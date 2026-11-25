@@ -1,0 +1,12 @@
+TYPE FIELD
+
+1. Unzip this folder.
+2. Right-click Type Field.html, then Open With > Google Chrome or Microsoft Edge.
+
+That is all. No installer, Node.js, Terminal or internet connection is needed.
+
+Upload a font and choose a preset. Font processing stays in your browser.
+Use Save project / Open project to transfer your compositions and uploaded fonts.
+Local browser autosaves are separate from saved project files.
+
+The Font licenses folder contains the licenses for the included Roboto fonts.

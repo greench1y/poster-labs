@@ -1,0 +1,1959 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Carpet Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;700&family=Archivo:wght@400;500;700;900&family=Archivo+Black&family=Anton&family=Unbounded:wght@800&family=Rubik+Mono+One&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Instrument+Serif&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
+<style>
+/* minimal UI: white, hairlines, one neutral sans, grey labels, no ornaments — the poster is the only colour */
+:root{--bg:#f4f4f4;--panel:#fff;--line:#d4d4d4;--tx:#111;--mut:#555;--hov:#ececec;--trk:#bdbdbd}
+@media (prefers-color-scheme: dark){:root{--bg:#0d0d0d;--panel:#161616;--line:#3a3a3a;--tx:#f2f2f2;--mut:#b0b0b0;--hov:#242424;--trk:#555}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:13px/1.4 "Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+#app{display:grid;grid-template-columns:1fr 300px;height:100vh}
+#stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+#top{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding:14px 20px}
+#top .logo{font-weight:700;margin-right:14px}
+#top .sp{flex:1}
+button,select,input,textarea{font:inherit;color:var(--tx)}
+button{background:none;border:0;padding:6px 10px;color:var(--tx);font-weight:500;cursor:pointer;white-space:nowrap;border-radius:6px;transition:color .12s,background .12s}
+button:hover{color:var(--tx);background:var(--hov)}
+button kbd{font:inherit;font-weight:400;color:var(--mut);margin-left:4px}
+#view{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px 32px 24px}
+canvas#cv{max-width:100%;max-height:100%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 30px rgba(0,0,0,.06)}
+#bar{display:flex;gap:12px;align-items:center;padding:12px 20px 16px}
+#bar button{width:32px;padding:6px 0;text-align:center}
+#bar input[type=range]{flex:1}
+#tlab{color:var(--mut);font-variant-numeric:tabular-nums;min-width:40px;text-align:right}
+#panel{overflow:auto;background:var(--panel);border-left:1px solid var(--line);padding:8px 0 40px}
+details{border-bottom:1px solid var(--line);padding:0 20px}
+details:last-of-type{border-bottom:0}
+summary{cursor:pointer;padding:12px 0;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;font-weight:600}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"";order:-1;width:5px;height:5px;border-right:1.5px solid var(--tx);border-bottom:1.5px solid var(--tx);transform:rotate(-45deg);margin:0 6px 0 1px;transition:transform .15s}
+details[open]>summary::after{transform:rotate(45deg)}
+details[open]{padding-bottom:12px}
+summary .tag{font-weight:400;color:var(--mut)}
+summary button.dice{order:5}summary input.hdr{order:6}
+summary button.dice{margin-left:auto;padding:3px;line-height:0;color:var(--mut)}
+summary button.dice:hover{color:var(--tx)}
+summary button.dice svg{width:17px;height:17px}
+summary input.hdr{margin:0 0 0 6px;cursor:pointer}
+summary:not(:has(.dice))>input.hdr{margin-left:auto}
+details.off>summary{color:var(--mut)}
+details.off>*:not(summary){opacity:.5}
+.row{display:grid;grid-template-columns:88px 1fr 34px;gap:10px;align-items:center;margin:7px 0}
+.row.wide{grid-template-columns:88px 1fr}
+.row label{color:var(--mut);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .v{color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
+.row select,.row input[type=text],textarea{width:100%;background:var(--panel);border:1px solid var(--trk);border-radius:6px;padding:5px 7px;outline:none}
+.row select:focus,.row input[type=text]:focus,textarea:focus{border-color:var(--mut)}
+textarea{resize:vertical;min-height:30px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--trk)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;margin-top:-5.5px;border-radius:50%;background:var(--tx);border:0}
+input[type=range]::-moz-range-track{height:2px;background:var(--trk)}
+input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--tx);border:0}
+.row input[type=color]{width:100%;height:24px;border:1px solid var(--trk);border-radius:6px;background:transparent;padding:2px;cursor:pointer}
+input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+input[type=color]::-webkit-color-swatch{border:0;border-radius:4px}
+input[type=checkbox]{accent-color:var(--tx);width:15px;height:15px}
+.row input[type=checkbox]{justify-self:start;margin:0}
+.inks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.inks input{width:100%;height:24px;border:1px solid var(--trk);border-radius:6px;background:transparent;padding:2px;cursor:pointer}
+.inks input.dim{opacity:.25}
+.hint{color:var(--mut);margin:6px 0 8px;line-height:1.45}
+#top button.on{background:var(--hov)}
+#bWall{display:inline-flex;align-items:center;gap:6px}
+#cWall{margin:0;pointer-events:none} /* the button toggles; the box only shows the state */
+button:disabled{opacity:.35;cursor:default}
+canvas#wall{max-width:100%;max-height:100%;display:none}
+#app.wallon canvas#cv{display:none}
+#app.wallon canvas#wall{display:block}
+#toast{position:fixed;left:50%;bottom:60px;transform:translateX(-50%);background:var(--tx);color:var(--panel);padding:7px 12px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+@media (max-width:820px){#app{grid-template-columns:1fr;grid-template-rows:60vh auto;height:auto}#panel{border-left:0;border-top:1px solid var(--line)}}
+.inks{grid-template-columns:repeat(4,1fr)}
+.subh{color:var(--mut);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 4px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 10px}
+.chips button{padding:3px 7px;border:1px solid var(--trk);border-radius:5px;font-weight:400;font-size:12px;color:var(--mut)}
+.chips button.on{background:var(--tx);color:var(--panel);border-color:var(--tx)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="top">
+      <div class="logo">Carpet Lab <span style="font-weight:400;color:var(--mut);font-size:11px" title="build marker">r48</span></div>
+      <button id="bAll" title="Randomize everything except text and format">Random <kbd>R</kbd></button>
+      <button id="bDay" title="Carpet of the day: the same carpet for everyone on a given date">Day <kbd>D</kbd></button>
+      <button id="bCar" title="Randomize the carpet (recipes after the references)">Carpet <kbd>K</kbd></button>
+      <button id="bSym" title="Randomize symmetry and space warps">Symmetry <kbd>S</kbd></button>
+      <button id="bWv" title="Randomize stitch, leading and wear">Weave <kbd>V</kbd></button>
+      <button id="bTxt" title="Randomize the text × carpet interaction">Text <kbd>T</kbd></button>
+      <button id="bLay" title="Randomize the readable layout">Layout <kbd>L</kbd></button>
+      <button id="bCol" title="Random palette">Colors <kbd>C</kbd></button>
+      <button id="bWall" title="Preview a row of static banners on a wall"><input type="checkbox" id="cWall" tabindex="-1"> Wall <kbd>B</kbd></button>
+      <span class="sp"></span>
+      <button id="bPng">PNG ×2</button>
+      <button id="bMp4">MP4</button>
+    </div>
+    <div id="view"><canvas id="cv"></canvas><canvas id="wall"></canvas></div>
+    <div id="bar">
+      <button id="bPlay" title="Play / pause (space)">❚❚</button>
+      <input type="range" id="scrub" min="0" max="1000" value="0">
+      <span id="tlab">0.0s</span>
+    </div>
+  </div>
+  <div id="panel"></div>
+</div>
+<div id="toast"></div>
+<input type="file" id="fFont" accept=".ttf,.otf,.woff,.woff2" hidden>
+<script>
+'use strict';
+/* Carpet Lab — two layers: a readable Swiss text layer and an animated GPU carpet.
+   The carpet is three slots — Field (lattice, rings, bands, panels, patchwork), Medallion (stepped / nested shapes) and Border (bands of motifs) —
+   folded by a global symmetry, rendered smooth or as stitches (pixel, graph paper, cross-stitch, beads, tesserae, knots), with stained-glass leading. */
+/* ================= basics ================= */
+const $=s=>document.querySelector(s);
+const TAU=Math.PI*2, CAP=.72;
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+let RNG=Math.random;const R=()=>RNG(), ri=(a,b)=>a+Math.floor(R()*(b-a+1)), rf=(a,b)=>a+R()*(b-a), pick=a=>a[Math.floor(R()*a.length)];
+function hsh(n){const x=Math.sin(n*127.1+P.seed*.0137)*43758.5453;return x-Math.floor(x)}
+function fmt(v){return Math.abs(v)>=100?Math.round(v):(Math.round(v*100)/100)}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('on'),1600)}
+
+/* ================= data ================= */
+const FORMATS={'3:4':[3,4],'4:5':[4,5],'2:3':[2,3],'A-series 1:√2':[1,Math.SQRT2],'F4 895×1280':[895,1280],'1:1':[1,1],'9:16':[9,16],'16:9':[16,9]};
+const READ_FONTS={'Inter':'"Inter"','Helvetica':'"Helvetica Neue",Helvetica,Arial,sans-serif','Space Grotesk':'"Space Grotesk"','IBM Plex Sans':'"IBM Plex Sans"','Archivo':'"Archivo"','IBM Plex Mono':'"IBM Plex Mono"','Instrument Serif':'"Instrument Serif"'};
+/* former broken-layer faces now live in the shared title list */
+Object.assign(READ_FONTS,{'Archivo Black':'"Archivo Black"','Anton':'"Anton"','Unbounded':'"Unbounded"','Rubik Mono One':'"Rubik Mono One"','Bricolage':'"Bricolage Grotesque"'});
+const TEMPLATES={band:'Title band',center:'Centered title',giant:'Giant title',cells:'Letter cells',scatter:'Scattered words',columns:'Columns',bigdate:'Big date',corners:'Corners',stagger:'Staggered list',vertical:'Vertical title',repeat:'Header + footer',axis:'Axis',bands:'Bands'};
+const RMOTION={none:'None',reveal:'Line reveal',slide:'Column slide',jump:'Grid jumps',rise:'Row drift',track:'Tracking',marquee:'Marquee title',step:'Step templates',drift:'Grid breathe'};
+const BLAYOUT={fill:'Fill page',stack:'Stack',repeat:'Repeat rows',letters:'Letter grid'};
+const BMOTION={none:'None',scroll:'Scroll',hscroll:'Line marquee',lines:'Line shift',pulse:'Pulse',breathe:'Tracking',wobble:'Wobble'};
+const CASES={none:'As typed',upper:'UPPER',lower:'lower'};
+const BLENDS={'source-over':'Normal','multiply':'Multiply','screen':'Screen','difference':'Difference','exclusion':'Exclusion'};
+/* space warps: ps = [label,min,max,step,default,[random lo,hi]] (Geo Lab set + noise) */
+const WARPS={
+ shear:{n:'Shear cells',ops:['Checker','Columns','Random'],ps:[['Amount',-3,3,.01,1.5,[-2,2]],['Cell',.03,.6,.005,.18,[.08,.4]],['Rows',.2,4,.01,1,[.4,2.5]]]},
+ steps:{n:'Column steps',ops:['Stairs','Random','Wave','Rows stairs','Rows random'],ps:[['Amount',-.3,.3,.001,.05,[-.1,.1]],['Width',.02,.5,.005,.1,[.05,.25]],['Wave freq',.1,4,.01,1]]},
+ fold:{n:'Fold',ops:['Fold X','Fold Y'],ps:[['Amount',0,.4,.001,.1,[.03,.15]],['Frequency',1,40,.1,8,[3,16]],['Envelope',0,1,.01,.5]]},
+ uturn:{n:'U-turn',ops:['Bottom','Top','Left','Right'],ps:[['Amount',0,1,.01,1,[.8,1]],['Center X',-.5,.5,.01,0,[-.25,.25]],['Center Y',-.5,.5,.01,0,[-.3,.3]]]},
+ polar:{n:'Polar',ops:['Polar','Log spiral','Tunnel'],ps:[['Amount',0,1,.01,1,[.7,1]],['Segments',1,24,1,6,[2,12]],['Twist',-3,3,.01,0,[-1,1]]]},
+ perspective:{n:'Perspective',ops:['Floor + ceiling','Floor','Wall'],ps:[['Amount',0,1,.01,1,[.8,1]],['Depth',.05,1,.01,.3,[.1,.6]],['Horizon',-.45,.45,.01,0,[-.25,.25]]]},
+ swirl:{n:'Swirl',ops:['Swirl','Ring twist','Ring steps'],ps:[['Amount',-6,6,.01,2,[-4,4]],['Size',.5,20,.01,3,[1,8]],['Center',-.4,.4,.01,0,[-.2,.2]]]},
+ kaleido:{n:'Kaleido',ops:['Radial','Mirror X','Mirror Y','Mirror XY'],ps:[['Amount',0,1,.01,1,[.8,1]],['Segments',2,16,1,6,[3,10]],['Offset',-.5,.5,.01,0,[-.2,.2]]]},
+ tile:{n:'Tile mirror',ops:['Mirror','Repeat','Brick'],ps:[['Amount',0,1,.01,1,[.8,1]],['Tile',.05,1,.005,.3,[.15,.5]],['Shift',0,1,.01,0]]},
+ ripple:{n:'Ripple',ops:['Round','Square','Diamond'],ps:[['Amount',0,.15,.001,.02,[.005,.03]],['Frequency',1,80,.1,20,[8,40]],['Center',-.4,.4,.01,0,[-.2,.2]]]},
+ wave:{n:'Wave',ops:['X by Y','Y by X','Both'],ps:[['Amount',0,.3,.001,.04,[.01,.08]],['Frequency',.5,40,.1,6,[2,16]],['Phase step',0,4,.01,0,[0,1.5]]]},
+ lens:{n:'Lens',ops:['Bulge','Pinch','Orbiting bulge'],ps:[['Amount',0,3,.01,1,[.5,2.5]],['Radius',.05,1,.01,.35,[.2,.6]],['Center',-.4,.4,.01,0,[-.2,.2]]]},
+ pixel:{n:'Quantize',ops:['Squares','Rows','Columns','Steps'],ps:[['Amount',0,1,.01,1,[.8,1]],['Cell',.004,.2,.001,.03,[.02,.08]],['Jitter',0,1,.01,0,[0,.6]]]},
+ noise:{n:'Noise',ops:['Smooth','Ridged','Curl'],ps:[['Amount',0,.4,.001,.06,[.02,.12]],['Scale',.3,12,.01,3,[1,6]],['Detail',0,1,.01,.5]]},
+};
+const WKEYS=Object.keys(WARPS);
+
+/* motif library — order = shader ids */
+const MOTIFS=['Solid','Diamond','Square','Circle','Octagon','Star 8','Stepped diamond','Toothed diamond','Cross','Flower','Spiky star','Rosette','Quatrefoil','Roundel','Lozenge + dots','Chevron','Zigzag','Stripes','Diagonal','Checker','Dots','Spiral','Teeth','Cube','Ikat','Arrow','Hook','Comb','Herringbone','Gul','Wave','Boteh',"Bird's eye",'Fir'];
+const M=Object.fromEntries(['solid','diamond','square','circle','octagon','star8','stepd','toothd','cross','flower','spiky','rosette','quatre','roundel','lozenge','chevron','zigzag','stripes','diag','checker','dots','spiral','teeth','cube','ikat','arrow','hook','comb','herring','gul','wave','boteh','bird','fir'].map((k,i)=>[k,i]));
+const BANDED=new Set([1,2,3,4,5,6,7,9,15,16,17,18,19,20,21,22,24]);
+const FLAYOUTS=['Grid','Diamond lattice','Half-drop','Rings','Spokes','Bands','Columns','Panels','Patchwork'];
+const MSHAPES=['Diamond','Square','Circle','Octagon','Star','Cross','Hexagon'];
+const PLACES=['Center','Three','Quincunx','Four corners','Column of five'];
+const PICKS=['Random','By ring / band','Checker','First only','By column'];
+const ROTS=['None','Checker 90°','Random 90°','Toward center','Flip rows'];
+const CMODES=['By ring / band','Random','Checker','Single','By motif'];
+const CGROUND=['Ground','Base ink','Checker inks','Line color','Transparent'];
+const MOTIONS=['None','Spin','Breathe','Color steps','Twinkle','Wave'];
+const SYMS=['None','Mirror X','Mirror Y','Quadrants','Octants','Radial'];
+const STITCH=['Smooth','Pixel','Graph paper','Cross-stitch','Beads','Tesserae','Knots'];
+const LEADS=['None','Leading','Outline only'];
+const TMODES={none:'None',woven:'Woven letters',swap:'Motif swap',recolor:'Recolor inside',invert:'Invert inside',finer:'Finer stitch inside',coarser:'Coarser stitch inside',knock:'Knockout',window:'Window',lead:'Lead outline',mirror:'Mirrored letters',push:'Push apart'};
+const TMK=Object.keys(TMODES);
+const TPLACE={woven:'Woven in',plates:'On plates',margin:'Carpet panel',free:'Free'};
+const PLSTYLES=['Box','Rounded','Stepped','Pointed'];
+const MSIDES={top:'Top',bottom:'Bottom',tb:'Top + bottom',left:'Left',sides:'Sides'};
+const PLCOLS=[['border','Border color'],['ground','Ground'],['line','Line color'],['accent','Accent'],['ink1','Ink 1'],['ink2','Ink 2'],['ink3','Ink 3'],['text','Text color']];
+
+/* [name, colours (1st = ground, rest = inks, up to 7), text, accent, line] — the first fourteen are the references */
+const PALETTES=[
+ ['Cross-stitch',['#eef1f5','#f6c21a','#3f8fe0','#8fcf5a','#f07ab0','#f59a2c','#8a6ad8','#e8463a'],'#2a2a3a','#e8463a','#3f8fe0'],
+ ['Indigo madder',['#1b2440','#a8322a','#e9d9b4','#d9a441','#2f5d8a','#6b2b2b'],'#e9d9b4','#d9a441','#10162b'],
+ ['Saffron field',['#d9a23a','#8e2a1b','#1d2b3a','#efe2c2','#5f7a3a','#c4541f'],'#1d2b3a','#8e2a1b','#1d2b3a'],
+ ['Ivory and black',['#ece3d0','#1a1613','#8a2b1c','#b88b4a','#4a5a45','#2f2a26'],'#1a1613','#8a2b1c','#1a1613'],
+ ['Moss and rust',['#2b2a1e','#b4501f','#d8c58c','#5d6b32','#7a2e1a','#3b4a3e'],'#d8c58c','#b4501f','#14130d'],
+ ['Night beads',['#050505','#ffffff','#2f5fae','#1f7a3a','#f5b81c','#d82020','#9ecbff'],'#ffffff','#f5b81c','#000000'],
+ ['Embroidery',['#f4ede4','#f0645a','#6dbf3a','#f6b21c','#3b2a1e','#2f8fe0','#ffd79a','#ffffff'],'#3b2a1e','#f0645a','#f0645a'],
+ ['Kilim drawing',['#ebe7e0','#e8361e','#f7b51c','#7fd0f0','#2a1d18','#f5a07a'],'#2a1d18','#e8361e','#2a1d18'],
+ ['Illumination',['#ece5d8','#22b07a','#111111','#e8322b','#3f8fe0','#f39ab8','#f6c21c'],'#111111','#e8322b','#111111'],
+ ['Harlequin',['#141c6a','#141c6a','#d9a520','#c8282a','#2433a8'],'#f3e3b0','#d9a520','#0b0f3a'],
+ ['Rose window',['#050505','#c8201e','#2f6fd8','#f0b020','#2f8a3a','#7a2fa0','#e8d8b0','#e8601e'],'#f4ead0','#f0b020','#050505'],
+ ['Ember',['#120c08','#f2e3c0','#d8461e','#f5b51c','#2f8f7a','#8a1f12','#f08a2a'],'#f2e3c0','#f5b51c','#120c08'],
+ ['Navajo',['#10162e','#f3e6c8','#c8281e','#f2a91c','#e8682a','#4f8a9a'],'#f3e6c8','#f2a91c','#10162e'],
+ ['Caucasian',['#163f52','#e8d6b0','#d2401e','#2f7f86','#e7a92a','#7a1f12'],'#e8d6b0','#e7a92a','#0e2a38'],
+ ['Patchwork',['#2a1a12','#f0e6d6','#c8521e','#e89a3a','#1c2f4a','#8a2a1a','#d8c8a8','#5a6a3a'],'#f0e6d6','#e89a3a','#1a100a'],
+ ['Brocade',['#4a0e0e','#c8401e','#e8b88a','#2a2040','#8fa0a0','#f2d8b0','#a01e2a'],'#f2d8b0','#e8b88a','#2a0606'],
+ ['Ikat',['#e8d0a0','#111111','#e8221e','#1f6f86','#f0b81c','#5a1010'],'#111111','#e8221e','#111111'],
+ ['Night tribal',['#0a0a0a','#ff5a2a','#3fd0e8','#a8a8a8','#f0ece0','#2a8fe0'],'#f0ece0','#ff5a2a','#0a0a0a'],
+ ['Swiss',['#f2f2f2','#111111','#ff2a1a'],'#111111','#ff2a1a','#111111'],
+ ['Riso',['#f4efe6','#ff4f8b','#2a5bd7','#ffd400'],'#111111','#ff4f8b','#111111'],
+ ['Blueprint',['#0f2350','#e8eef8','#7fb2ff'],'#e8eef8','#7fb2ff','#7fb2ff'],
+ ['Kraft',['#e6d9c3','#1b1814','#b0472c','#3f6b8a'],'#1b1814','#b0472c','#1b1814'],
+];
+
+function mkWarp(type,on,o={}){return Object.assign({on,type,op:0,p:WARPS[type].ps.map(q=>q[4]),sp:0,pu:0},o)}
+/* one slot. x1..x4 depend on the slot: Field x1 ring shape, x2 sectors/panels · Medallion lay shape, D rings, x1 placement, x2 size, x3 halo, x4 steps ·
+   Border D bands, x1 corners, x2 width, x3 guard lines */
+function mkSlot(o={}){return Object.assign({on:true,lay:0,D:6,asp:1,n:3,w:.6,size:1,rot:0,pick:0,cmode:0,ink:0,tbg:0,mo:0,cyc:1,mot:[1,9,20],x1:0,x2:2,x3:0,x4:0,mv:0,gd:0,fl:false,cs:0},o)}
+const DEF={wall:false,wallN:5,wallMode:'mix',wallPeople:2,wallTex:true,
+ fmt:'3:4',q:.75,aa:true,loop:8,seed:1234,
+ title:'Carpet\nLab',sub:'Rugs, glass & stitches',date:'14.01–28.02.2027',place:'Hall 3, Kunsthalle',credit:'@carpet.lab',
+ tpl:'center',rfont:'Inter',tw:900,tspan:1,body:14,mid:2.4,lead:1.15,cols:8,rows:12,margin:38,gutter:12,stairs:0,rcase:'upper',rcol:'text',band:false,rblend:'source-over',grid:false,
+ rax:{},rcol:'auto',
+ rmo:'none',rmoAmt:.5,rmoSpd:1,
+ tshow:true,tmode:'woven',tamt:.6,tblur:1,tfill:'none',tsrc:'big',
+ tplace:'woven',tstyle:'halo',ttc:70,tplt:false,plsm:true,tpos:'top',tmot:1,twv:true,twfull:false,twpos:'center',tx:true,tsplit:false,wov:'',desc:'Rugs, glass & stitches 14.01–28.02.2027 Hall 3, Kunsthalle @carpet.lab',tlay:'ring',tsymk:1,tmir:false,tdiag:false,trad:.3,thalo:.4,plst:1,plfor:'all',plpad:.8,plfw:.8,plh:.6,plf:'ground',plb:'line',mside:'tb',mband:.2,
+ slots:[mkSlot({lay:1,D:5,mot:[9,11,1,20],cmode:1,tbg:1,n:3}),
+        mkSlot({lay:0,D:5,mot:[9,1,20,6],x1:0,x2:.55,x3:.25,x4:0,pick:1,tbg:1}),
+        mkSlot({D:2,mot:[22,20],pick:1,x1:1,x2:.07,x3:.15,cmode:0,ink:2})],
+ sym:3,symN:8,symSpin:0,symRot:0,fm:0,
+ warps:[mkWarp('noise',false),mkWarp('wave',false)],
+ st:0,stc:90,stg:.1,stj:.4,ld:1,lw:.35,wear:0,pile:.6,abr:.5,tuft:.7,strand:0,tufs:230,
+ pal:['#120c08','#f2e3c0','#d8461e','#f5b51c','#2f8f7a','#8a1f12','#f08a2a','#f2e3c0'],nCol:7,cyc:0,grain:0,txt:'#f2e3c0',acc:'#f5b51c',lc:'#120c08',
+ pngScale:2,mp4Scale:1,fps:30,mq:.15,
+};
+const LSKEY='carpetlab.v1';
+/* fictional events with very different amounts of text, to test the layout quickly */
+const PRESETS=[
+ {n:'One word',title:'Open',desc:''},
+ {n:'Club night',title:'Open Jam #30',desc:'Noise Kitchen\nFri 02.12 / 23:00\nKino, Petrohradská'},
+ {n:'Exhibition',title:'Pattern\nLanguage',desc:'Geometry, rhythm & optical noise\n14.01–28.02.2027\nHall 3, Kunsthalle\n@geo.lab'},
+ {n:'Concert',title:'Orchestra of Broken Clocks',desc:'Live in concert\n22.03.2027, 20:00\nRoxy, Dlouhá 33\nTickets at roxy.example'},
+ {n:'Lecture',title:'Type & Time',desc:'Lecture by Mira Holan\nWed 05.05 / 18:30\nRoom 204, Academy of Arts\nFree entry'},
+ {n:'Film night',title:'Kino Nocturne',desc:'Three short films about cities at night\nEvery Thursday in March\nAtrium cinema, 21:00\nOriginal version with subtitles\natrium.example'},
+ {n:'Festival line-up',title:'Basel Noise Festival',desc:'Three days of loud music\n12–14.06.2027\nKaserne, Basel\nVera Stone\nThe Long Hum\nNoor & Kit\nPale Static\nOdd Machines\nMarta Velez\nDJ Lumen\nbaselnoise.example'},
+ {n:'Symposium',title:'International Symposium on Generative Graphic Design',desc:'Two days of talks and workshops\n03–04.10.2027\nUniversity of Applied Arts\nRegistration open'},
+ {n:'Announcement',title:'Closed for Renovation',desc:'Back in spring'},
+];
+/* text fields that presets write and Custom keeps */
+const TXT_KEYS=['title','desc'],setTxt=pr=>{P.title=pr.title;P.desc=pr.desc};
+const txtSnap=()=>Object.fromEntries(TXT_KEYS.map(k=>[k,P[k]]));
+const WALL_FONTS=()=>(typeof READ_FONTS!=='undefined'&&'rfont' in P)?[['rfont',READ_FONTS,'rax']]:[];
+
+let P=JSON.parse(JSON.stringify(DEF));
+const okMot=a=>Array.isArray(a)&&a.length>0&&a.every(v=>Number.isInteger(v)&&v>=0&&v<MOTIFS.length);
+try{const s=JSON.parse(localStorage.getItem(LSKEY)||'null');if(s&&typeof s==='object'){Object.assign(P,s);
+  if(!Array.isArray(P.slots)||P.slots.length!==3||P.slots.some(x=>!x||typeof x!=='object'))P.slots=JSON.parse(JSON.stringify(DEF.slots));
+  P.slots.forEach((x,i)=>{Object.keys(DEF.slots[0]).forEach(k=>{if(x[k]==null)x[k]=JSON.parse(JSON.stringify(DEF.slots[i][k]))});if(!okMot(x.mot))x.mot=DEF.slots[i].mot.slice()});
+  if(!Array.isArray(P.warps)||P.warps.length!==2||P.warps.some(x=>!x||!WARPS[x.type]))P.warps=JSON.parse(JSON.stringify(DEF.warps));
+  P.warps.forEach(x=>{const d=WARPS[x.type];if(!Array.isArray(x.p)||x.p.length!==d.ps.length)x.p=d.ps.map(q=>q[4])});
+  if(!Array.isArray(P.pal)||P.pal.length!==8)P.pal=DEF.pal.slice();
+  if(!FORMATS[P.fmt])P.fmt=DEF.fmt;if(!TEMPLATES[P.tpl])P.tpl=DEF.tpl;if(!TMODES[P.tmode])P.tmode=DEF.tmode;
+  if(!READ_FONTS[P.rfont])P.rfont=DEF.rfont;if(!TPLACE[P.tplace])P.tplace=DEF.tplace;if(!MSIDES[P.mside])P.mside=DEF.mside;
+  if(typeof P.rax!=='object'||!P.rax)P.rax={};
+  Object.keys(DEF).forEach(k=>{if(P[k]==null)P[k]=JSON.parse(JSON.stringify(DEF[k]))});
+}}catch(e){}
+
+/* the text the user had before presets existed becomes their Custom */
+if(P.preset==null||(P.preset===-1&&!P.custom)){P.preset=-1;P.custom=txtSnap()}
+let saveH=0;function saveSoon(){clearTimeout(saveH);saveH=setTimeout(()=>{try{localStorage.setItem(LSKEY,JSON.stringify(P))}catch(e){}},300)}
+/* ================= WebGL carpet engine ================= */
+const glc=document.createElement('canvas');
+const gl=glc.getContext('webgl2',{premultipliedAlpha:false,preserveDrawingBuffer:true,antialias:false,alpha:false});
+if(!gl)alert('WebGL2 is not available in this browser — the carpet layer needs it.');
+const VS=`#version 300 es
+in vec2 aP;out vec2 vUv;void main(){vUv=aP*.5+.5;gl_Position=vec4(aP,0.,1.);}`;
+const FSRC=`#version 300 es
+precision highp float;
+in vec2 vUv;out vec4 o;
+uniform vec2 uRes;uniform float uT,uSeed,uPm,uAA;
+uniform vec4 uWA[3],uWB[3];
+uniform vec4 uSA[3],uSB[3],uSC[3],uSD[3],uSE[3];
+uniform float uMo[48];
+uniform vec4 uSym,uFr,uSt,uLd;
+uniform int uN,uCyc,uTMode;
+uniform float uGrain,uTAmt,uTBlur,uWear,uPile,uAbr;uniform vec4 uGd;uniform vec3 uTf;
+uniform vec3 uPal[8];
+uniform vec3 uLine,uAcc;
+uniform sampler2D uTxt,uPlt,uHal;uniform float uHalOn;
+uniform vec2 uFc;uniform float uPlOn,uTHalo,uGate,uTC,uTHr,uTM;uniform vec3 uPlF,uPlB,uTxtC;
+#define TAU 6.2831853
+#define PI 3.14159265
+float h21(vec2 p){p=fract(p*vec2(123.34,456.21)+uSeed*.001);p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float h11(float n){return fract(sin(n*12.9898+uSeed*.37)*43758.5453);}
+mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,s,-s,c);}
+float tri(float x){return abs(fract(x)-.5)*2.;}
+float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
+float cr2(vec2 a,vec2 b){return a.x*b.y-a.y*b.x;}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+ float a=h21(i),b=h21(i+vec2(1.,0.)),c=h21(i+vec2(0.,1.)),d=h21(i+vec2(1.,1.));return mix(mix(a,b,f.x),mix(c,d,f.x),f.y)*2.-1.;}
+float fbm(vec2 p,int oc){float s=0.,a=.5;for(int i=0;i<5;i++){if(i>=oc)break;s+=a*vn(p);p=rot(.7)*p*2.03+17.;a*=.5;}return s;}
+
+/* ---------- space warps (world units: poster height = 1, centre = 0) ---------- */
+vec2 warp(vec2 p,int i){
+ vec4 A=uWA[i],B=uWB[i];int ty=int(B.z+.5),op=int(A.w+.5);
+ float ph=uT*B.x,an=B.x>0.?cos(TAU*ph):1.;
+ float amt=A.x*(1.-B.y*(.5-.5*cos(TAU*uT*max(1.,B.x))));
+
+ if(ty==0){ /* shear cells */
+  vec2 cs=vec2(A.y,A.y*A.z);vec2 c=floor(p/cs);float ly=fract(p.y/cs.y)-.5;
+  float s=op==0?mod(c.x+c.y,2.):op==1?mod(c.x,2.)*2.-1.:floor(h21(c)*3.)-1.;
+  p.x+=ly*cs.y*amt*s*an;
+ }else if(ty==1){ /* column / row steps */
+  bool rows=op>=3;int m=rows?op-3:op;float x=rows?p.y:p.x;float c=floor(x/A.y);float off;
+  if(m==0)off=c;else if(m==1)off=(h21(vec2(c,7.))-.5)*4.;else off=sin(c*A.z)*2.;
+  off*=amt;if(B.x>0.)off+=amt*2.*sin(TAU*(ph+h21(vec2(c,3.))));
+  if(rows)p.x+=off;else p.y+=off;
+ }else if(ty==2){ /* zigzag fold */
+  vec2 q=op==0?p:p.yx;float cx=B.x>0.?.35*sin(TAU*ph):0.;
+  float env=mix(1.,exp(-pow((q.x-cx)/.22,2.)),A.z);
+  q.x+=amt*(tri(q.y*A.y)-.5)*2.*env;p=op==0?q:q.yx;
+ }else if(ty==3){ /* U-turn: straight lines bend around a half circle */
+  vec2 c=vec2(A.y,A.z);if(B.x>0.)c.y+=.15*sin(TAU*ph);
+  vec2 q=p-c;if(op==1)q=-q;else if(op==2)q=vec2(q.y,-q.x);else if(op==3)q=vec2(-q.y,q.x);
+  vec2 r;if(q.y>=0.)r=vec2(abs(q.x),q.y);else{float rr=length(q),a=atan(abs(q.x),-q.y);r=vec2(rr,-rr*(PI*.5-a));}
+  p=mix(p,r,amt);
+ }else if(ty==4){ /* polar */
+  vec2 q=p;if(B.x>0.)q=rot(TAU*ph)*q;float a=atan(q.y,q.x)/TAU,r=length(q),k=.15;vec2 w;
+  if(op==0)w=vec2(a*A.y*k,r);else if(op==1)w=vec2(a,log(r+1e-4)/TAU)*A.y*k;else w=vec2(a*A.y*k,.08/(r+.005));
+  w.x+=A.z*w.y;p=mix(p,w,amt);
+ }else if(ty==5){ /* perspective plane */
+  float hz=A.z+(B.x>0.?.05*sin(TAU*ph):0.);
+  vec2 q=op==2?vec2(p.y,p.x-hz):vec2(p.x,p.y-hz);float k=A.y*.3;
+  vec2 w=vec2(q.x*k/(abs(q.y)+.004),k/(abs(q.y)+.004));
+  if(op==1&&q.y>0.)w=p;if(op==2)w=w.yx;p=mix(p,w,amt);
+ }else if(ty==6){ /* swirl */
+  vec2 c=vec2(A.z,0.);if(B.x>0.)c+=.08*vec2(cos(TAU*ph),sin(TAU*ph));
+  vec2 q=p-c;float r=length(q),a;
+  if(op==0)a=amt*exp(-r*A.y)*an;else if(op==1)a=(mod(floor(r*A.y*4.),2.)*2.-1.)*amt*.2*an;else a=floor(r*A.y*4.)*amt*.08*an;
+  p=rot(a)*q+c;
+ }else if(ty==7){ /* kaleido */
+  vec2 q=p-vec2(A.z,0.);
+  if(op==0){float n=max(2.,A.y),sg=TAU/n;q=rot(sg*ph)*q;float a=mod(atan(q.y,q.x),sg);a=abs(a-sg*.5);q=vec2(cos(a),sin(a))*length(q);}
+  else{q.x+=B.x>0.?.08*sin(TAU*ph):0.;if(op==1)q.x=abs(q.x);else if(op==2)q.y=abs(q.y);else q=abs(q);}
+  p=mix(p,q,amt);
+ }else if(ty==8){ /* tile mirror / repeat */
+  vec2 q=p/A.y;if(op==2)q.x+=mod(floor(q.y),2.)*.5;q+=vec2(A.z,ph);
+  vec2 f=fract(q)-.5;if(op==0)f=abs(f);p=mix(p,f*A.y,amt);
+ }else if(ty==9){ /* ripple */
+  vec2 q=p-vec2(A.z,0.);float d=op==0?length(q):op==1?max(abs(q.x),abs(q.y)):abs(q.x)+abs(q.y);
+  p+=q/(d+1e-4)*sin(d*A.y-TAU*ph)*amt;
+ }else if(ty==10){ /* wave */
+  if(op!=1)p.x+=sin(p.y*A.y+TAU*ph+A.z*floor(p.x*A.y*.2))*amt;
+  if(op!=0)p.y+=sin(p.x*A.y+TAU*ph+A.z*floor(p.y*A.y*.2))*amt;
+ }else if(ty==11){ /* lens */
+  vec2 c=vec2(A.z,0.);if(op==2||B.x>0.)c+=vec2(cos(TAU*ph),sin(TAU*ph))*(op==2?.25:.1);
+  vec2 q=p-c;float r=length(q)/A.y;
+  if(r<1.&&r>1e-4){float e=op==1?1./(1.+amt):1.+amt;p=c+q*pow(r,e-1.);}
+ }else if(ty==12){ /* quantize */
+  float s=A.y*(B.x>0.?1.+.5*sin(TAU*ph):1.);vec2 c=floor(p/s);
+  vec2 q=(c+.5)*s+(vec2(h21(c),h21(c+3.))-.5)*s*A.z;
+  if(op==1)q.x=p.x;else if(op==2)q.y=p.y;else if(op==3){q=(c+.5)*s;q.y+=c.x*s*.5*A.z;q.y=(floor(q.y/s)+.5)*s;}
+  p=mix(p,q,amt);
+ }else if(ty==13){ /* noise displacement, loops by moving the noise along a circle */
+  vec2 lo=B.x>0.?.7*vec2(cos(TAU*ph),sin(TAU*ph)):vec2(0.);
+  vec2 q=p*A.y+lo;int oc=1+int(A.z*4.);
+  vec2 d=vec2(fbm(q,oc),fbm(q+vec2(31.7,-12.3),oc));
+  if(op==1)d=(1.-abs(d)*2.)*.6;
+  else if(op==2){float n=fbm(q,oc)*2.;d=vec2(cos(n*TAU),sin(n*TAU))*.5;}
+  p+=d*amt;
+ }
+ return p;
+}
+vec3 txGrad(vec2 uv){float lv=3.+uTBlur*.7;vec2 e=vec2(exp2(lv))/uRes;
+ return vec3(textureLod(uTxt,uv,lv).a,
+  textureLod(uTxt,uv+vec2(e.x,0.),lv).a-textureLod(uTxt,uv-vec2(e.x,0.),lv).a,
+  textureLod(uTxt,uv+vec2(0.,e.y),lv).a-textureLod(uTxt,uv-vec2(0.,e.y),lv).a);}
+float sdBox(vec2 p,vec2 b,float r){vec2 d=abs(p)-b+r;return length(max(d,0.))+min(max(d.x,d.y),0.)-r;}
+float gCy=0.;
+vec3 inkc(float i){int k=1+int(mod(floor(i+.5),float(uN)));return uPal[k];}
+vec2 uvOf(vec2 w){return (w*uRes.y+uRes*.5)/uRes;}
+float txIn(vec2 uv){return step(.5,textureLod(uTxt,uv,uTBlur).a);}
+
+/* ---------- motifs: q in the unit cell [-.5,.5]², returns the layer index (0,1,2…) or -1 for no ink ---------- */
+float bnd(float t,float w){return fract(t)<.3+.7*w?floor(t):-1.;}
+float mot(int id,vec2 q,float n,float w){
+ vec2 a=abs(q);float L1=a.x+a.y,Li=max(a.x,a.y),r=length(q),an=atan(q.y,q.x);n=max(1.,floor(n+.5));
+ if(id==0)return 0.;
+ if(id==1)return L1<.5?bnd(L1*2.*n,w):-1.;
+ if(id==2)return bnd(Li*2.*n,w);
+ if(id==3)return r<.5?bnd(r*2.*n,w):-1.;
+ if(id==4){float d=max(Li,L1*.7071)*2.;return d<1.?bnd(d*n,w):-1.;}
+ if(id==5){float d=min(Li,L1*.7071)/.3536;return d<1.?bnd(d*n,w):-1.;}
+ if(id==6){float k=2.*n+2.;vec2 s=floor(a*k*2.)/(k*2.);float d=(s.x+s.y)*2.;return d<1.?bnd(d*n,w):-1.;}
+ if(id==7){if(L1<.3)return bnd(L1/.3*max(1.,n-1.),w)+1.;if(L1<.37)return 0.;
+  if(L1<.5)return mod(floor((a.x-a.y)*(6.+n*2.)+.5),2.)<.5?0.:-1.;return -1.;}
+ if(id==8){float t=.1+.12*w;float d=min(max(a.x/t,a.y*2.),max(a.x*2.,a.y/t));
+  if(d>=1.)return -1.;if(Li<t*.9)return 2.;return d<.55?1.:0.;}
+ if(id==9){float rr=.5*(.42+.58*pow(abs(cos(an*4.)),.7));float d=r/rr;if(d>=1.)return -1.;return r<.08?n:bnd(d*n,w);}
+ if(id==10){float rr=.5*(.28+.72*pow(abs(cos(an*4.)),1.5+(1.-w)*5.));float d=r/rr;if(d>=1.)return -1.;return r<.07?2.:(d<.5?1.:0.);}
+ if(id==11){if(r>.43&&r<.5)return 2.;float sa=TAU/8.,aa=mod(an+sa*.5,sa)-sa*.5;vec2 c=vec2(cos(aa),sin(aa))*r-vec2(.29,0.);
+  if(length(c)<.07+.06*w)return 1.;return r<.15?0.:-1.;}
+ if(id==12){float lr=.18+.05*w;float d=min(length(a-vec2(.22,0.)),length(a-vec2(0.,.22)));
+  if(L1<.13)return 1.;if(d<lr)return n>1.5&&d<lr*.5?2.:0.;return -1.;}
+ if(id==13){if(r<.5){if(r>.43)return 0.;float rr=.4*(.35+.65*pow(abs(cos(an*4.)),.8));if(r<.08)return 3.;return r<rr?2.:1.;}
+  vec2 cc=.5-a;return cc.x+cc.y<.2?3.:-1.;}
+ if(id==14){if(L1<.3)return L1<.13?1.:0.;float d=min(length(vec2(a.x-.42,a.y)),length(vec2(a.x,a.y-.42)));return d<.06+.03*w?2.:-1.;}
+ if(id==15)return bnd((q.y+.5+a.x)*n,w);
+ if(id==16)return bnd((q.y+.5+tri(q.x*2.)*.5)*n,w);
+ if(id==17)return bnd((q.y+.5)*n,w);
+ if(id==18)return bnd((q.x+q.y+1.)*n*.5,w);
+ if(id==19){float k=max(2.,n);vec2 c=floor((q+.5)*k);return mod(c.x+c.y,2.)<.5?0.:(w>.5?1.:-1.);}
+ if(id==20){vec2 l=fract((q+.5)*n)-.5;return length(l)<.18+.2*w?0.:-1.;}
+ if(id==21){float d=Li*2.;float t=d*n+an/TAU+.5;return (d<1.&&fract(t)<.3+.5*w)?0.:-1.;}
+ if(id==22){float k=max(1.,n-1.);float tx=fract((q.x+.5)*k)-.5,y=q.y+.5,h=(1.-2.*abs(tx))*(.55+.45*w);return y<h?(y<h*.45?1.:0.):-1.;}
+ if(id==23){float d=max(a.x,dot(a,vec2(.5,.866)))-.433;if(d>0.)return -1.;return (an>.5236&&an<2.618)?0.:((an>=2.618||an<-1.5708)?1.:2.);}
+ if(id==24){float j=.5+.5*sin(q.y*61.)*sin(q.y*17.+1.);float d=a.x/(.36+.08*j*(.5+w))+a.y/.5;return d<1.?bnd(d*n,w):-1.;}
+ if(id==25){float y=q.y+.05;if(y>0.&&a.x+y<.42)return 0.;if(a.x<.08+.06*w&&q.y<=-.05&&q.y>-.45)return 1.;return -1.;}
+ if(id==26){vec2 c=floor((q+.5)*5.);if(Li>.5)return -1.;return (c.x==2.||(c.y==4.&&c.x<=2.)||(c.y==0.&&c.x>=2.))?0.:-1.;}
+ if(id==27){vec2 c=floor((q+.5)*vec2(7.,5.));if(Li>.5)return -1.;return c.y==0.?0.:(mod(c.x,2.)<.5&&c.y<4.?1.:-1.);}
+ if(id==28){float k=max(2.,n*2.),x=(q.x+.5)*k,s=mod(floor(x),2.)<.5?1.:-1.;return Li<=.5&&fract((q.y+.5)*k*.6+s*fract(x)*.5)<.5?0.:-1.;}
+ if(id==29){float d=max(Li,L1*.7071)*2.;if(d>=1.)return -1.;if(d>.82)return 0.;if(r<.12)return 2.;if(min(a.x,a.y)<.06&&Li<.38)return 1.;return mod(floor(an/(TAU/8.)+.5),2.)<.5?3.:2.;}
+ if(id==30){float y=q.y-.2*sin(q.x*TAU);if(Li>.5)return -1.;if(abs(y)<.07+.06*w)return 0.;return length(vec2(a.x-.38,y+sign(q.x)*.0))<.05?1.:-1.;}
+ if(id==31){vec2 p=q+vec2(0.,.12);float body=length(p)-.25;float tail=(p.y>0.&&p.y<.55)?abs(p.x-.24*p.y*p.y)-.2*(1.-p.y/.55):1.;float d=min(body,tail);if(d>0.)return -1.;return length(p)<.1?1.:(d<-.05?0.:2.);}
+ if(id==32){if(L1>.5)return -1.;if(L1>.4)return 0.;if(r<.12)return 2.;return 1.;}
+ if(id==33){float y=q.y+.5;if(y<0.||y>1.)return -1.;float wd=(1.-fract(y*5.))*.38*(1.-y*.3)+.05;return a.x<wd?(a.x<.05?1.:0.):-1.;}
+ return -1.;
+}
+/* ---------- shape metric (1 = edge) and perimeter coordinate for rings ---------- */
+float shpD(int sh,vec2 m){vec2 a=abs(m);
+ if(sh==0)return a.x+a.y;
+ if(sh==1)return max(a.x,a.y);
+ if(sh==2)return length(m);
+ if(sh==3)return max(max(a.x,a.y),(a.x+a.y)*.7071);
+ if(sh==4)return min(max(a.x,a.y),(a.x+a.y)*.7071)*1.4142;
+ if(sh==5)return min(max(a.x*2.5,a.y),max(a.x,a.y*2.5));
+ return max(a.x*.866+a.y*.5,a.y)*1.1547;}
+float alongU(int sh,vec2 m,float dc,float rw){
+ if(sh==0)m=rot(.785398)*m;
+ if(sh<=1){vec2 a=abs(m);return (a.x>a.y?m.y:m.x)/rw;}
+ float nc=4.*max(1.,floor(TAU*dc/rw/4.+.5));return atan(m.y,m.x)/TAU*nc;}
+vec2 symFold(vec2 w){int ty=int(uSym.x+.5);vec2 p=w;
+ if(ty==1)p.x=abs(p.x);else if(ty==2)p.y=abs(p.y);else if(ty==3)p=abs(p);
+ else if(ty==4){p=abs(p);if(p.y>p.x)p=p.yx;}
+ else if(ty==5){float n=max(2.,uSym.y),sg=TAU/n;p=rot(uSym.w+sg*fract(uT*uSym.z))*p;float a=mod(atan(p.y,p.x),sg);a=abs(a-sg*.5);p=vec2(cos(a),sin(a))*length(p);}
+ return p;}
+float flowT(int s){return fract(uT)*uSE[s].w*uPm;}
+
+/* ---------- one cell of a slot: motif pick, rotation, size, inks. returns ink index or -9 (miss) ---------- */
+float paint(int s,vec2 q,vec2 id,float k,float ins,float alt,out float base){
+ vec4 B=uSB[s],C=uSC[s],D=uSD[s];
+ float nM=max(1.,D.z),N=float(uN),cy=max(1.,D.y),mv=uSE[s].w;int pk=int(C.x+.5),cm=int(C.y+.5),ro=int(B.w+.5),mo=int(D.x+.5);
+ vec2 pid=mv!=0.?mod(id,uPm):id;float kp=mv!=0.?mod(k,uPm):k;
+ float h=h21(pid+float(s)*7.31+.17),h2=h21(pid*1.37+float(s)*3.1+5.3),par=mod(pid.x+pid.y,2.);
+ float j;
+ if(pk==0)j=floor(h*nM);else if(pk==1)j=kp;else if(pk==2)j=par;else if(pk==3)j=0.;else j=abs(pid.x);
+ j+=alt;if(uTMode==2&&ins>.5)j+=1.;
+ int mid=int(uMo[s*16+int(mod(j,nM))]+.5);
+ float a=0.;
+ if(ro==1)a=par*PI*.5;else if(ro==2)a=floor(h2*4.)*PI*.5;else if(ro==3)a=floor(atan(id.y,id.x)/(PI*.5)+.5)*PI*.5;else if(ro==4)a=mod(pid.y,2.)*PI;
+ if(mo==1)a+=TAU*fract(uT*cy)*(par>.5?1.:-1.);
+ float sz=alt>0.?1.:B.z;
+ if(mo==2)sz*=.72+.28*sin(TAU*(fract(uT*cy)+h));else if(mo==5)sz*=.68+.32*sin(TAU*fract(uT*cy)-kp*.9);
+ base=C.z+gCy;
+ if(cm==0)base+=kp;else if(cm==1)base+=floor(h*N);else if(cm==2)base+=par*2.;else if(cm==4)base+=j;
+ if(mo==3)base+=floor(uT*N*cy);else if(mo==4)base+=floor(uT*N*cy+h2*N);
+ if(uTMode==3&&ins>.5)base+=max(1.,floor(uTAmt*N));
+ vec2 qq=rot(-a)*q/max(sz,1e-3);
+ if(max(abs(qq.x),abs(qq.y))>.5)return -9.;
+ float m=mot(mid,qq,B.x,B.y);
+ return m>=0.?base+1.+m:-9.;
+}
+float cellGround(int s,vec2 id,float base){int tb=int(uSC[s].w+.5);
+ if(tb==1)return base;if(tb==2)return base+2.+mod(id.x+id.y,2.);if(tb==3)return -4.;if(tb==4)return -2.;return -1.;}
+
+/* ---------- Field layouts → cell (q, id, ring k, frame flag) ---------- */
+struct Cl{vec2 q;vec2 id;float k;float fr;};
+Cl fieldCell(vec2 f){
+ vec4 A=uSA[0],D=uSD[0],E=uSE[0];int lay=int(A.y+.5);
+ float sz=1./max(.5,A.z),asp=max(.1,A.w),T=flowT(0),mv=E.w;
+ Cl c;c.fr=0.;c.k=0.;c.id=vec2(0.);c.q=vec2(0.);
+ if(lay<=2){
+  vec2 g=f/sz;
+  if(lay==1)g=vec2(g.x/asp+g.y,-g.x/asp+g.y)*.7071;else g.x/=asp;
+  g.y-=T;
+  if(lay==2)g.y+=mod(floor(g.x+.5),2.)*.5;
+  c.id=floor(g+.5);c.q=g-c.id;
+  c.k=mv!=0.?mod(c.id.y,uPm):max(abs(c.id.x),abs(c.id.y));
+ }else if(lay==3||lay==4){
+  vec2 m=f/vec2(asp,1.);int sh=int(D.w+.5);
+  float d=lay==3?shpD(sh,m):length(m),rr=d/sz;
+  if(rr<1.){c.q=m/sz*.5;}
+  else{float x=rr-T;c.k=floor(x);float t=fract(x),u;
+   if(lay==3)u=alongU(sh,m,(floor(rr)+.5)*sz,sz);
+   else{float ns=max(3.,floor(E.x+.5));if(mv==0.)ns*=exp2(floor(log2(max(1.,c.k))));u=atan(m.y,m.x)/TAU*ns;}
+   c.id=vec2(floor(u+.5),c.k);c.q=vec2(u-c.id.x,t-.5);}
+ }else if(lay==5||lay==6){
+  vec2 g=(lay==6?f.yx:f)/sz;float y=g.y-T,b=floor(y+.5),ty=y-b,bp=mv!=0.?mod(b,uPm):abs(b);
+  float hb=h21(vec2(bp,3.7)),ns=hb<.45?1.:hb<.8?2.:3.,sub=min(ns-1.,floor((ty+.5)*ns));
+  float tl=(ty+.5)*ns-sub-.5,cw=asp/ns;
+  c.id=vec2(floor(g.x/cw+.5),bp*3.+sub);c.q=vec2(g.x/cw-c.id.x,tl);c.k=bp*3.+sub;
+ }else if(lay==7){
+  float nx=max(1.,floor(E.x+.5));vec2 fi=uFr.zw;float pw=2.*fi.x/nx,ny=max(1.,floor(nx*fi.y/fi.x+.5)),phh=2.*fi.y/ny;
+  vec2 g=f/vec2(pw,phh),off=vec2(mod(nx,2.)>.5?.5:0.,mod(ny,2.)>.5?.5:0.);
+  c.id=floor(g+off);c.q=g+off-c.id-.5;c.k=max(abs(c.id.x-off.x+.5),abs(c.id.y-off.y+.5));
+  float e=min((.5-abs(c.q.x))*pw,(.5-abs(c.q.y))*phh);if(e<sz*.12)c.fr=1.;
+  c.q=c.q*vec2(pw,phh)/min(pw,phh);
+ }else{
+  vec2 g=f/(sz*2.)/vec2(asp,1.);g.y-=T;
+  float sc=1.;vec2 id=floor(g);
+  for(int i=0;i<3;i++){vec2 pd=vec2(id.x,mod(id.y,uPm*sc));if(h21(pd+float(i)*17.1+.3)>.5)break;sc*=2.;id=floor(g*sc);}
+  c.id=vec2(id.x,mod(id.y,uPm*sc))+sc*100.;c.q=fract(g*sc)-.5;c.k=log2(sc);
+  float e=.5-max(abs(c.q.x),abs(c.q.y));if(e*2.*sz/sc<sz*.06)c.fr=1.;
+  float rep=1.+floor(h21(c.id+5.5)*3.);if(sc<1.5)c.q=fract((c.q+.5)*rep)-.5;
+ }
+ return c;
+}
+float fieldEval(vec2 f,float ins){
+ Cl c=fieldCell(f);
+ if(c.fr>.5)return -4.;
+ float base,b2;float r=paint(0,c.q,c.id,c.k,ins,0.,base);
+ if(r>-8.)return r;
+ if(int(uSA[0].y+.5)==7){vec2 g=c.q*4.;vec2 id2=floor(g+.5);float r2=paint(0,g-id2,id2+c.id*16.,c.k+1.,ins,1.,b2);if(r2>-8.)return r2;}
+ return cellGround(0,c.id,base);
+}
+/* ---------- Medallion: nested rings of a shape, optional stepped outline and halo ---------- */
+float medEval(vec2 f,float ins){
+ vec4 A=uSA[1],C=uSC[1],D=uSD[1],E=uSE[1];
+ int sh=int(A.y+.5),pl=int(D.w+.5);float asp=max(.1,A.w),R=max(.02,E.x*uFr.w),sc=1.;
+ vec2 c=vec2(0.);
+ if(pl==1){float dy=uFr.w*.64;c.y=clamp(floor(f.y/dy+.5),-1.,1.)*dy;if(c.y!=0.)sc=.7;}
+ else if(pl==2||pl==3){vec2 cc=vec2((f.x<0.?-1.:1.)*uFr.z*.56,(f.y<0.?-1.:1.)*uFr.w*.56);
+  if(pl==3){c=cc;sc=.55;}
+  else{float d0=shpD(sh,f/vec2(asp,1.)/R),d1=shpD(sh,(f-cc)/vec2(asp,1.)/(R*.5));if(d1<d0){c=cc;sc=.5;}}}
+ else if(pl==4){float dy=uFr.w*.42;c.y=clamp(floor(f.y/dy+.5),-2.,2.)*dy;sc=.5;}
+ vec2 m=(f-c)/vec2(asp,1.)/(R*sc);
+ float st=E.z;if(st>.5)m=(floor(m*st)+.5)/st;
+ float d=shpD(sh,m),nR=max(1.,floor(A.z+.5)),rw=1./nR,hal=E.y;
+ if(d>=1.){if(hal>0.&&d<1.+hal){float jj=floor((d-1.)/(rw*.5));return mod(jj,2.)<.5?C.z+gCy+floor(jj*.5)+1.:-2.;}return -2.;}
+ vec2 id,qq;float k=0.;
+ if(d<rw){qq=m/rw*.5;id=vec2(0.);}
+ else{float x=d/rw-flowT(1);k=floor(x);float t=fract(x),u=alongU(sh,m,(floor(d/rw)+.5)*rw,rw);id=vec2(floor(u+.5),k);qq=vec2(u-id.x,t-.5);}
+ float base;float r=paint(1,qq,id+vec2(0.,c.y*7.+sc*3.),k,ins,0.,base);
+ return r>-8.?r:cellGround(1,id,base);
+}
+/* ---------- Border: bands of motifs along the frame, mitred or with corner blocks ---------- */
+float gPlate=0.,gPD=0.;
+float borderEval(vec2 w,float ex,float ey,float eo,float ins,float bw){
+ vec4 A=uSA[2],D=uSD[2],E=uSE[2];
+ float nb=max(1.,floor(A.z+.5)),bs=bw/nb,gd=E.y,base;
+ if(D.w>.5&&ex<bw&&ey<bw){vec2 cq=vec2(ex,ey)/bw-.5;float r=paint(2,cq,vec2(77.),nb,ins,1.,base);if(gPlate>.5){gPD=1.;return cellGround(2,vec2(77.),base);}return r>-8.?r:cellGround(2,vec2(77.),base);}
+ float u=ex<ey?w.y:w.x;
+ float j=min(nb-1.,floor(eo/bs)),t=eo/bs-j;
+ if(gd>0.&&(t<gd*.5||t>1.-gd*.5))return -4.;
+ t=(t-gd*.5)/max(.01,1.-gd);
+ float cl=bs*max(.01,1.-gd)*max(.1,A.w),uu=u/cl-flowT(2);
+ vec2 id=vec2(floor(uu+.5),j);
+ float r=paint(2,vec2(uu-id.x,t-.5),id,j,ins,0.,base);
+ if(gPlate>.5){gPD=1.;return cellGround(2,id,base);}
+ return r>-8.?r:cellGround(2,id,base);
+}
+/* ---------- whole carpet at a world point → colour code (≥0 ink, -1 ground, -3 accent, -4 line) ---------- */
+float guardCode(float t){float N=float(uN);return t<.5?mod(1.,N):t<.72?-4.:-1.;}
+float evalCarpet(vec2 w,float ins){
+ w-=uFc;vec2 aw=abs(w);float ex=uFr.x-aw.x,ey=uFr.y-aw.y,eo=min(ex,ey);
+ if(eo<0.)return -1.;
+ if(uSA[2].x>.5){float bw=uSE[2].x;
+  if(eo<bw){float g1=uGd.x,g2=uGd.y;
+   if(g1>0.&&eo<g1)return guardCode(eo/g1);
+   if(g2>0.&&eo>bw-g2)return guardCode((bw-eo)/g2);
+   return borderEval(w,ex-g1,ey-g1,eo-g1,ins,bw-g1-g2);}
+  float fl=uGd.z;
+  if(fl>0.&&eo<bw+fl)return -4.;
+  if(uGd.w>0.){float cx=ex-bw-fl,cy=ey-bw-fl,u=length(vec2(cx,cy))/uGd.w;
+   if(u<1.)return u>.93?-4.:mod(floor(u*3.99)==1.?3.:floor(u*3.99)==2.?1.:2.,float(uN));}
+ }
+ vec2 f=symFold(w);
+ for(int i=0;i<2;i++)if(uWB[i].w>.5)f=warp(f,i);
+ float r=-2.;
+ if(uSA[1].x>.5)r=medEval(f,ins);
+ if(abs(r+2.)<.1&&uSA[0].x>.5)r=fieldEval(f,ins);
+ return abs(r+2.)<.1?-1.:r;
+}
+/* text alpha at mip level lv, unioned over the symmetry for Mirrored letters */
+float mA(vec2 w,float lv,bool mir){float s=textureLod(uTxt,uvOf(w),lv).a;if(!mir)return s;int ty=int(uSym.x+.5);
+ if(ty!=2)s=max(s,textureLod(uTxt,uvOf(vec2(-w.x,w.y)),lv).a);
+ if(ty>=2)s=max(s,textureLod(uTxt,uvOf(vec2(w.x,-w.y)),lv).a);
+ if(ty>=3)s=max(s,textureLod(uTxt,uvOf(-w),lv).a);
+ return s;}
+float mirMask(vec2 w){return step(.5,mA(w,uTBlur,true));}
+vec3 ciCol(float ci);
+float gMinR=0.;
+/* letter coverage of one grid cell (area average, so thin strokes survive as one cell) */
+float txC(vec2 q){float lod=log2(max(1.,uTC*uRes.y));return step(.28,textureLod(uTxt,uvOf(q),lod).a);}
+/* the carpet element a letter cell is made of; stitched carpets draw their own stitch, so the whole cell counts */
+bool inMot(vec2 q){int m=int(uTM+.5);vec2 a=abs(q);if(m==0)return true;if(m==1)return length(q)<.43;if(m==2)return a.x+a.y<.52;
+ if(m==3)return min(a.x,a.y)<.16;if(m==4)return min(abs(q.x+q.y),abs(q.x-q.y))<.22;return max(a.x,a.y)<.38;}
+/* 1 if a letter lies within r of w: 18 taps on two rings → a crisp, even-width halo */
+float dil(vec2 w,float r){float m=0.;
+ for(int i=0;i<12;i++){float a=float(i)*.5236;m=max(m,txIn(uvOf(w+vec2(cos(a),sin(a))*r)));}
+ for(int i=0;i<6;i++){float a=float(i)*1.0472+.26;m=max(m,txIn(uvOf(w+vec2(cos(a),sin(a))*r*.5)));}
+ return m;}
+float letterCode(float ci0){
+ vec3 uc=ciCol(ci0);vec3 lw=vec3(.3,.59,.11);float L0=dot(uc,lw);
+ if(abs(dot(uAcc,lw)-L0)>.32)return -3.;
+ float bc=-1.,bd=abs(dot(uPal[0],lw)-L0);
+ for(int k=0;k<8;k++){if(k>=uN)break;float d=abs(dot(uPal[1+k],lw)-L0);if(d>bd){bd=d;bc=float(k);}}
+ return bc;}
+float letterTile(bool inM){return inM?-7.:-5.;} /* plate colour tile, small-text colour element */
+float carpetAt(vec2 w){
+ float ins=0.;float tc=uTC;vec2 wq=floor(w/tc+.5)*tc;
+ vec3 pl=vec3(0.);if(uPlOn>.5)pl=textureLod(uPlt,uvOf(w),0.).rgb;gPlate=(pl.g>.5||pl.r>.5)?1.:0.;gPD=0.;
+ if(uTMode>0&&uTMode!=9)ins=uTMode==1?txC(wq):uTMode==10?mirMask(w):txIn(uvOf(w));
+ vec2 wp=w;
+ if(uPile>0.)wp+=vec2((h21(vec2(floor(w.y*240.),3.1))-.5)*.0016,0.)*uPile+(vec2(vn(w*vec2(7.,5.)+2.3),vn(w*vec2(5.,7.)+8.1))-.5)*.006*uPile;
+ if(uTMode==11){vec3 g=txGrad(uvOf(w));wp-=g.yz*uTAmt*.5;}
+ float ci=evalCarpet(wp,ins);
+ if(ins>.5){if(uTMode==1){vec2 q=(w-wq)/tc;ci=letterTile(inMot(q));}else if(uTMode==10)ci=-3.;else if(uTMode==7)ci=-1.;}
+ if(uTMode==8&&ins<.5)ci=-1.;
+ /* halo around woven letters: a calm ring of plate colour so the letters read against the pattern */
+ if(uTMode==1&&ins<.5&&uTHr>.5&&textureLod(uTxt,uvOf(w),uGate).a>.002){
+  int hr=int(uTHr+.5);bool hit=false;
+  for(int i=-3;i<=3;i++)for(int j=-3;j<=3;j++){if(max(abs(i),abs(j))<=hr&&!hit&&txC(wq+vec2(float(i),float(j))*tc)>.5)hit=true;}
+  if(hit)ci=-5.;}
+ /* plates (cartouches) set into the carpet: b = gap, r = frame, g = fill */
+ if(uPlOn>.5){if(pl.r>.5){if(gPD<.5)ci=-6.;}else if(pl.g>.5){if(gPD<.5)ci=-5.;}else if(pl.b>.5)ci=-1.;}
+ return ci;}
+float keyOf(float ci){return ci>=0.?mod(floor(ci+.5),float(uN)):ci;}
+vec3 ciCol(float ci){if(ci<-6.5)return uTxtC;if(ci<-5.5)return uPlB;if(ci<-4.5)return uPlF;if(ci<-3.5)return uLine;if(ci<-2.5)return uAcc;if(ci<-.5)return uPal[0];return inkc(ci);}
+float pcG=1.;
+float cov(float d){return clamp(.5-d/pcG,0.,1.);}
+vec3 yarn(vec3 K,vec2 l,vec2 cid,float a){
+ float h=h21(cid*1.7+.3);vec2 dir=normalize(vec2(h21(cid+4.1)-.5,h21(cid+8.3)-.5)+.001);
+ float st=sin(dot(l,dir)*22.+h*6.)*.5+.5,lit=dot(l,vec2(-.6,.8))*.5;
+ return K*(1.+a*(.22*lit+(h-.5)*.16+.18*(st-.5)));}
+vec3 heather(vec3 K,vec2 cid,float a){float h=h21(cid*1.3+.7),f=h21(cid*2.1+3.3);
+ float t=(h-.5)*.2+(f>.9?(f-.95)*1.2:0.)+(mod(cid.x+cid.y,2.)-.5)*.05;return K*(1.+a*t);}
+vec3 shade(vec2 fc){
+ gMinR=0.;
+ vec2 w=(fc-uRes*.5)/uRes.y;
+ int sm=int(uSt.x+.5),ld=int(uLd.x+.5);vec3 col;float ci=0.;vec2 wt=w;
+ vec2 wf=abs(w-uFc);bool outF=wf.x>uFr.x||wf.y>uFr.y;
+ if(outF){col=uPal[0];if(uTMode>0&&uTMode!=9){ci=carpetAt(w);if(ci<-2.5&&ci>-3.5)col=uAcc;}}
+ else if(sm==0){
+  vec2 cw=w;float tfd=0.,tl=0.,tdk=1.,tb=.5,tpf=1.;
+  if(uTf.x>0.){vec3 pl0=uPlOn>.5?textureLod(uPlt,uvOf(w),0.).rgb:vec3(0.);
+   {tpf=1.;float ts=1./uTf.y;mat2 Rm=rot(1.5708); /* constant direction: a position-dependent angle shears the tuft lattice into long streaks */float el=1.+2.*uTf.z;vec2 q=Rm*w;q.y/=el;vec2 g=q/ts,id=floor(g),f=fract(g),best=vec2(0.);float d1=9.,d2=9.;
+    for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){vec2 o=vec2(float(i),float(j)),hh=vec2(h21(id+o+1.7),h21(id+o+7.3)),p=o+hh-f;float d=dot(p,p);
+     if(d<d1){d2=d1;d1=d;best=p;tb=hh.x;}else if(d<d2)d2=d;}
+    d1=sqrt(d1);d2=sqrt(d2);cw=w+transpose(Rm)*vec2(best.x*ts,best.y*ts*el);tfd=1.;
+    tl=dot(-best,vec2(-.5,.8))*.7+(1.-d1*1.4)*.3;tdk=mix(.74,1.,smoothstep(0.,.25,d2-d1));if(tb>.93&&tpf>.9)tdk*=.62;}}
+  ci=carpetAt(cw);col=ciCol(ci);
+  if(tfd>0.){col*=(1.+.32*tl*uTf.x*tpf)*mix(1.,tdk,uTf.x*tpf)*(1.+(tb-.5)*.2*uTf.x*tpf);}
+  if(ld>0){float lw=uLd.y,a=carpetAt(w+vec2(lw,0.)),b=carpetAt(w+vec2(0.,lw));
+   bool e=keyOf(a)!=keyOf(ci)||keyOf(b)!=keyOf(ci);
+   bool tx=(ci<-2.5&&ci>-3.5)||ci<-4.5;
+   if(ld==1){if(e)col=uLine;}else if(!tx)col=e?ciCol(max(ci,max(a,b))):uPal[0];}
+  if(uTMode==9){float lw=.0008+.003*uTAmt;vec2 uv=uvOf(w);float i0=txIn(uv);
+   if(i0!=txIn(uvOf(w+vec2(lw,0.)))||i0!=txIn(uvOf(w+vec2(0.,lw)))||i0!=txIn(uvOf(w-vec2(lw,0.)))||i0!=txIn(uvOf(w-vec2(0.,lw))))col=uAcc;}
+ }else{
+  float cnt=max(4.,uSt.y);
+  if(uTMode==5||uTMode==6){if(txIn(uvOf(w))>.5)cnt*=uTMode==5?2.:.5;}
+  float cs=1./cnt;vec2 g=w/cs,cid=floor(g+.5),l=g-cid,wc=cid*cs;wt=wc;gMinR=cs*1.15;
+  pcG=1./(uRes.y*cs);
+  ci=carpetAt(wc);vec3 K=ciCol(ci);if(ci>-4.5)K=heather(K,cid,uTf.x);
+  bool gr=ci<-.5&&ci>-1.5;float gp=uSt.z;if(sm==2||sm==6)K=yarn(K,l,cid,uTf.x*.6);
+  if(sm==1){float ya=uTf.x;vec2 lj=l+(vec2(vn(cid*3.7+l*4.),vn(cid*5.1+l*4.+9.))-.5)*.2*ya;
+   vec3 Ky=yarn(K,l,cid,ya),gapc=mix(uLine,K*.3,.55*ya);col=mix(gapc,Ky,cov(max(abs(lj.x),abs(lj.y))-(.5-gp*.4)));}
+  else if(sm==2)col=mix(K,uLine,.55*cov(abs(.5-max(abs(l.x),abs(l.y)))-.025-gp*.06));
+  else if(sm==3){vec3 fab=uPal[0];vec2 hc=abs(l)-.5;col=mix(fab,fab*.82,cov(length(hc)-.09));
+   if(!gr){float sw=.1+.1*(1.-gp),d1=abs(l.x-l.y)*.7071,d2=abs(l.x+l.y)*.7071,bx=max(abs(l.x),abs(l.y))-.43;
+    col=mix(col,K*.78,cov(max(d2-sw,bx)));col=mix(col,K*(1.06-.3*d1/sw),cov(max(d1-sw,bx)));}}
+  else if(sm==4){col=gr?K:K*.22+uLine*.08;
+   if(!gr){float r=length(l),R0=.47-gp*.15,cc=cov(r-R0);vec3 sh=K*(.7+.42*clamp(1.-length(l-vec2(-.15,.15))/R0,0.,1.));
+    col=mix(col,sh,cc);col=mix(col,K*.3,cov(r-.12)*cc);}}
+  else if(sm==5){float j=h21(cid*1.31+.7)-.5;vec3 Kj=clamp(K*(1.+j*uSt.w*.5)+j*uSt.w*.06,0.,1.);
+   vec2 lj=l+(vec2(h21(cid+2.),h21(cid+5.))-.5)*.08*uSt.w;col=mix(uLine,Kj,cov(sdBox(lj,vec2(.5-.04-gp*.3),.08)));}
+  else{float nz=vn(w*uRes.y*.3);float d=sdBox(l,vec2(.5-gp*.3-.06),.2);col=mix(K*.6,K*(.86+.24*(.5-l.y))+nz*.05*uSt.w,cov(d));}
+  if(ld>0){float a=carpetAt(wc+vec2(cs,0.)),b=carpetAt(wc+vec2(0.,cs)),lwc=max(uLd.y/cs,pcG),e=0.;
+   if(keyOf(a)!=keyOf(ci))e=max(e,cov(.5-lwc-l.x));if(keyOf(b)!=keyOf(ci))e=max(e,cov(.5-lwc-l.y));
+   bool tx=(ci<-2.5&&ci>-3.5)||ci<-4.5;
+   if(ld==2&&!tx&&e<.01)col=uPal[0];
+   col=mix(col,ld==1?uLine:ciCol(max(ci,max(a,b))),e);}
+  if(uTMode==9){float i0=txIn(uvOf(wc)),e=0.;
+   if(i0!=txIn(uvOf(wc+vec2(cs,0.))))e=max(e,cov(.38-l.x));if(i0!=txIn(uvOf(wc+vec2(0.,cs))))e=max(e,cov(.38-l.y));col=mix(col,uAcc,e);}
+ }
+ if(uTMode==4&&txIn(uvOf(wt))>.5)col=clamp(uPal[0]+uPal[1]-col,0.,1.);
+ if(uPlOn>.5&&sm>0){vec3 pl=textureLod(uPlt,uvOf(w),0.).rgb;if(pl.g>.5&&pl.r<.5)col=uPlF;}
+ if(uPile>0.){
+  float pm=ci<-6.5?.3:1.;           /* plates and the woven title are cloth: less dye variation */
+  float ab=fbm(w*2.6+7.3,3)-.5,ab2=vn(vec2(w.x*1.3,w.y*11.)+1.7)-.5;      /* abrash: uneven dye, banded along the weft */
+  float k=uAbr*pm*uPile;
+  col*=vec3(1.+(ab*.36+ab2*.2)*k*1.15,1.+(ab*.36+ab2*.2)*k,1.+(ab*.36+ab2*.2)*k*.8);
+  float fib=vn(vec2(w.x*620.,w.y*1500.)+uSeed)+.5*vn(vec2(w.x*1500.,w.y*3300.)+4.)-.75;   /* pile fibres, long along the rows */
+  /* fibre noise removed: the tufts carry the texture */
+  float sh=fbm(w*1.7+3.,3)-.5;col+=sh*.12*uPile*pm;                          /* soft sheen of the pile */
+  vec2 ed=abs(w-uFc)/uFr.xy;col*=1.-.05*uPile*smoothstep(.8,1.,max(ed.x,ed.y));col*=1.+.1*uPile; /* worn, darker edges */
+ }
+ if(uWear>0.){float n=fbm(w*5.+3.1,4)*.5+.5,sp=h21(floor(fc*.5));col=mix(col,mix(uPal[0],col,.35),uWear*smoothstep(.42,.85,n+sp*.18));}
+ col+=(h21(floor(fc)*.731+3.1)-.5)*uGrain*.35;
+ return col;
+}
+void main(){
+ gCy=mod(float(uCyc)*floor(uT*float(uN)),float(uN));
+ vec3 c=vec3(0.);
+ if(uAA>1.5){for(int i=0;i<4;i++){vec2 off=vec2(float(i&1),float(i>>1))*.5-.25;c+=shade(gl_FragCoord.xy+off);}c*=.25;}
+ else c=shade(gl_FragCoord.xy);
+ o=vec4(pow(clamp(c,0.,1.),vec3(.93)),1.);
+}
+`;
+
+let PROG=null,txTex=null;const UL={};
+const U=n=>{if(!(n in UL))UL[n]=gl.getUniformLocation(PROG,n);return UL[n]};
+if(gl){
+  const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS)){console.error(gl.getShaderInfoLog(x));throw new Error('shader: '+gl.getShaderInfoLog(x))}return x};
+  PROG=gl.createProgram();gl.attachShader(PROG,sh(gl.VERTEX_SHADER,VS));gl.attachShader(PROG,sh(gl.FRAGMENT_SHADER,FSRC));
+  gl.bindAttribLocation(PROG,0,'aP');gl.linkProgram(PROG);if(!gl.getProgramParameter(PROG,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(PROG));
+  const vao=gl.createVertexArray();gl.bindVertexArray(vao);
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  txTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,txTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+}
+function hex2rgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return [(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]}
+/* period: flowing slots move uPm cells per loop; hashes repeat with that period (even multiple of the ink count) */
+const nInk=()=>Math.max(1,clamp(P.nCol|0,2,8)-1);
+let fontsTick=0;
+const pmPeriod=()=>{const n=nInk();return n%2?n*2:n};
+/* carpet rectangle in world units (poster height 1, centre 0); Carpet panel leaves bands for the text */
+function carpetRect(a){
+  let cx=0,cy=0,hx=a/2-P.fm,hy=.5-P.fm;
+  if(P.tshow&&P.tplace==='margin'){const b=P.mband;
+    if(P.mside==='top'){cy=-b/2;hy-=b/2}else if(P.mside==='bottom'){cy=b/2;hy-=b/2}
+    else if(P.mside==='tb'){cy=-b*.25;hy-=b*.75}else if(P.mside==='left'){cx=b/2;hx-=b/2}else{cx=b*.2;hx-=b*.8}}
+  return {cx,cy,hx:Math.max(.05,hx),hy:Math.max(.05,hy)};
+}
+const hTex=gl?gl.createTexture():null;
+if(gl){gl.bindTexture(gl.TEXTURE_2D,hTex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(4))}
+const plTex=gl?gl.createTexture():null;
+if(gl){gl.bindTexture(gl.TEXTURE_2D,plTex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(4))}
+function borderColor(){const B=P.slots[2],n=nInk(),ink=k=>P.pal[1+(((Math.round(k)%n)+n)%n)];
+  if(!B||!B.on)return P.pal[0];const tb=B.tbg|0;return tb===1?ink(B.ink):tb===2?ink(B.ink+2):tb===3?P.lc:P.pal[0]}
+/* every colour the border's cell ground can take under a plate; the text colour must contrast with all of them */
+function borderGrounds(){const B=P.slots[2],n=nInk(),ink=k=>P.pal[1+(((Math.round(k)%n)+n)%n)];
+  if(!B||!B.on)return [P.pal[0]];const tb=B.tbg|0;if(tb===3)return [P.lc];if(tb!==1&&tb!==2)return [P.pal[0]];
+  if(B.cmode===3&&!P.cyc&&B.mo!==3&&B.mo!==4)return tb===1?[ink(B.ink)]:[ink(B.ink+2),ink(B.ink+3)];
+  return P.pal.slice(1,n+1)}
+function bestOn(list){const n=Math.max(2,P.nCol),cand=[P.txt,P.acc,P.lc,...P.pal.slice(0,n),'#000000','#ffffff'],sc=c=>Math.min(...list.map(g=>Math.abs(lum(c)-lum(g))));
+  for(const c of cand)if(sc(c)>=.55)return c;let b=cand[0],bs=-1;cand.forEach(c=>{const s=sc(c);if(s>bs){bs=s;b=c}});return b}
+function plateText(){return P.plf==='border'?bestOn(borderGrounds()):contrastOn(plateCol(P.plf))}
+function plateCol(k){return k==='border'?borderColor():k==='line'?P.lc:k==='accent'?P.acc:k==='text'?P.txt:(k||'').startsWith('ink')?P.pal[Math.min(7,+k.slice(3)||1)]:P.pal[0]}
+/* the title is quantized to one cell grid: the stitch grid, or Letter pixels on smooth carpets */
+let TCAP=.1;
+const tCells=()=>P.st>0?Math.max(4,P.stc):Math.max(20,P.ttc,Math.ceil(9/TCAP));
+const haloCells=()=>P.thalo<.02?0:(P.thalo<.7?1:2);
+function renderCarpet(ph){
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,RW,RH);gl.useProgram(PROG);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,txTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,dcv);gl.generateMipmap(gl.TEXTURE_2D);
+  gl.uniform1i(U('uTxt'),0);
+  gl.uniform2f(U('uRes'),RW,RH);gl.uniform1f(U('uT'),ph);gl.uniform1f(U('uSeed'),P.seed%1000);gl.uniform1f(U('uPm'),pmPeriod());
+  gl.uniform1f(U('uAA'),(exporting||P.aa)?2:1);
+  const wa=[],wb=[];P.warps.forEach(w=>{wa.push(w.p[0],w.p[1],w.p[2],w.op);wb.push(w.sp,w.pu,WKEYS.indexOf(w.type),w.on?1:0)});
+  wa.push(0,0,0,0);wb.push(0,0,0,0);
+  gl.uniform4fv(U('uWA'),wa);gl.uniform4fv(U('uWB'),wb);
+  const V={A:[],B:[],C:[],D:[],E:[]},mo=new Float32Array(48);
+  P.slots.forEach((s,i)=>{
+    V.A.push(s.on?1:0,s.lay,s.D,s.asp);V.B.push(s.n,s.w,s.size,s.rot);V.C.push(s.pick,s.cmode,s.ink,s.tbg);
+    const em=effMotion(s,i);V.D.push(em.mo,em.cyc,Math.min(16,s.mot.length),s.x1);V.E.push(s.x2,s.x3,s.x4,em.mv);
+    s.mot.slice(0,16).forEach((v,j)=>mo[i*16+j]=v)});
+  Object.keys(V).forEach(k=>gl.uniform4fv(U('uS'+k),V[k]));gl.uniform1fv(U('uMo'),mo);
+  const a=RW/RH,bw=P.slots[2].on?P.slots[2].x2:0,cr=carpetRect(a);
+  gl.uniform4f(U('uFr'),cr.hx,cr.hy,Math.max(.02,cr.hx-bw),Math.max(.02,cr.hy-bw));gl.uniform2f(U('uFc'),cr.cx,cr.cy);
+  const plOn=P.tshow;
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,plTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  if(plOn)gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,pcv);
+  gl.uniform1i(U('uPlt'),1);gl.uniform1f(U('uPlOn'),plOn?1:0);gl.activeTexture(gl.TEXTURE0);
+  gl.uniform3fv(U('uPlF'),hex2rgb(plateCol(P.plf)));gl.uniform3fv(U('uTxtC'),hex2rgb(plateText()));gl.uniform3fv(U('uPlB'),hex2rgb(plateCol(P.plb)));
+  gl.uniform1f(U('uTC'),1/tCells());gl.uniform1f(U('uTM'),P.st>0?0:P.tmot);gl.uniform1f(U('uTHr'),haloCells());gl.uniform1f(U('uGate'),6+Math.log2(RH/1200));
+  gl.uniform4f(U('uSym'),P.sym,P.symN,P.symSpin,P.symRot*Math.PI/180);
+  gl.uniform4f(U('uSt'),P.st,P.stc,P.stg,P.stj);
+  gl.uniform4f(U('uLd'),P.ld,P.lw*.008,0,0);
+  gl.uniform1f(U('uWear'),P.wear);gl.uniform1f(U('uPile'),P.pile);gl.uniform3f(U('uTf'),(P.st===0&&P.ld>0)?0:P.tuft,P.tufs,P.strand||0);{const B=P.slots[2],gn=B.on?(B.gd||0):0,g1=Math.min(gn*.007,B.x2*.22);gl.uniform4f(U('uGd'),g1,g1*.85,B.on&&B.fl?.0028:0,B.on?(B.cs||0):0)}gl.uniform1f(U('uAbr'),P.abr);
+  const pal=[];for(let i=0;i<8;i++)pal.push(...hex2rgb(P.pal[i]||'#000'));gl.uniform3fv(U('uPal'),pal);
+  gl.uniform3fv(U('uLine'),hex2rgb(P.lc||P.txt));gl.uniform3fv(U('uAcc'),hex2rgb(P.acc));
+  gl.uniform1i(U('uN'),nInk());gl.uniform1i(U('uCyc'),P.cyc);gl.uniform1f(U('uGrain'),P.grain);
+  gl.uniform1i(U('uTMode'),P.tshow&&P.tplace!=='margin'?TMK.indexOf(P.tmode):0);gl.uniform1f(U('uTAmt'),P.tamt);
+  gl.uniform1f(U('uTBlur'),P.tblur>0?Math.max(0,P.tblur+Math.log2(RH/1200)):0);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+/* ================= canvases & sizes ================= */
+const cv=$('#cv'),ctx=cv.getContext('2d');
+const mctx=document.createElement('canvas').getContext('2d');
+const dcv=document.createElement('canvas'),dctx=dcv.getContext('2d');
+const hcv=document.createElement('canvas'),hctx=hcv.getContext('2d');   /* title outline / extrusion: r = line, g = halo */
+const pcv=document.createElement('canvas'),pctx=pcv.getContext('2d');   /* plates: b gap, r frame, g fill */      /* large text = the mask the pattern reacts to */
+const mDcv=document.createElement('canvas'),mDctx=mDcv.getContext('2d');   /* measuring with display axes */
+/* canvas text takes font-variation-settings from the canvas element's own style, so these live (hidden) in the DOM */
+const hiddenHost=el('div');hiddenHost.style.cssText='position:fixed;left:-99999px;top:0;width:1px;height:1px;overflow:hidden;visibility:hidden;pointer-events:none';
+document.body.append(hiddenHost);[dcv,mDcv].forEach(x=>hiddenHost.append(x));
+const USERF={};
+const axesOf=name=>(USERF[name]&&USERF[name].axes)||[];
+const varStr=(name,vals)=>{const a=axesOf(name);return a.length?a.map(x=>`"${x.tag}" ${vals[x.tag]??x.def}`).join(', '):'normal'};
+function axWeight(name,vals,fb){const w=axesOf(name).find(x=>x.tag==='wght');return w&&w.min>=1&&w.max<=1000?Math.round(vals.wght??w.def):fb}
+let lastVar='';
+function applyVariations(){const r=varStr(P.rfont,P.rax);if(r===lastVar)return;lastVar=r;dcv.style.fontVariationSettings=r;mDcv.style.fontVariationSettings=r}
+let RW=0,RH=0,renderK=null,exporting=false;
+function baseSize(){const [a,b]=FORMATS[P.fmt];if(a<=b)return [Math.round(1600*a/b/2)*2,1600];return [1600,Math.round(1600*b/a/2)*2]}
+function ensureSize(){
+  const [bw,bh]=baseSize(),k=renderK??P.q,w=Math.round(bw*k/2)*2,h=Math.round(bh*k/2)*2;
+  if(w!==RW||h!==RH){RW=w;RH=h;cv.width=glc.width=dcv.width=pcv.width=hcv.width=w;cv.height=glc.height=dcv.height=pcv.height=hcv.height=h}
+}
+const applyCase=(s,c)=>c==='upper'?s.toUpperCase():c==='lower'?s.toLowerCase():s;
+const HAS_LS='letterSpacing' in ctx;
+
+
+/* ================= readable layer ================= */
+function grid(W,H,ph){
+  const u=H/1000;let m=P.margin*u,g=P.gutter*u;
+  if(P.rmo==='drift'){const s=Math.sin(TAU*ph*P.rmoSpd);m*=1+P.rmoAmt*.6*s;g*=1+P.rmoAmt*1.2*Math.sin(TAU*ph*P.rmoSpd+1.3)}
+  const cols=P.cols,rows=P.rows,cw=(W-2*m-(cols-1)*g)/cols,rh=(H-2*m-(rows-1)*g)/rows;
+  return {u,m,g,cols,rows,cw,rh,W,H,x:i=>m+i*(cw+g),y:j=>m+j*(rh+g),span:n=>n*cw+(n-1)*g,right:W-m,bottom:H-m}
+}
+const BODY_FAM='"Inter"';
+const DFAM=()=>READ_FONTS[P.rfont]||READ_FONTS.Inter;
+let STEP=0; /* staircase offset per line break, px */
+function fit(text,wt,w,big=true){
+  const ls=text.split('\n'),m=big?mDctx:mctx;m.font=`${wt} 100px ${big?DFAM():BODY_FAM}`;if(HAS_LS)m.letterSpacing='0px';
+  let s=1e9;ls.forEach((l,i)=>{const lw=Math.max(1,m.measureText(l).width);s=Math.min(s,Math.max(w*.25,w-i*STEP)*100/lw)});return s}
+function blockH(it){const n=it.s.split('\n').length;return (n-1)*it.sz*it.lh+it.sz*CAP}
+function nextRow(G,yEnd){return Math.max(0,Math.ceil((yEnd-G.m+G.g*.5)/(G.rh+G.g)-1e-3))}
+function tplItems(name,G,T){
+  const S=P.body*G.u,M=S*P.mid,c=G.cols,Rw=G.rows,it=[];
+  const add=o=>{o=Object.assign({wt:400,al:'left',rot:0,lh:P.lead,ls:0},o);if(o.k!=='title')o.sz=Math.min(o.sz,S*1.45);o.big=o.k==='title';if(o.vb!=null)o.y=o.vb-blockH(o);it.push(o);return o};
+  const span=n=>G.span(Math.max(1,Math.min(c,Math.round(n))));
+  const end=o=>o.y+blockH(o);
+  const half=Math.floor(c/2),tw=(titleWoven()&&P.twfull)?Math.min(P.tw,400):P.tw;
+  const DP=T.date+'\n'+T.place;
+  switch(name){
+  case 'columns':{
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:fit(T.title,tw,span(c*P.tspan)),wt:tw,lh:1});
+    const sb=add({k:'sub',s:T.sub,x:G.x(0),y:G.y(nextRow(G,end(t))),sz:S});
+    add({k:'date',s:DP,x:G.x(half),y:G.y(Math.max(Math.floor(Rw*.45),nextRow(G,end(sb))+1)),sz:Math.min(M,fit(DP,500,span(c-half))),wt:500,lh:1.05});
+    add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:S*.85});
+    break}
+  case 'bigdate':{
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:fit(T.title,tw,span(c*P.tspan)),wt:tw,lh:1});
+    const r=nextRow(G,end(t));
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(r),sz:S});
+    add({k:'place',s:T.place,x:G.x(half),y:G.y(r),sz:S*1.4,wt:500});
+    const ds=fit(T.date,500,G.span(c));const d=add({k:'date',s:T.date,x:G.x(0),vb:G.bottom,sz:ds,wt:500,lh:1});
+    add({k:'credit',s:T.credit,x:G.right,vb:d.y-ds*.18,sz:S*.85,al:'right'});
+    break}
+  case 'corners':{
+    const ts=Math.min(fit(T.title,tw,span(c/2)),M*1.7);
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:ts,wt:tw,lh:1});
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(nextRow(G,end(t))),sz:S});
+    add({k:'date',s:T.date,x:G.right,y:G.y(0),sz:Math.min(ts*.8,fit(T.date,500,span(c-half))),al:'right',wt:500,lh:1});
+    add({k:'place',s:T.place,x:G.x(0),vb:G.bottom,sz:Math.min(ts*.8,fit(T.place,500,span(half))),wt:500,lh:1});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S*.85,al:'right'});
+    break}
+  case 'stagger':{ /* every element one step further right and down */
+    const st=Math.max(1,Math.floor((c-2)/4));
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:Math.min(M*1.6,fit(T.title,tw,span(c*.6))),wt:tw,lh:1});
+    const s=add({k:'sub',s:T.sub,x:G.x(st),y:G.y(nextRow(G,end(t))),sz:S});
+    const d=add({k:'date',s:T.date,x:G.x(st*2),y:G.y(nextRow(G,end(s))+1),sz:Math.min(M,fit(T.date,500,span(c-st*2))),wt:500,lh:1.05});
+    add({k:'place',s:T.place,x:G.x(Math.min(c-1,st*3)),y:G.y(nextRow(G,end(d))),sz:S*1.4,wt:500});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S*.85,al:'right'});
+    break}
+  case 'mirror':{
+    const top=[],third=span(c/3)-G.g,pl=T.place.split('\n')[0];
+    const ts=Math.min(S*1.5,...[T.date,T.credit,pl].map(s=>fit(s,500,third,false)));
+    top.push(add({k:'date',s:T.date,x:G.x(0),y:G.y(0),sz:ts,wt:500}));
+    top.push(add({k:'credit',s:T.credit,x:G.W/2,y:G.y(0),sz:ts,al:'center',wt:500}));
+    top.push(add({k:'place',s:pl,x:G.right,y:G.y(0),sz:ts,al:'right',wt:500}));
+    top.push(add({k:'title',s:T.title,x:G.x(0),y:G.y(0)+ts*1.9,sz:fit(T.title,tw,G.span(c)),wt:tw,lh:1}));
+    top.forEach(o=>it.push(Object.assign({},o,{x:G.W-o.x,y:G.H-o.y,rot:Math.PI,k:o.k+'M'})));
+    break}
+  case 'vertical':{
+    const tl=T.title.split('\n').length;
+    const ts=Math.min(fit(T.title,tw,G.H-2*G.m),span(c*.4)/tl);
+    add({k:'title',s:T.title,x:G.m,y:G.bottom,sz:ts,wt:tw,lh:1,rot:-Math.PI/2});
+    const cx=G.x(Math.ceil(c*.45));
+    const s=add({k:'sub',s:T.sub,x:cx,y:G.y(0),sz:S});
+    add({k:'date',s:DP,x:cx,y:G.y(nextRow(G,end(s))+1),sz:Math.min(M,fit(DP,500,G.right-cx)),wt:500,lh:1.05});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S*.85,al:'right'});
+    break}
+  case 'repeat':{
+    const t1=T.title.replace(/\n/g,' ');
+    const t=add({k:'title',s:t1,x:G.x(0),y:G.y(0),sz:fit(t1,tw,G.span(c)),wt:tw,lh:1});
+    const r=nextRow(G,end(t));
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(r),sz:S});
+    add({k:'place',s:T.place,x:G.right,y:G.y(r),sz:S,al:'right'});
+    const cr=add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:S*.85});
+    add({k:'date',s:T.date,x:G.x(0),vb:cr.y-S*1.2,sz:fit(T.date,500,G.span(c)),wt:500,lh:1});
+    break}
+  case 'axis':{
+    const ax=G.x(half),words=T.title.replace(/\n/g,' ').split(' ').join('\n');
+    const t=add({k:'title',s:words,x:ax,y:G.y(0),sz:fit(words,tw,G.right-ax),wt:tw,lh:1});
+    const s=add({k:'sub',s:T.sub,x:ax,y:G.y(nextRow(G,end(t))),sz:S});
+    add({k:'date',s:DP,x:ax,y:G.y(nextRow(G,end(s))+1),sz:Math.min(M,fit(DP,500,G.right-ax)),wt:500,lh:1.05});
+    add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:S*.85});
+    break}
+  case 'bands':{
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:Math.min(M*1.3,fit(T.title,tw,span(c*.6))),wt:tw,lh:1.15,box:1});
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(nextRow(G,end(t))+1),sz:S});
+    add({k:'date',s:T.date,x:G.x(half),y:G.y(Math.floor(Rw*.3)),sz:Math.min(M,fit(T.date,500,span(c-half))),wt:500,box:1});
+    const pl=T.place.split('\n')[0],ps=fit(pl,700,span(c*.7));
+    const big=add({k:'place',s:pl,x:G.W/2,vb:G.bottom-ps*.1,sz:ps,wt:700,al:'center',lh:1,box:1});
+    add({k:'credit',s:T.credit,x:G.right,vb:big.y-ps*.35,sz:S*.85,al:'right'});
+    break}
+  case 'center':{ /* title as a centred block inside the carpet, small text in the corners */
+    const tl=T.title.trim()||' ',n=tl.split('\n').length,sz=Math.min(fit(tl,tw,(G.W-2*G.m)*.9),(G.H-2*G.m)*.42/((n-1)*1.02+CAP));
+    add({k:'title',s:tl,x:G.W/2,y:G.H/2-((n-1)*sz*1.02+sz*CAP)/2,sz,wt:tw,lh:1.02,al:'center'});
+    add({k:'sub',s:T.sub.split('\n')[0],x:G.x(0),y:G.y(0),sz:S});
+    add({k:'date',s:T.date,x:G.right,y:G.y(0),sz:S,al:'right',wt:500});
+    add({k:'place',s:T.place.split('\n')[0],x:G.x(0),vb:G.bottom,sz:S});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S,al:'right'});
+    break}
+  case 'band':{ /* title in an edge band, small text on plates in the other corners; the centre of the carpet stays free */
+    const pos=P.tpos||'top',tl=T.title.trim()||' ',n=tl.split('\n').length,gp=S*1.4,sm=S;
+    const info=(x,y,al,vb)=>{};
+    if(pos==='top'||pos==='bottom'){
+      const sz=Math.min(fit(tl,tw,(G.W-2*G.m)*(titleWoven()?.92:.34)),G.H*(titleWoven()?(n>1?.3:.2):(n>1?.1:.062))/((n-1)+CAP)),bh=(n-1)*sz+sz*CAP;
+      if(pos==='top'){
+        add({k:'title',s:tl,x:G.x(0),y:G.m,sz,wt:tw,lh:1});
+        const y=G.m+bh+gp;add({k:'sub',s:T.sub.split('\n')[0],x:G.x(0),y,sz:sm});add({k:'date',s:T.date,x:G.right,y,sz:sm,al:'right',wt:500});
+        add({k:'place',s:T.place.split('\n')[0],x:G.x(0),vb:G.bottom,sz:sm});add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:sm,al:'right'});
+      }else{
+        const ty=G.bottom-bh;add({k:'title',s:tl,x:G.x(0),y:ty,sz,wt:tw,lh:1});
+        add({k:'sub',s:T.sub.split('\n')[0],x:G.x(0),y:G.m,sz:sm});add({k:'date',s:T.date,x:G.right,y:G.m,sz:sm,al:'right',wt:500});
+        const vb=ty-gp;add({k:'place',s:T.place.split('\n')[0],x:G.x(0),vb,sz:sm});add({k:'credit',s:T.credit,x:G.right,vb,sz:sm,al:'right'});
+      }
+    }else{
+      const sz=Math.min(fit(tl,tw,(G.H-2*G.m)*(titleWoven()?.92:.34)),G.W*(titleWoven()?.26:.085)/((n-1)+CAP)),bh=(n-1)*sz+sz*CAP;
+      if(pos==='left'){
+        add({k:'title',s:tl,x:G.m,y:G.bottom,sz,wt:tw,lh:1,rot:-Math.PI/2});
+        add({k:'sub',s:T.sub.split('\n')[0],x:G.right,y:G.m,sz:sm,al:'right'});add({k:'date',s:T.date,x:G.right,y:G.m+sm*2.6,sz:sm,al:'right',wt:500});
+        add({k:'place',s:T.place.split('\n')[0],x:G.right,vb:G.bottom-sm*2.6,sz:sm,al:'right'});add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:sm,al:'right'});
+      }else{
+        add({k:'title',s:tl,x:G.right,y:G.m,sz,wt:tw,lh:1,rot:Math.PI/2});
+        add({k:'sub',s:T.sub.split('\n')[0],x:G.x(0),y:G.m,sz:sm});add({k:'date',s:T.date,x:G.x(0),y:G.m+sm*2.6,sz:sm,wt:500});
+        add({k:'place',s:T.place.split('\n')[0],x:G.x(0),vb:G.bottom-sm*2.6,sz:sm});add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:sm});
+      }
+    }
+    break}
+  case 'giant':{ /* title lines stretched to fill the page, small text in one footer row */
+    const T0=T.title.trim(),lines=(T0.includes('\n')?T0.split('\n'):T0.split(/\s+/)).map(s=>s.trim()).filter(Boolean);
+    if(lines.length){
+      const foot=(titleWoven()&&P.twfull)?0:S*3.2,avail=G.H-2*G.m-foot,szs=lines.map(l=>fit(l,tw,G.span(c)));
+      const tot=szs.reduce((a,s)=>a+s*CAP,0),sy=clamp((avail-G.g*(lines.length-1))/Math.max(1,tot),.3,(titleWoven()&&P.twfull)?({center:2.2,top:1.25,bottom:1.25,split:1.7}[P.twpos]||2.2):6);
+      const hs=szs.map(s=>s*CAP*sy),used=hs.reduce((a,b)=>a+b,0)+G.g*(lines.length-1),slack=Math.max(0,avail-used),pos=(titleWoven()&&P.twfull)?P.twpos:'center';
+      let ys=[];{let y=G.m+(pos==='bottom'?slack:pos==='top'?0:slack/2);lines.forEach((l,i)=>{ys.push(y);y+=hs[i]+G.g})}
+      if(pos==='split'&&lines.length>1){const nL=lines.length;ys=lines.map((l,i)=>G.m+(avail-hs[nL-1])*i/(nL-1))}
+      lines.forEach((l,i)=>add({k:'title',s:l,x:G.x(0),y:ys[i],sz:szs[i],wt:tw,lh:1,sy}));
+    }
+    if(titleWoven()&&P.twfull){ /* the plates sit on random spots, over the title as well */
+      const sl=[{x:G.x(0),y:G.m,al:'left'},{x:G.right,y:G.m,al:'right'},{x:G.x(0),vb:G.bottom,al:'left'},{x:G.right,vb:G.bottom,al:'right'},{x:G.x(0),y:G.H*.36,al:'left'},{x:G.right,y:G.H*.36,al:'right'},{x:G.x(0),y:G.H*.62,al:'left'},{x:G.right,y:G.H*.62,al:'right'},{x:G.W/2,y:G.H*.5,al:'center'},{x:G.W/2,y:G.m,al:'center'},{x:G.W/2,vb:G.bottom,al:'center'}]
+        .map((s,i)=>[hsh(i*3.7+11),s]).sort((a,b)=>a[0]-b[0]).map(a=>a[1]);
+      [['sub',T.sub.split('\n')[0]],['place',T.place.split('\n')[0]],['date',T.date],['credit',T.credit]].forEach(([k,s],i)=>add(Object.assign({k,s,sz:S},sl[i])));
+    }else{
+    add({k:'sub',s:T.sub.split('\n')[0],x:G.x(0),vb:G.bottom,sz:S});
+    add({k:'place',s:T.place.split('\n')[0],x:G.x(half),vb:G.bottom-S*1.35,sz:S});
+    add({k:'date',s:T.date,x:G.x(half),vb:G.bottom,sz:S});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S,al:'right'});
+    }
+    break}
+  case 'cells':{ /* every letter of the title in its own grid cell */
+    const ch=[...T.title.replace(/\s+/g,'')];const n=ch.length;
+    if(n){
+      const foot=S*3.2,avail=G.H-2*G.m-foot,aw=G.W-2*G.m;
+      const cc=Math.max(1,Math.min(n,Math.round(Math.sqrt(n*aw/avail*1.6)))),rr=Math.ceil(n/cc);
+      const cw=(aw-(cc-1)*G.g)/cc,chh=(avail-(rr-1)*G.g)/rr;
+      ch.forEach((t,i)=>{const q=i%cc,r=Math.floor(i/cc),sz=fit(t,tw,cw*.98);
+        add({k:'title',s:t,x:G.m+q*(cw+G.g)+cw/2,y:G.m+r*(chh+G.g),sz,wt:tw,lh:1,al:'center',sy:clamp(chh/(sz*CAP),.3,8)})});
+    }
+    add({k:'sub',s:T.sub.split('\n')[0],x:G.x(0),vb:G.bottom,sz:S});
+    add({k:'date',s:T.date+'  '+T.place.split('\n')[0],x:G.x(half),vb:G.bottom,sz:S});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S,al:'right'});
+    break}
+  case 'scatter':{ /* one word per column, stepping down the page */
+    const words=[...T.title.split(/\s+/).map(w=>({w,k:'title'})),...[T.sub,T.date,T.place,T.credit].join(' ').split(/\s+/).map(w=>({w,k:'sub'}))].filter(o=>o.w);
+    const n=words.length;
+    words.forEach((o,i)=>{const col=i%c,row=Math.round(i*(Rw-1)/Math.max(1,n-1));
+      add({k:o.k,s:o.w,x:G.x(col),y:G.y(row),sz:o.k==='title'?S*1.6:S,wt:o.k==='title'?tw:400})});
+    break}
+  }
+  return it;
+}
+function animItems(items,G,ph){
+  const m=P.rmo,a=P.rmoAmt,k=P.rmoSpd,n=items.length,step=G.cw+G.g;
+  items.forEach((it,i)=>{
+    if(m==='slide')it.x+=Math.round(a*3*Math.sin(TAU*ph*k+i*.9))*step;
+    else if(m==='jump'){const st=Math.floor(ph*k*4);it.x+=Math.round((hsh(i*7.1+st*3.3)-.5)*a*5)*step}
+    else if(m==='rise')it.y+=a*(G.rh+G.g)*1.5*Math.sin(TAU*ph*k+i*.7);
+    else if(m==='track')it.ls=a*.3*(.5+.5*Math.sin(TAU*ph*k+i*.6));
+    else if(m==='reveal'){const t0=.04+.5*i/Math.max(1,n);it.vis=ph>.94?0:clamp((ph-t0)/(.12+a*.2))}
+    else if(m==='marquee'&&it.k==='title')it.mq=ph*k;
+  });
+}
+let HOVR=null; /* {col,lw}: draw this text as a flat stroke+fill in one color (outline canvas) */
+function drawItem(c,it){
+  c.save();c.translate(it.x,it.y);if(it.rot)c.rotate(it.rot);if(it.sy)c.scale(1,it.sy);
+  const wt=it.big?axWeight(P.rfont,P.rax,it.wt):it.wt;
+  c.font=`${wt} ${it.sz}px ${it.big?DFAM():BODY_FAM}`;c.textAlign=it.al;c.textBaseline='alphabetic';
+  if(HAS_LS)c.letterSpacing=(it.ls*it.sz)+'px';
+  const lines=it.s.split('\n'),lh=it.sz*it.lh,fg=colorOf(P.rcol,it),dir=it.al==='right'?-1:1;
+  let budget=it.vis==null?1e9:Math.floor(it.vis*it.s.replace(/\n/g,'').length);
+  lines.forEach((ln,i)=>{
+    if(budget<=0)return;const shown=ln.slice(0,budget);budget-=ln.length;
+    const y=i*lh+it.sz*CAP,sx=it.mq!=null?0:i*STEP*dir;
+    if(it.box||P.band){const w=c.measureText(ln).width,pd=it.sz*.18;const x0=sx+(it.al==='right'?-w:it.al==='center'?-w/2:0);
+      c.fillStyle=P.acc;c.fillRect(x0-pd,y-it.sz*CAP-pd,w+2*pd,it.sz*CAP+2*pd+it.sz*.2)}
+    c.fillStyle=(it.box||P.band)?P.pal[0]:fg;if(HOVR)c.fillStyle=HOVR.col;
+    if(it.mq!=null){const w=c.measureText(ln+'   ').width;const off=(it.mq*w)%w;c.textAlign='left';
+      for(let x=-off-w*Math.ceil(it.x/w);x<RW-it.x+w;x+=w)c.fillText(ln,x,y)}
+    else{if(HOVR&&HOVR.lw){c.strokeStyle=HOVR.col;c.lineWidth=HOVR.lw;c.lineJoin='round';c.miterLimit=2;c.strokeText(shown,sx,y)}c.fillText(shown,sx,y)}
+  });
+  c.restore();
+}
+function titleCol(){
+  if(P.tstyle==='halo'){const h=P.pal[0];return Math.abs(lum(P.acc)-lum(h))>.28?P.acc:contrastOn(h)}
+  /* lead line / extrude: letters must read against the line colour */
+  const l=P.lc;if(Math.abs(lum(P.acc)-lum(l))>.4)return P.acc;
+  return [P.txt,P.pal[0],P.pal[1],'#f6f6f2','#111111'].reduce((b,x)=>Math.abs(lum(x)-lum(l))>Math.abs(lum(b)-lum(l))?x:b)}
+function lum(h){const [r,g,b]=hex2rgb(h);return .3*r+.59*g+.11*b}
+/* best readable colour against a background: the palette's text colour if it contrasts, else ground / line / black / white */
+function contrastOn(bg){const L=lum(bg);
+  for(const c of [P.txt,P.acc,P.lc,P.pal[0],...P.pal.slice(1,Math.max(2,P.nCol))])if(Math.abs(lum(c)-L)>=.55)return c;
+  return L>.5?'#000000':'#ffffff'}
+function colorOf(k,it){k='auto'; /* readable text is not optional */
+  if(k==='auto'){if(it&&hasPlate(it))return plateText();return contrastOn(P.pal[0])}
+  return k==='ink1'?P.pal[1]:k==='bg'?P.pal[0]:k==='acc'?P.acc:P.txt}
+const titleWoven=()=>true; /* the title is always set into the carpet */
+const hasPlate=it=>!(it.big&&titleWoven()); /* every line sits on a plate, except a title woven into a stitched carpet */
+const inMask=it=>it.big&&titleWoven();
+/* lays out the readable layer and paints the mask text (large text, or all of it) into dcv */
+/* Carpet panel: the carpet shrinks to a panel, the copy sits in the free bands around it */
+function marginItems(G,T){
+  const W=G.W,H=G.H,S=P.body*G.u,fm=P.fm*H,b=P.mband*H,gp=.018*H,tw=P.tw,it=[],side=P.mside;
+  const mk=o=>{o=Object.assign({wt:400,al:'left',rot:0,lh:P.lead,ls:0},o);o.big=o.k==='title'||o.sz>=S*1.8;it.push(o);return o};
+  const tl=T.title.trim()||' ',n=tl.split('\n').length,tH=(z,lh)=>(n-1)*z*lh+z*CAP;
+  const info=[T.sub.split('\n')[0],T.date,T.place.split('\n')[0],T.credit].filter(Boolean);
+  const row=(y,top)=>{const cw=(W-2*fm)/info.length;info.forEach((s,i)=>{const z=Math.min(S,fit(s,400,cw*.94,false));
+    const o=mk({k:['sub','date','place','credit'][i]||'sub',s,x:fm+i*cw,y,sz:z});if(!top)o.y=y-z*CAP})};
+  if(side==='top'||side==='bottom'||side==='tb'){
+    const band=(side==='tb'?b:b-S*2.4)-gp,z=Math.min(fit(tl,tw,W-2*fm),band/((n-1)*1.0+CAP));
+    if(side==='bottom'){row(H-fm-b+gp,true);mk({k:'title',s:tl,x:fm,y:H-fm-tH(z,1),sz:z,wt:tw,lh:1})}
+    else{mk({k:'title',s:tl,x:fm,y:fm,sz:z,wt:tw,lh:1});
+      if(side==='top')row(fm+b-gp,false);else{const bb=b*.5,y0=H-fm-bb+gp;row(y0+(bb-gp-S*CAP)/2,true)}}
+  }else{
+    const inf=info.join('\n'),iH=(info.length-1)*S*P.lead+S*CAP;
+    if(side==='left'){const z=Math.min(fit(tl,tw,H-2*fm),(b-gp-iH-S)/((n-1)+CAP));
+      mk({k:'title',s:tl,x:fm,y:H-fm,sz:z,wt:tw,lh:1,rot:-Math.PI/2});
+      mk({k:'sub',s:inf,x:fm+b-gp-iH,y:H-fm,sz:S,rot:-Math.PI/2})}
+    else{const z=Math.min(fit(tl,tw,H-2*fm),(b-gp)/((n-1)+CAP));
+      mk({k:'title',s:tl,x:fm,y:H-fm,sz:z,wt:tw,lh:1,rot:-Math.PI/2});
+      mk({k:'sub',s:inf,x:W-fm,y:fm,sz:S,rot:Math.PI/2})}
+  }
+  return it;
+}
+/* plate outline: Box, Rounded, Stepped (kilim corners), Pointed (cartouche) */
+function platePath(c,x,y,w,h,st){
+  c.beginPath();
+  if(st===1){const r=Math.min(h,w)*.32;c.roundRect(x,y,w,h,r)}
+  else if(st===2){const k=Math.min(h,w)*.16;c.moveTo(x+2*k,y);c.lineTo(x+w-2*k,y);c.lineTo(x+w-2*k,y+k);c.lineTo(x+w-k,y+k);c.lineTo(x+w-k,y+2*k);c.lineTo(x+w,y+2*k);
+    c.lineTo(x+w,y+h-2*k);c.lineTo(x+w-k,y+h-2*k);c.lineTo(x+w-k,y+h-k);c.lineTo(x+w-2*k,y+h-k);c.lineTo(x+w-2*k,y+h);c.lineTo(x+2*k,y+h);c.lineTo(x+2*k,y+h-k);
+    c.lineTo(x+k,y+h-k);c.lineTo(x+k,y+h-2*k);c.lineTo(x,y+h-2*k);c.lineTo(x,y+2*k);c.lineTo(x+k,y+2*k);c.lineTo(x+k,y+k);c.lineTo(x+2*k,y+k);c.closePath()}
+  else if(st===3){const p=Math.min(h*.5,w*.25);c.moveTo(x+p,y);c.lineTo(x+w-p,y);c.lineTo(x+w,y+h/2);c.lineTo(x+w-p,y+h);c.lineTo(x+p,y+h);c.lineTo(x,y+h/2);c.closePath()}
+  else c.rect(x,y,w,h);
+}
+/* one flat plate per text line, hugging the line like a label; stacked lines merge into a stepped silhouette */
+function drawPlates(items,G){
+  const c=pctx,W=G.W,H=G.H,cs=H/tCells();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,W,H);c.globalCompositeOperation='source-over';c.fillStyle='#00ff00';
+  const lo=(v,c0)=>c0+(Math.floor((v-c0)/cs-.5)+.5)*cs,hi=(v,c0)=>c0+(Math.ceil((v-c0)/cs-.5)+.5)*cs;
+  items.forEach(it=>{if(!hasPlate(it))return;
+    c.save();c.font=`${it.big?axWeight(P.rfont,P.rax,it.wt):it.wt} ${it.sz}px ${it.big?DFAM():BODY_FAM}`;if(HAS_LS)c.letterSpacing=(it.ls*it.sz)+'px';
+    const ls=it.s.split('\n'),lh=it.sz*it.lh,dir=it.al==='right'?-1:1,sy=it.sy||1;
+    const padX=P.plpad*Math.max(it.sz*.28,G.u*5),padY=Math.max(P.plpad*it.sz*.14,P.plpad*G.u*2.5);
+    if(it.rot){c.translate(it.x,it.y);c.rotate(it.rot);if(it.sy)c.scale(1,it.sy)}
+    ls.forEach((ln,i)=>{if(!ln.trim())return;
+      const w=it.mq!=null?W:c.measureText(ln).width,sx=it.mq!=null?-it.x:i*STEP*dir,x0=sx+(it.al==='right'?-w:it.al==='center'?-w/2:0);
+      const base=i*lh+it.sz*CAP,top=base-it.sz*CAP-padY,h=it.sz*(CAP+.22)+2*padY;
+      if(it.rot)c.fillRect(x0-padX,top,w+2*padX,h);
+      else{const X1=lo(it.x+x0-padX,W/2),X2=hi(it.x+x0+w+padX,W/2),Y1=lo(it.y+top*sy,H/2),Y2=hi(it.y+(top+h)*sy,H/2);c.fillRect(X1,Y1,X2-X1,Y2-Y1)}});
+    c.restore()});
+}
+function drawHalo(){}
+const TLAYS={ring:'Ring',cross:'Cross on axes',pinwheel:'Pinwheel'};
+function useLetters(){return true}
+/* the title taken apart into letters (or words) and set on the carpet's own geometry; the centre stays free */
+function descWords(G,mk){
+  const tt=String(P.title||'').replace(/\s+/g,' ').trim().toUpperCase(),words=[...(tt?[tt]:[]),...String(P.desc||'').toUpperCase().split(/\s+/).filter(Boolean)];if(!words.length)return;
+  const W=G.W,H=G.H,B=P.slots[2],bwp=Math.max(B.on?B.x2:0,.06)*H,ib=bwp/2,S=P.body*G.u,PI=Math.PI;
+  const w=W-2*ib,h=H-2*ib,Pm=2*(w+h),N=words.length,sp=Pm/N,maxw=Math.max(...words.map(x=>x.length))*.72;
+  const z=Math.max(S*.45,Math.min(S,bwp*.5,sp/(maxw*1.25)));
+  for(let i=0;i<N;i++){ /* every plate sits on the border's centre line; t runs clockwise from the top centre, (i+.5)/N is mirror-symmetric */
+    let s=((i+(tt?0:.5))/N)*Pm,cx,cy,rot=0,side;const hw=words[i].length*z*.36+z*.5;
+    if(s<w/2){side='t';cx=W/2+s;cy=ib}
+    else{s-=w/2;
+      if(s<h){side='r';cx=W-ib;cy=ib+s;rot=PI/2}
+      else{s-=h;
+        if(s<w){side='b';cx=W-ib-s;cy=H-ib;rot=PI}
+        else{s-=w;
+          if(s<h){side='l';cx=ib;cy=H-ib-s;rot=-PI/2}
+          else{s-=h;side='t';cx=ib+s;cy=ib}}}}
+    if(side==='t'||side==='b')cx=Math.max(bwp+hw,Math.min(W-bwp-hw,cx));else cy=Math.max(bwp+hw,Math.min(H-bwp-hw,cy));
+    const hh=z*CAP;mk({k:'sub',s:words[i],sz:z,al:'center',rot,wt:i===0&&tt?800:600,ls:.1,x:cx+Math.sin(rot)*hh/2,y:cy-Math.cos(rot)*hh/2});
+  }
+}
+function letterItems(G,T){
+  const W=G.W,H=G.H,cx=W/2,cy=H/2,S=P.body*G.u,it=[],tw=titleWoven()?Math.min(P.tw,500):P.tw,lay=P.tlay,B=P.slots[2],bwp=B.on?B.x2*H:0,PI=Math.PI;
+  const mk=o=>{o=Object.assign({wt:400,al:'left',rot:0,lh:P.lead,ls:0},o);o.big=o.k==='title';if(!o.big)o.sz=Math.min(o.sz,S*1.45);if(o.vb!=null)o.y=o.vb-blockH(o);it.push(o);return o};
+  const inset=lay==='inscr'?bwp+S*.9:G.m;
+  descWords(G,mk);
+  if(false)[['sub',T.sub.split('\n')[0],'left',0],['date',T.date,'right',0],['place',T.place.split('\n')[0],'left',1],['credit',T.credit,'right',1]].forEach(([k,s,al,bt])=>{
+    const o={k,s:String(s).toUpperCase(),sz:S,al,wt:600,ls:.1,x:al==='left'?inset:W-inset};if(bt)o.vb=H-inset;else o.y=inset;mk(o)});
+  if(!P.tx)return it; /* Text × carpet off: no title in the carpet */
+  const tl=(((P.wov||'').trim()?applyCase(P.wov,P.rcase):T.title).trim()||' ').replace(/\s+/g,' '),L=[...tl.replace(/ /g,'')];if(!L.length)L.push('.');
+  const capH=lay==='inscr'?Math.max(.04*H,Math.min(bwp*.8,.12*H)):(P.st>0?.125:.1)*H,sz=capH/CAP,h=capH;
+  const put=(ch,x,y,rot,z)=>{const hh=(z||sz)*CAP;mk({k:'title',s:ch,x:x+Math.sin(rot)*hh/2,y:y-Math.cos(rot)*hh/2,sz:z||sz,wt:tw,al:'center',rot,lh:1})};
+  const m=G.m+capH*.6;
+  if(lay==='ring'){
+    const n=L.length,N=n>=3?Math.min(n,24):4,R0=Math.min(P.trad*H,.5*W-capH*1.2),cH=Math.min(capH,2*PI*R0/N/1.4); /* one letter per axis of the carpet's radial symmetry */
+    for(let i=0;i<N;i++){const a=-PI/2+i*2*PI/N;put(L[i%n],cx+R0*Math.cos(a),cy+R0*Math.sin(a),a+PI/2,cH/CAP)}
+  }else if(lay==='cross'){ /* all letters on every arm; if they would be too small, the first word only */
+    const lim=(P.tdiag?(W/2-G.m)/.7071:W/2-G.m)-.08*H,fcap=k=>lim/(1.45*(k-1)+1.1);
+    if(P.tsplit){ /* different letters on different axes: letter i goes to arm i%4, so every letter appears once and can be bigger */
+      const mN=Math.ceil(Math.max(4,L.length)/4)*4,kmax=mN/4,cS=Math.max(.03*H,Math.min(.12*H,fcap(kmax))),zs=cS/CAP,stp=cS*1.45,r00=.08*H+cS*.5;
+      for(let j=0;j<4;j++){const th=-PI/2+j*PI/2+(P.tdiag?PI/4:0);
+        for(let k=0;k<kmax;k++){const i=j+4*k;if(i>=mN)break;const r=r00+k*stp;put(L[i%L.length],cx+r*Math.cos(th),cy+r*Math.sin(th),th+PI/2,zs)}}
+    }else{
+    const w1=[...tl.split(' ')[0]];let LL=L,cH=Math.min(.1*H,fcap(L.length));
+    if(cH<.055*H&&w1.length<L.length){LL=w1;cH=Math.min(.1*H,fcap(w1.length))}
+    cH=Math.max(cH,.03*H);const zz=cH/CAP,step=cH*1.45,r0=.08*H+cH*.5,n=LL.length;
+    for(let j=0;j<4;j++){const th=-PI/2+j*PI/2+(P.tdiag?PI/4:0),seq=(P.tmir&&j%2)?LL.slice().reverse():LL;
+      for(let k=0;k<n;k++){const r=r0+k*step;put(seq[k],cx+r*Math.cos(th),cy+r*Math.sin(th),th+PI/2,zz)}}
+    }
+  }else if(lay==='pinwheel'){
+    const d0=P.trad*H,pw=tl.length>8?tl.split(' ')[0]:tl; /* long titles: the first word only */
+    for(let j=0;j<4;j++){const th=-PI/2+j*PI/2,d=j%2?Math.min(d0,.5*W-capH*.9-G.m):d0;
+      const z=Math.min(sz*.8,fit(pw,tw,Math.min(W,H)*.36));
+      put(pw,cx+d*Math.cos(th),cy+d*Math.sin(th),th+PI/2,z)}
+  }else if(lay==='inscr'){
+    const ib=bwp/2,step=capH*1.3,seq=[...L,null];let idx=0;
+    [[ib,0,1,0,0],[W-ib,0,0,1,PI/2],[W-ib,H-ib,-1,0,PI],[ib,H-ib,0,-1,3*PI/2]].forEach(([x0,y0,dx,dy,rot],s)=>{
+      const sx=s===0?ib:s===1?W-ib:s===2?W-ib:ib,sy=s===0?ib:s===1?ib:s===2?H-ib:H-ib;
+      const len=(dx?W:H)-2*ib-capH*2.4,n=Math.max(0,Math.floor(len/step)+1),off=(len-(n-1)*step)/2+capH*1.2;
+      for(let k=0;k<n;k++){const ch=seq[idx%seq.length];idx++;if(ch==null)continue;const t=off+k*step;put(ch,sx+(dx?dx*t:0),sy+(dy?dy*t:0),rot)}});
+  }
+  return it;
+}
+const wovenText=()=>((P.wov||'').trim()?P.wov:P.title)||'';
+/* ring layout: one letter per symmetry axis, kept in step with the text that is set into the carpet */
+function ringSync(){if(P.tlay!=='ring')return;const n=[...wovenText().replace(/\s+/g,'')].length,N=n>=3?Math.min(n,24):4,k=(P.tsymk===2&&N*2<=24)?2:1,v=N*k;
+  if(P.sym!==5||P.symN!==v||P.symRot!==-90||P.symSpin!==0){P.sym=5;P.symN=v;P.symRot=-90;P.symSpin=0}}
+function layoutText(W,H,ph){ringSync();
+  const G=grid(W,H,ph);STEP=P.stairs*(G.cw+G.g);
+  const T={};['title','sub','date','place','credit'].forEach(k=>T[k]=applyCase(P[k]||'',P.rcase));
+  let name=(titleWoven()&&P.twfull)?'giant':P.tpl;
+  if(P.rmo==='step'){const keys=Object.keys(TEMPLATES),st=Math.floor(ph*Math.max(2,P.rmoSpd*3));name=keys[(keys.indexOf(P.tpl)+st)%keys.length]}
+  const mg=P.tplace==='margin';
+  const items=mg?marginItems(G,T):(useLetters()?letterItems(G,T):tplItems(name,G,T));
+  if(!mg||['reveal','track','marquee'].includes(P.rmo))animItems(items,G,ph);
+  dctx.setTransform(1,0,0,1,0,0);dctx.clearRect(0,0,W,H);
+  if(!P.tshow)return {G,items:[]}; /* copy layer hidden: no text and no mask */
+  {const ts=items.filter(i=>i.k==='title');TCAP=ts.length?Math.max(.04,Math.min(...ts.map(i=>i.sz*CAP*(i.sy||1)/H))):.1}
+  drawPlates(items,G);
+  drawHalo(items,G);
+  items.forEach(it=>{if(inMask(it))drawItem(dctx,it)});
+  return {G,items};
+}
+function drawTextTop(c,L,W,H){
+  c.save();c.globalCompositeOperation=P.rblend;
+  L.items.forEach(it=>{if(!inMask(it))drawItem(c,it)});
+  if(P.tfill==='solid'||P.tmode==='none'||P.tplace==='margin'||P.tplace==='plates')c.drawImage(dcv,0,0);
+  c.restore();
+  const G=L.G;
+  if(P.grid&&!exporting){c.save();c.globalAlpha=.5;c.strokeStyle='#ff2bd6';c.lineWidth=Math.max(1,G.u*.8);
+    for(let i=0;i<G.cols;i++)c.strokeRect(G.x(i),G.m,G.cw,H-2*G.m);
+    for(let j=0;j<G.rows;j++){c.beginPath();c.moveTo(G.m,G.y(j));c.lineTo(W-G.m,G.y(j));c.stroke()}c.restore()}
+}
+
+/* ================= main render ================= */
+function render(ph){
+  ensureSize();applyVariations();
+  const L=layoutText(RW,RH,ph);
+  ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+  if(gl){renderCarpet(ph);ctx.drawImage(glc,0,0)}else{ctx.fillStyle=P.pal[0];ctx.fillRect(0,0,RW,RH)}
+  drawTextTop(ctx,L,RW,RH);
+}
+let clock=0,playing=true,last=performance.now(),dirty=true;
+const phase=()=>{const L=P.loop;return (((clock%L)+L)%L)/L};
+function frame(now){
+  const dt=Math.min(.1,(now-last)/1000);last=now;
+  if(!exporting&&P.wall){if(dirty){dirty=false;try{renderWall(phase())}catch(e){console.error(e)}}}
+  else if(!exporting){
+    if(playing){clock+=dt;dirty=true}
+    if(dirty){dirty=false;const ph=phase();try{render(ph)}catch(e){console.error(e)}
+      $('#scrub').value=Math.round(ph*1000);$('#tlab').textContent=(ph*P.loop).toFixed(1)+'s'}
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ================= randomizers ================= */
+function rq(q){let v=q[5]?rf(q[5][0],q[5][1]):rf(q[1],q[2]);if(q[3]>=1)v=Math.round(v);else v=Math.round(v/q[3])*q[3];return +clamp(v,q[1],q[2]).toFixed(4)}
+function pickW(o){const e=Object.entries(o),t=e.reduce((a,x)=>a+x[1],0);let r=R()*t;for(const [k,w] of e){if((r-=w)<0)return k}return e[0][0]}
+const lightGround=()=>{const [r,g,b]=hex2rgb(P.pal[0]);return .3*r+.59*g+.11*b>.5};
+
+const f2=v=>+v.toFixed(2);
+
+/* ================= carpet randomizers ================= */
+const palIx=n=>PALETTES.findIndex(p=>p[0]===n);
+const ms=s=>s.split(' ').map(k=>M[k]);
+const sub=(a,k)=>{const b=a.slice().sort(()=>R()-.5);return b.slice(0,Math.max(1,Math.min(b.length,k)))};
+/* recipes: one per reference. f = Field, m = Medallion (null = off), b = Border (null = off) */
+const RECIPES={
+ crossstitch:{pal:'Cross-stitch',f:()=>({
+   f:{lay:pick([1,1,5,3]),x1:0,D:ri(5,8),mot:sub(ms('stripes chevron dots rosette diag checker zigzag'),ri(3,5)),pick:0,cmode:1,n:ri(3,5),w:f2(rf(.5,.9)),tbg:pick([0,1])},
+   m:R()<.8?{lay:0,D:ri(4,6),x2:f2(rf(.35,.55)),x3:f2(rf(0,.3)),mot:sub(ms('rosette flower diamond dots star8'),3),pick:1,tbg:1}:null,
+   b:{D:ri(1,2),mot:sub(ms('teeth dots arrow zigzag'),2),pick:1,x1:R()<.5?1:0,x2:f2(rf(.04,.07)),x3:f2(rf(.1,.25)),ink:1},
+   sym:pick([3,3,4]),st:[3,ri(60,95)],text:'woven'})},
+ nightbeads:{pal:'Night beads',f:()=>({
+   f:{lay:3,x1:1,D:ri(6,10),mot:sub(ms('spiral dots checker square stripes rosette teeth'),ri(4,6)),pick:1,cmode:0,n:ri(2,4),w:f2(rf(.5,.8)),tbg:0},
+   m:null,b:R()<.5?{D:1,mot:ms('dots'),x2:f2(rf(.03,.05)),x3:0}:null,
+   sym:4,st:[pick([4,1,4]),ri(70,110)],gap:f2(rf(.05,.3)),text:'mirror'})},
+ embroidery:{pal:'Embroidery',f:()=>({
+   f:{lay:7,x2:2,D:ri(7,10),mot:sub(ms('flower star8 cross lozenge dots spiky'),3),pick:2,cmode:1,n:ri(2,3),size:f2(rf(.8,.95)),tbg:0},
+   m:{lay:pick([4,5,0]),D:ri(5,7),x2:f2(rf(.42,.58)),x3:f2(rf(.1,.2)),x4:0,mot:sub(ms('chevron flower diamond stepd zigzag'),3),pick:1,tbg:1},
+   b:{D:1,mot:ms('zigzag'),x2:f2(rf(.02,.035)),x3:f2(rf(.2,.35)),ink:1},
+   sym:3,st:[2,ri(100,140)],text:'woven'})},
+ kilim:{pal:'Kilim drawing',f:()=>({
+   f:{lay:5,D:ri(5,9),asp:f2(rf(1,1.6)),mot:sub(ms('chevron zigzag stepd checker teeth hook comb herring bird stripes diamond lozenge'),ri(5,8)),pick:1,cmode:0,n:ri(2,4),w:f2(rf(.6,1)),tbg:R()<.5?1:0},
+   m:R()<.4?{lay:0,D:ri(3,5),x2:f2(rf(.2,.35)),x4:ri(8,14),mot:ms('stepd diamond'),pick:1,tbg:1}:null,b:null,
+   sym:pick([1,3]),st:[pick([2,1]),ri(70,110)],text:'swap'})},
+ illumination:{pal:'Illumination',f:()=>({
+   f:{lay:0,D:ri(8,14),mot:[M.cube],cmode:3,ink:1,size:1,tbg:0},
+   m:null,b:{D:1,mot:sub(ms('flower rosette quatre spiky dots'),3),pick:0,cmode:1,x1:1,x2:f2(rf(.09,.13)),x3:0,tbg:0,size:f2(rf(.8,.95))},
+   sym:pick([0,1]),st:[0,90],text:'recolor'})},
+ harlequin:{pal:'Harlequin',f:()=>({
+   f:{lay:1,D:ri(4,7),asp:f2(rf(.5,.7)),mot:[M.spiky],cmode:3,ink:0,size:f2(rf(.55,.8)),w:f2(rf(.2,.6)),tbg:2,rot:0},
+   m:null,b:null,sym:3,st:[0,90],grain:true,wear:true,text:'mirror'})},
+ rose:{pal:'Rose window',f:()=>({
+   f:{lay:pick([0,0,4]),x2:ri(6,12),D:ri(3,5),mot:sub(ms('roundel rosette flower quatre'),ri(2,3)),pick:2,cmode:1,n:ri(2,4),tbg:1},
+   m:R()<.4?{lay:2,D:ri(3,5),x2:f2(rf(.3,.45)),mot:ms('flower rosette spiky'),pick:1,tbg:1}:null,
+   b:{D:ri(1,2),mot:sub(ms('dots stripes lozenge'),2),pick:1,x2:f2(rf(.03,.06)),x3:f2(rf(0,.2)),cmode:1},
+   sym:pick([3,4,5]),st:[0,90],ld:[1,f2(rf(.3,.6))],text:'lead'})},
+ ember:{pal:'Ember',f:()=>({
+   f:{lay:1,D:ri(4,6),mot:sub(ms('flower gul rosette boteh spiky'),3),pick:0,cmode:1,tbg:1},
+   m:{lay:0,D:ri(5,7),x2:f2(rf(.55,.75)),x3:f2(rf(0,.15)),mot:sub(ms('flower diamond dots stepd spiky'),4),pick:1,cmode:0,tbg:1},
+   b:{D:ri(1,2),mot:sub(ms('flower dots rosette'),2),pick:1,x2:f2(rf(.04,.06)),x3:.1,cmode:1,tbg:1},
+   sym:3,st:[0,90],ld:[1,f2(rf(.25,.45))],wear:true,text:'woven'})},
+ navajo:{pal:'Navajo',f:()=>({
+   f:{lay:0,D:ri(3,5),mot:sub(ms('stepd toothd cross lozenge'),3),pick:2,cmode:1,tbg:1},
+   m:{lay:0,D:ri(4,6),x2:f2(rf(.45,.6)),x3:f2(rf(.3,.5)),x4:ri(10,18),mot:sub(ms('stepd diamond flower'),2),pick:1,tbg:1},
+   b:{D:ri(2,3),mot:sub(ms('teeth zigzag diamond'),3),pick:1,x2:f2(rf(.05,.08)),x3:f2(rf(.05,.15)),cmode:0},
+   sym:3,st:[pick([0,1]),ri(70,100)],text:'mirror'})},
+ caucasian:{pal:'Caucasian',f:()=>({
+   f:{lay:1,D:ri(3,5),mot:sub(ms('toothd stepd lozenge hook boteh'),2),pick:0,cmode:pick([1,2]),tbg:1},
+   m:{lay:pick([3,0]),x1:pick([1,2]),D:ri(3,5),x2:f2(rf(.3,.4)),x3:f2(rf(0,.2)),x4:R()<.5?0:ri(8,14),mot:sub(ms('gul cross boteh flower wave'),3),pick:1,tbg:1},
+   b:{D:1,mot:sub(ms('zigzag lozenge'),1),x2:f2(rf(.04,.06)),x3:f2(rf(.15,.3)),cmode:1},
+   sym:3,st:[0,90],wear:true,text:'woven'})},
+ patchwork:{pal:'Patchwork',f:()=>({
+   f:{lay:8,D:ri(3,6),mot:sub(ms('toothd stepd stripes zigzag lozenge chevron diamond checker'),ri(5,8)),pick:0,cmode:1,n:ri(2,4),tbg:1},
+   m:null,b:null,sym:0,st:[pick([0,0,6]),ri(110,150)],wear:true,text:'knock'})},
+ brocade:{pal:'Brocade',f:()=>({
+   f:{lay:6,D:ri(6,12),mot:sub(ms('lozenge dots rosette stepd flower chevron stripes'),ri(4,6)),pick:1,cmode:0,n:ri(2,3),tbg:R()<.6?1:0},
+   m:null,b:null,sym:1,st:[pick([0,6]),ri(120,160)],text:'swap'})},
+ ikat:{pal:'Ikat',f:()=>({
+   f:{lay:5,D:ri(3,5),asp:f2(rf(.8,1.2)),mot:sub(ms('ikat comb hook lozenge toothd diamond'),ri(3,5)),pick:1,cmode:0,n:ri(2,4),tbg:R()<.5?1:0},
+   m:null,b:null,sym:1,st:[0,90],text:'invert'})},
+ tribal:{pal:'Night tribal',f:()=>({
+   f:{lay:1,D:ri(3,5),mot:sub(ms('hook fir bird lozenge toothd quatre'),3),pick:0,cmode:1,n:ri(3,5),tbg:0},
+   m:R()<.3?{lay:0,D:ri(4,6),x2:f2(rf(.3,.45)),mot:ms('diamond toothd'),pick:1,tbg:0}:null,b:null,
+   sym:3,st:[0,90],ld:[2,f2(rf(.25,.45))],text:'mirror'})},
+};
+function freeField(){return {lay:ri(0,8),x1:ri(0,6),x2:ri(2,10),D:ri(3,10),asp:R()<.8?1:f2(rf(.6,1.6)),
+  mot:sub([...MOTIFS.keys()],ri(1,5)),pick:+pickW({0:3,1:3,2:2,3:1,4:1}),cmode:+pickW({0:3,1:3,2:2,3:1,4:1}),
+  n:ri(2,5),w:f2(rf(.4,.9)),size:R()<.7?1:f2(rf(.7,.95)),rot:+pickW({0:5,1:1,2:1,3:1,4:1}),tbg:+pickW({0:3,1:3,2:2,3:1})}}
+function freeMed(){return {lay:ri(0,6),x1:+pickW({0:5,1:1,2:1,3:1,4:1}),D:ri(3,7),x2:f2(rf(.3,.7)),x3:R()<.5?0:f2(rf(.1,.4)),x4:R()<.6?0:ri(8,18),
+  mot:sub([...MOTIFS.keys()],ri(2,4)),pick:1,cmode:pick([0,0,1]),n:ri(2,4),w:f2(rf(.4,.9)),tbg:pick([1,1,0,2])}}
+function freeBorder(){return {D:ri(1,3),mot:sub(ms('teeth dots zigzag lozenge chevron flower rosette arrow stripes diamond'),ri(1,3)),pick:1,x1:R()<.4?1:0,
+  x2:f2(rf(.03,.09)),x3:R()<.5?0:f2(rf(.08,.3)),cmode:pick([0,1]),ink:ri(0,3),tbg:pick([0,1]),gd:ri(0,3),fl:R()<.7,cs:R()<.5?f2(rf(.12,.3)):0}}
+function randSlotMotion(s){s.mo=+pickW({0:2,1:2,2:2,3:3,4:2,5:2});s.cyc=ri(1,2);s.mv=pick([0,0,0,1,-1])}
+/* the carpet is always animated: at least one slot flows or moves, or the symmetry spins, or colors cycle */
+/* the border moves only when its elements are large; then only synchronised band-level motion (colour steps / wave), no flow, spin or twinkle */
+const borderLarge=s=>s.x2/Math.max(1,s.D)*(s.size||1)>=.035;
+function effMotion(s,i){if(i!==2)return {mo:s.mo,cyc:s.cyc,mv:s.mv};if(!borderLarge(s))return {mo:0,cyc:1,mv:0};return {mo:(s.mo===3||s.mo===5)?s.mo:(s.mo?3:0),cyc:1,mv:0}}
+const slotMoves=(s,i)=>{const e=effMotion(s,i);return e.mo>=2||e.mv!==0};
+function ensureMotion(){
+  const on=P.slots.filter(s=>s.on);
+  if(P.slots.some((s,i)=>s.on&&slotMoves(s,i))||P.cyc!==0||(P.sym===5&&P.symSpin!==0)||P.warps.some(w=>w.on&&w.sp>0))return;
+  const nb=on.filter(x=>x!==P.slots[2]),s=nb.length?pick(nb):P.slots[0];s.on=true;s.mo=pick([2,3,3,4,5]);s.cyc=ri(1,2);s.mv=pick([1,-1,0]);if(s.mv===0&&s.mo!==3)s.mo=3;
+}
+function setSlot(i,o){P.slots[i]=mkSlot(o?Object.assign({ink:i===2?1:0},o):{on:false});if(o)randSlotMotion(P.slots[i]);if(!o)P.slots[i].on=false}
+function randSlotFree(i){setSlot(i,[freeField,freeMed,freeBorder][i]());ensureMotion()}
+let lastRecipe='free';
+function randCarpet(){
+  const keys=Object.keys(RECIPES),name=R()<.15?'free':pick(keys);lastRecipe=name;
+  if(name==='free'){randSlotFree(0);if(R()<.5)randSlotFree(1);else setSlot(1,null);if(R()<.6)randSlotFree(2);else setSlot(2,null);randSym();randWeave()}
+  else{const rc=RECIPES[name],r=rc.f();
+    setSlot(0,r.f);setSlot(1,r.m);setSlot(2,r.b);
+    if(P.slots[2].on&&r.b){const B=P.slots[2];B.gd=ri(1,3);B.fl=R()<.8;B.cs=R()<.55?f2(rf(.12,.3)):0}
+    P.slots.forEach(s=>{if(R()<.6)s.mv=0});
+    if(R()<.75){setPalette(PALETTES[palIx(rc.pal)]);P.grain=r.grain?f2(rf(.12,.3)):0}P.pile=f2(rf(.5,.9));P.abr=f2(rf(.35,.85));P.tuft=f2(rf(.5,.95));P.tufs=ri(201,320);
+    P.sym=r.sym;if(P.sym===5)P.symN=pick([6,8,12]);P.symSpin=0;P.warps.forEach(w=>w.on=false);
+    P.st=r.st[0];P.stc=r.st[1];P.stg=r.gap??f2(rf(0,.2));P.stj=f2(rf(.2,.7));
+    P.ld=0;
+    P.wear=r.wear&&R()<.7?f2(rf(.15,.45)):0;P.fm=0;
+  }
+  P.seed=ri(1,99999);fixText();
+}
+function randSym(){
+  P.sym=+pickW({0:1,1:2,2:1,3:5,4:2,5:2});P.symN=pick([4,6,8,8,12,16]);P.symSpin=R()<.3?pick([1,-1]):0;P.symRot=0;
+  for(let i=0;i<2;i++){const type=pick(WKEYS),d=WARPS[type],w=mkWarp(type,R()<[.2,.06][i]);w.op=ri(0,d.ops.length-1);w.p=d.ps.map(rq);w.sp=pick([0,0,1,1,2]);w.pu=R()<.3?+rf(.3,1).toFixed(2):0;P.warps[i]=w}
+}
+function randWarp(i){const type=pick(WKEYS),d=WARPS[type],w=mkWarp(type,true);w.op=ri(0,d.ops.length-1);w.p=d.ps.map(rq);w.sp=pick([0,0,1,1,2]);w.pu=R()<.3?+rf(.3,1).toFixed(2):0;P.warps[i]=w}
+function randWeave(){
+  P.st=0;P.stc=ri(50,130);P.stg=R()<.5?0:f2(rf(.05,.35));P.stj=f2(rf(.2,.8));
+  P.ld=0;P.lw=f2(rf(.2,.6));P.wear=R()<.25?f2(rf(.15,.5)):0;
+}
+/* plates (and the title tiles that share their colour) must be very dark or very light so they stand out from mid-tone carpets */
+function plateSane(reroll){if(P.plf==='border')return;
+  const ok=k=>{const l=lum(plateCol(k));return l<.3||l>.75};
+  if(!reroll&&ok(P.plf))return;
+  const ks=['line','line','ground','accent','ink1','ink2','ink3','text'].filter(ok);
+  if(ks.length)P.plf=pick(ks);else{P.lc='#111111';P.plf='line'}
+}
+function randText(){
+  P.tmode='woven';P.tamt=f2(rf(.35,1));P.tblur=pick([0,1,1]);
+  P.tstyle='halo';P.ttc=ri(110,190);P.tmot=0;P.tw=pick([700,900,900]);P.twfull=R()<.3;P.twpos=pickW({center:3,top:2,bottom:2,split:3}); /* thin, pixel-font strokes */
+  P.thalo=f2(rf(.3,.55));plateSane(true);P.tlay=pickW({ring:4,cross:2,pinwheel:2});P.tmir=R()<.5;P.tdiag=R()<.3;P.tsplit=R()<.5;P.tsymk=R()<.4?2:1;P.trad=f2(rf(.26,.32));
+  P.plsm=R()<.85;P.plpad=f2(rf(.4,1.2));P.plfw=f2(rf(.3,1.6));P.plh=f2(rf(0,1.4));P.rcol='auto';
+  P.plb=pick(['line','line','accent','ink1']);if(plateCol(P.plb)===plateCol(P.plf))P.plb=P.plf==='line'?'accent':'line';
+  fixText();
+}
+/* the title is always woven: only modes that draw the letters with the carpet */
+const TSTYLES={lead:'Lead line',extrude:'Extrude',inverse:'Inverse',halo:'Halo'};
+const TITLE_MODES=['woven']; /* only modes whose letter color is controlled (titleCol), so letters never merge with the halo */
+/* the carpet always fills the whole sheet */
+/* text never moves: only the carpet is animated */
+/* the border keeps only large, simple elements: wide bands, no stripes/dots/teeth, no tiny cells */
+function tidyBorder(){if(P.slots[2]&&!P.slots[2].on)setSlot(2,freeBorder()); /* the border carries the plates, so it is always there */const B=P.slots[2];if(!B||!B.on)return;
+  B.x2=Math.max(B.x2,.085);B.D=Math.max(1,Math.min(B.D,Math.floor(B.x2/.045)));B.asp=Math.max(B.asp,.9);B.n=Math.min(B.n,2);if(B.size<.6)B.size=.6;
+  const fine=new Set([M.dots,M.stripes,M.checker,M.teeth,M.zigzag,M.chevron,M.diag,M.spiral,M.ikat,M.toothd]);
+  let m=B.mot.filter(x=>!fine.has(x));if(!m.length)m=[M.diamond,M.lozenge];B.mot=m}
+function fixText(){P.strand=0; /* no pile strands */tidyBorder();P.plf='border';P.st=0;P.ld=0;P.tuft=Math.max(+P.tuft||0,.3);P.tufs=Math.max(+P.tufs||0,201); /* tufts are never off */ /* no leading */ /* no stitched / pixelated carpets */ensureMotion();P.band=false; /* the old 'Bands' boxes would flood the title mask */
+  /* a title that fills the carpet needs a light, text-width face: heavy display faces would cover everything */
+  if(P.twfull&&['Archivo Black','Anton','Unbounded','Rubik Mono One','Bricolage','Instrument Serif'].includes(P.rfont)){P.rfont='Inter';P.rax={}}
+  P.tplt=true;P.plsm=true;if(['giant','cells','scatter','mirror','center'].includes(P.tpl))P.tpl='band';if(!['top','bottom','left','right'].includes(P.tpos))P.tpos='top'; /* the middle of the carpet stays free */P.tstyle='halo';if(P.st>0)P.stc=P.tlay&&P.tlay!=='band'?Math.min(Math.max(P.stc,120),150):Math.min(P.stc,105); /* single letters need finer stitches to keep their shape */ /* stitches coarse enough for the title to hold its shape */
+  P.tplace='woven';P.fm=0;P.rmo='none';P.tfill='none';P.tsrc='big';P.plst=0;if(!TITLE_MODES.includes(P.tmode))P.tmode='woven';
+  if(['finer','coarser'].includes(P.tmode)&&!P.st)P.tmode='woven';
+  if(P.tplace==='woven'&&['giant','cells','scatter'].includes(P.tpl))P.tpl='center';
+  P.twv=true;P.tmot=0;if(!(P.st>0))P.ttc=Math.max(P.ttc,110);
+  if(!TLAYS[P.tlay])P.tlay='ring';P.twfull=false;
+  ringSync();
+  if(P.tlay==='inscr'){const B=P.slots[2];if(!B.on)P.tlay='ring';else B.x2=Math.max(B.x2,.12)}
+}
+/* plates need room around them: no page-filling titles */
+const PLATE_TPL=['center','corners','stagger','columns','axis','repeat','vertical','mirror','bands','center'];
+function randLayout(){
+  P.tpl=pick([...Object.keys(TEMPLATES),'giant','giant','cells']);P.stairs=pick([0,0,0,1,2]);
+  if(!USERF[P.rfont]){P.rfont=pick(Object.keys(READ_FONTS).filter(n=>!USERF[n]));P.rax={}}P.tw=pick([500,700,900,900]);
+  P.tspan=+rf(.45,1).toFixed(2);P.body=ri(11,20);P.mid=+rf(1.7,3.2).toFixed(2);P.lead=+rf(1.05,1.3).toFixed(2);
+  P.cols=pick([4,6,6,8,8,12]);P.rows=pick([6,8,12,12,16]);P.margin=ri(22,60);P.gutter=ri(6,22);
+  P.rcase=pick(['none','upper','upper','lower']);P.band=R()<.1;P.rblend='source-over';
+}
+function randRMotion(){P.rmo=R()<.35?'none':pick(Object.keys(RMOTION));P.rmoAmt=+rf(.25,1).toFixed(2);P.rmoSpd=ri(1,3)}
+function hsl(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return '#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('')}
+
+/* ================= UI ================= */
+const panel=$('#panel');
+const openS=new Set(); /* every group starts collapsed; open state is kept only while the page is open */
+const DICE_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="8.5" r=".9" fill="currentColor"/><circle cx="12" cy="12" r=".9" fill="currentColor"/><circle cx="8.5" cy="15.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="15.5" r=".9" fill="currentColor"/></svg>';
+function changed(){dirty=true;saveSoon()}
+function el(t,props={}){return Object.assign(document.createElement(t),props)}
+function sec(id,title,{dice,on,tag}={}){
+  const d=el('details');d.open=openS.has(id);
+  d.addEventListener('toggle',()=>{d.open?openS.add(id):openS.delete(id)});
+  const s=el('summary');s.append(title);if(tag)s.append(el('span',{className:'tag',textContent:tag}));
+  if(on){const [o,k]=on;const hc=el('input',{type:'checkbox',className:'hdr',checked:!!o[k],title:'On / off'});
+    hc.addEventListener('click',e=>e.stopPropagation());
+    hc.addEventListener('input',()=>{o[k]=hc.checked;d.classList.toggle('off',!hc.checked);changed()});
+    s.append(hc);d.classList.toggle('off',!o[k])}
+  if(dice){const b=el('button',{type:'button',className:'dice',title:'Randomize this group',innerHTML:DICE_SVG});
+    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();dice();changed();buildUI()});s.append(b)}
+  d.append(s);panel.append(d);return d;
+}
+function rowEl(d,label,ctl,v){const r=el('div',{className:'row'+(v?'':' wide')});r.append(el('label',{textContent:label}),ctl);if(v)r.append(v);d.append(r);return r}
+function cRange(d,o,k,mn,mx,st,label,cb){
+  const i=el('input',{type:'range',min:mn,max:mx,step:st,value:o[k]}),v=el('span',{className:'v',textContent:fmt(o[k])});
+  i.oninput=()=>{o[k]=+i.value;v.textContent=fmt(o[k]);changed();cb&&cb()};rowEl(d,label,i,v)}
+function cSel(d,o,k,opts,label,cb){
+  const s=el('select');const list=Array.isArray(opts)?opts:Object.entries(opts);
+  list.forEach(op=>{const [val,t]=Array.isArray(op)?op:[op,op];s.append(el('option',{value:val,textContent:t}))});
+  s.value=String(o[k]);s.onchange=()=>{o[k]=typeof o[k]==='number'?+s.value:s.value;changed();cb&&cb()};rowEl(d,label,s)}
+function cChk(d,o,k,label){const i=el('input',{type:'checkbox',checked:!!o[k]});i.onchange=()=>{o[k]=i.checked;changed()};rowEl(d,label,i)}
+function cText(d,o,k,label,area){const i=el(area?'textarea':'input',area?{rows:area}:{type:'text'});i.value=o[k];i.oninput=()=>{o[k]=i.value;changed()};rowEl(d,label,i)}
+function cColor(d,o,k,label){const i=el('input',{type:'color',value:o[k]});i.oninput=()=>{o[k]=i.value;changed()};rowEl(d,label,i)}
+let fontTarget='read';
+/* font dropdown with "Load font file…" inside it, plus axis sliders when the chosen font is variable */
+function cFont(d,key,map,target,vals){
+  const s=el('select'),cur=P[key];
+  Object.keys(map).forEach(n=>s.append(el('option',{value:n,textContent:(USERF[n]?'★ ':'')+n+(axesOf(n).length?' (variable)':'')})));
+  if(target)s.append(el('option',{value:'__load',textContent:'Load font file…'}));
+  s.value=cur;
+  s.onchange=()=>{if(s.value==='__load'){s.value=P[key];fontTarget=target;$('#fFont').click();return}P[key]=s.value;changed();buildUI()};
+  rowEl(d,'Font',s);
+  const ax=axesOf(P[key]);
+  ax.forEach(a=>{if(vals[a.tag]==null)vals[a.tag]=a.def;cRange(d,vals,a.tag,a.min,a.max,(a.max-a.min)>20?1:.01,a.name)});
+  if(ax.length){const b=el('button',{textContent:'Reset axes'});b.onclick=()=>{ax.forEach(a=>vals[a.tag]=a.def);changed();buildUI()};rowEl(d,'',b)}
+}
+
+function setPalette(pl){const c=pl[1];P.pal=[0,1,2,3,4,5,6,7].map(i=>c[i%c.length]);P.nCol=Math.max(2,c.length);P.txt=pl[2];P.acc=pl[3];P.lc=pl[4]||pl[2]}
+function randColors(){
+  if(R()<.8)setPalette(pick(PALETTES));
+  else{const h=ri(0,359),dark=R()<.4,n=ri(3,7);
+    const c=[dark?hsl(h,ri(20,60),ri(5,12)):hsl(h,ri(15,40),ri(88,95))];
+    for(let i=1;i<n;i++)c.push(hsl((h+ri(60,300)+i*ri(30,100))%360,ri(55,95),dark?ri(50,70):ri(32,55)));
+    P.pal=[0,1,2,3,4,5,6,7].map(i=>c[i%n]);P.nCol=n;P.txt=dark?'#f4f4f4':'#111111';P.acc=c[1];P.lc=dark?'#000000':'#111111'}
+  P.cyc=R()<.1?pick([-1,1]):0;P.grain=R()<.2?f2(rf(.1,.35)):0;P.pile=f2(rf(.4,.9));P.abr=f2(rf(.3,.85));P.tuft=f2(rf(.5,.95));P.tufs=ri(201,320);
+}
+/* carpets may be bright: most dark-ground palettes swap the ground with their lightest ink */
+function brighten(){if(lum(P.pal[0])>=.3||R()>.85)return;let bi=0,bl=-1;for(let i=1;i<P.nCol;i++){const l=lum(P.pal[i]);if(l>bl){bl=l;bi=i}}
+  if(bi&&bl>.5){const t=P.pal[0];P.pal[0]=P.pal[bi];P.pal[bi]=t;P.txt='#151515';P.lc='#151515'}}
+/* stitched carpets: no dusty motifs, structure instead of confetti */
+function stitchTidy(){if(!(P.st>0))return;const F=P.slots[0];
+  if(F.on){P.tuft=Math.max(P.tuft,.55);const bad=new Set([M.solid,M.dots,M.checker,M.teeth,M.spiral]);let m=F.mot.filter(x=>!bad.has(x));if(!m.length)m=[M.diamond,M.stepd,M.hook];F.mot=m;if(F.pick===0)F.pick=1;
+    P.stc=Math.max(P.stc,Math.min(105,Math.round(12*F.D)))}
+  if(!P.slots[1].on&&R()<.5)randSlotFree(1);if(!P.slots[2].on&&R()<.5)randSlotFree(2)}
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const dayKey=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()};
+/* Carpet of the day: the same carpet for everyone on a given date (text is kept) */
+function dayCarpet(){RNG=mulberry(Math.imul(dayKey(),2654435761)>>>0);try{randAll()}finally{RNG=Math.random}}
+function randAll(){randLayout();randColors();randCarpet();brighten();stitchTidy();randText();
+  /* mirrored letters fold the title four ways: a giant title would cover the whole carpet */
+  P.tpl='band';P.tpos=pickW({top:3,bottom:3,left:1,right:1});if(P.rmo==='step')P.rmo='none';fixText();}
+function fixBlend(){}
+
+/* the motif set: toggle chips, order = order of clicks (Pick by uses this order) */
+function cMotifs(d,s){
+  const w=el('div',{className:'chips'});
+  MOTIFS.forEach((n,i)=>{const b=el('button',{type:'button',textContent:n,className:s.mot.includes(i)?'on':''});
+    b.onclick=()=>{const j=s.mot.indexOf(i);if(j>=0){if(s.mot.length>1)s.mot.splice(j,1)}else if(s.mot.length<16)s.mot.push(i);changed();buildUI()};w.append(b)});
+  d.append(w);
+}
+const subh=(d,t)=>d.append(el('div',{className:'subh',textContent:t}));
+const motTag=s=>s.mot.length===1?MOTIFS[s.mot[0]]:s.mot.length+' motifs';
+function slotCommon(d,s){
+  subh(d,'Motifs');cMotifs(d,s);
+  cSel(d,s,'pick',PICKS.map((m,j)=>[j,m]),'Pick by');
+  if(s.mot.some(v=>BANDED.has(v)))cRange(d,s,'n',1,8,1,'Bands');
+  cRange(d,s,'w',0,1,.01,'Weight');
+  cRange(d,s,'size',.1,1,.01,'Size');
+  cSel(d,s,'rot',ROTS.map((m,j)=>[j,m]),'Rotation');
+  subh(d,'Color');
+  cSel(d,s,'cmode',CMODES.map((m,j)=>[j,m]),'Color by');
+  cRange(d,s,'ink',0,6,1,'Ink');
+  cSel(d,s,'tbg',CGROUND.map((m,j)=>[j,m]),'Cell ground');
+  subh(d,'Motion');
+  cSel(d,s,'mo',MOTIONS.map((m,j)=>[j,m]),'Motion');
+  cRange(d,s,'cyc',1,4,1,'Cycles');
+  cRange(d,s,'mv',-2,2,1,'Flow');
+}
+
+function buildUI(){
+  const sc=panel.scrollTop;panel.innerHTML='';
+  let d;
+  if(P.wall){d=sec('wall','Wall',{tag:'static preview',dice:makeWallSet});
+    cRange(d,P,'wallN',2,8,1,'Banners');
+    cSel(d,P,'wallMode',[['mix','Random designs + presets'],['series','Series — presets'],['repeat','Repeat'],['phases','Loop phases']],'Show');
+    cRange(d,P,'wallPeople',0,8,1,'People, max');
+    cChk(d,P,'wallTex','Concrete texture');
+    d.append(el('div',{className:'hint',textContent:'Random designs: the current poster hangs in the middle, the others are random designs with neighbouring text presets. Random and the dice reshuffle designs, people and the wall. Scrub the timeline to pick the frame. Click a neighbouring poster to make it the current one (with your text). PNG exports the wall.'}))}
+  d=sec('text','Copy',{on:[P,'tshow']});
+  /* text presets; Custom = your own text, saved on every edit and never overwritten by a sample */
+  const sl=el('select');sl.append(el('option',{value:-1,textContent:P.custom?'Custom — your text':'Custom — type your own'}));
+  PRESETS.forEach((pr,i)=>{const n=pr.desc?pr.desc.split('\n').length:0;sl.append(el('option',{value:i,textContent:pr.n+' · '+(n?n+' line'+(n>1?'s':''):'title only')}))});
+  sl.value=String(P.preset??-1);sl.onchange=()=>applyPreset(+sl.value);rowEl(d,'Preset',sl);
+  const toCustom=()=>{P.preset=-1;P.custom=txtSnap();sl.value='-1';sl.options[0].textContent='Custom — your text'};
+  cText(d,P,'title','Title',2);d.lastChild.querySelector('textarea,input').addEventListener('input',toCustom);
+  d.append(el('div',{className:'hint',textContent:'The title is set into the carpet. Every word of the description gets its own plate, spread evenly round the edge of the carpet and mirrored left to right.'}));
+  cText(d,P,'desc','Description',3);d.lastChild.querySelector('textarea,input').addEventListener('input',toCustom);
+
+  d=sec('lay','Layout',{dice:()=>{randLayout();fixText()},tag:'Swiss grid'});
+  cFont(d,'rfont',READ_FONTS,'read',P.rax);
+  if(!axesOf(P.rfont).some(a=>a.tag==='wght'))cSel(d,P,'tw',[[300,'Light'],[400,'Regular'],[500,'Medium'],[700,'Bold'],[900,'Black']],'Title weight');
+  cRange(d,P,'tspan',.3,1,.01,'Title span');
+  cRange(d,P,'body',8,30,1,'Body size');
+  cRange(d,P,'mid',1.2,4,.01,'Date scale');
+  cRange(d,P,'lead',.9,1.6,.01,'Leading');
+  cRange(d,P,'stairs',0,4,.25,'Stairs');
+  cRange(d,P,'cols',2,16,1,'Columns');cRange(d,P,'rows',2,24,1,'Rows');
+  cRange(d,P,'margin',0,120,1,'Margin');cRange(d,P,'gutter',0,60,1,'Gutter');
+  cSel(d,P,'rcase',CASES,'Case');
+  cSel(d,P,'rblend',BLENDS,'Blend');
+  cChk(d,P,'band','Bands');cChk(d,P,'grid','Show grid');
+
+  d=sec('tx','Text × carpet',{dice:randText,tag:'Woven',on:[P,'tx']});
+  cText(d,P,'wov','Woven text (empty = title)',2);
+  cSel(d,P,'tlay',TLAYS,'Title layout',()=>{fixText();buildUI()});
+  if(P.tlay==='ring')cSel(d,P,'tsymk',[[1,'Axes = letters'],[2,'Axes = 2 × letters']],'Pattern axes',()=>{fixText();buildUI()});
+  if(P.tlay!=='band'){if(P.tlay==='cross')cChk(d,P,'tmir','Alternate direction');if(P.tlay==='ring'||P.tlay==='pinwheel')cRange(d,P,'trad',.18,.4,.005,'Radius');if(P.tlay==='cross'){cChk(d,P,'tdiag','Diagonals (X)');cChk(d,P,'tsplit','Different letters per axis')}}
+  subh(d,'Plates');
+  subh(d,'Small text');
+
+  {const chk=(k,l)=>{const i=el('input',{type:'checkbox',checked:!!P[k]});i.onchange=()=>{P[k]=i.checked;changed();buildUI()};rowEl(d,l,i)};
+   }
+  if(P.twv&&P.twfull)cSel(d,P,'twpos',[['center','Center'],['top','Top'],['bottom','Bottom'],['split','Split: top + bottom']],'Position');
+  d.append(el('div',{className:'hint',textContent:'Woven title: on stitched carpets the title is set in the stitches. Full carpet: it is stretched over the sheet, and Position decides where it sits.'}));
+  cRange(d,P,'plpad',0,2,.01,'Padding');
+  cSel(d,P,'plf',PLCOLS,'Plate / halo color');
+  d.append(el('div',{className:'hint',textContent:'Every line of text sits on its own flat plate set into the carpet. On stitched carpets (cross-stitch, beads, pixels…) the title is instead set in the stitches themselves. Plate color and the text color on it are always a contrasting pair.'}));
+
+  const F=P.slots[0],Md=P.slots[1],B=P.slots[2];
+  d=sec('fld','Field',{dice:()=>randSlotFree(0),on:[F,'on'],tag:FLAYOUTS[F.lay]+' · '+motTag(F)});
+  cSel(d,F,'lay',FLAYOUTS.map((m,j)=>[j,m]),'Layout',buildUI);
+  if(F.lay===3)cSel(d,F,'x1',MSHAPES.map((m,j)=>[j,m]),'Ring shape');
+  if(F.lay===4)cRange(d,F,'x2',3,24,1,'Sectors');
+  if(F.lay===7)cRange(d,F,'x2',1,6,1,'Panels');
+  cRange(d,F,'D',1,30,.5,'Density');
+  cRange(d,F,'asp',.3,3,.01,'Cell aspect');
+  slotCommon(d,F);
+
+  d=sec('med','Medallion',{dice:()=>randSlotFree(1),on:[Md,'on'],tag:MSHAPES[Md.lay]+(Md.x1?' · '+PLACES[Md.x1]:'')});
+  cSel(d,Md,'lay',MSHAPES.map((m,j)=>[j,m]),'Shape');
+  cSel(d,Md,'x1',PLACES.map((m,j)=>[j,m]),'Placement');
+  cRange(d,Md,'x2',.05,1.2,.01,'Size');
+  cRange(d,Md,'D',1,12,1,'Rings');
+  cRange(d,Md,'x3',0,1,.01,'Halo');
+  cRange(d,Md,'x4',0,30,1,'Steps');
+  cRange(d,Md,'asp',.3,3,.01,'Aspect');
+  slotCommon(d,Md);
+
+  d=sec('brd','Border',{dice:()=>randSlotFree(2),on:[B,'on'],tag:B.D+(B.D>1?' bands':' band')});
+  cRange(d,B,'x2',.01,.25,.001,'Width');
+  cRange(d,B,'D',1,6,1,'Bands');
+  cRange(d,B,'x3',0,.6,.01,'Guard lines');
+  cRange(d,B,'gd',0,3,1,'Guard stripes');cChk(d,B,'fl','Field line');cRange(d,B,'cs',0,.4,.01,'Corner pieces');
+  cSel(d,B,'x1',[[0,'Mitred'],[1,'Corner blocks']],'Corners');
+  cRange(d,B,'asp',.3,3,.01,'Cell aspect');
+  slotCommon(d,B);
+
+  d=sec('sym','Symmetry',{dice:randSym,tag:SYMS[P.sym]});
+  cSel(d,P,'sym',SYMS.map((m,j)=>[j,m]),'Symmetry',buildUI);
+  if(P.sym===5){cRange(d,P,'symN',2,24,1,'Segments');cRange(d,P,'symRot',-180,180,1,'Rotate');cRange(d,P,'symSpin',-2,2,1,'Spin')}
+  d.append(el('div',{className:'hint',textContent:'The fold is applied before the Field and Medallion, so every layout becomes mirrored. The Border is always symmetric.'}));
+  P.warps.forEach((w,i)=>{
+    const df=WARPS[w.type];
+    d=sec('w'+i,'Space '+(i+1),{dice:()=>{randWarp(i)},on:[w,'on'],tag:df.n});
+    cSel(d,w,'type',WKEYS.map(k=>[k,WARPS[k].n]),'Warp',()=>{const n=WARPS[w.type];w.p=n.ps.map(q=>q[4]);w.op=0;buildUI()});
+    cSel(d,w,'op',df.ops.map((m,j)=>[j,m]),'Variant');
+    df.ps.forEach((q,j)=>cRange(d,w.p,j,q[1],q[2],q[3],q[0]));
+    cRange(d,w,'sp',0,4,1,'Speed');
+    cRange(d,w,'pu',0,1,.01,'Pulse');
+  });
+
+  d=sec('wv','Weave',{dice:randWeave,tag:'Pile'});
+  
+  if(P.st){cRange(d,P,'stc',20,240,1,'Stitches');cRange(d,P,'stg',0,1,.01,'Gap');if(P.st>=5)cRange(d,P,'stj',0,1,.01,'Jitter')}
+  cRange(d,P,'wear',0,1,.01,'Wear');
+  cRange(d,P,'pile',0,1,.01,'Pile (wool)');cRange(d,P,'abr',0,1,.01,'Abrash (dye)');cRange(d,P,'tuft',.3,1,.01,'Tufts (cut pile)');cRange(d,P,'tufs',201,400,1,'Tuft density');
+  d.append(el('div',{className:'hint',textContent:'Pile: wool texture, uneven dye (abrash) and cut-pile tufts. Tufts give the colour edges their ragged, furry look.'}));
+
+  d=sec('col','Color',{dice:()=>{randColors();plateSane()}});
+  cSel(d,{v:''},'v',[['','— palette —'],...PALETTES.map((p,i)=>[i,p[0]])],'Palette',()=>{});
+  d.lastChild.querySelector('select').onchange=e=>{const i=e.target.value;if(i==='')return;setPalette(PALETTES[+i]);changed();buildUI()};
+  const ik=el('div',{className:'inks'});P.pal.forEach((c,i)=>{const x=el('input',{type:'color',value:c,title:i?'Ink '+i:'Ground'});if(i>=P.nCol)x.classList.add('dim');x.oninput=()=>{P.pal[i]=x.value;changed()};ik.append(x)});rowEl(d,'Ground, inks',ik);
+  cRange(d,P,'nCol',2,8,1,'Count',()=>{[...ik.children].forEach((x,i)=>x.classList.toggle('dim',i>=P.nCol))});
+  cRange(d,P,'cyc',-3,3,1,'Color cycle');
+  cRange(d,P,'grain',0,1,.01,'Grain');
+  cColor(d,P,'txt','Text');cColor(d,P,'acc','Accent');cColor(d,P,'lc','Lines');
+
+
+  d=sec('exp','Export');
+  cSel(d,P,'fmt',Object.keys(FORMATS),'Format',updLabels);
+  cRange(d,P,'loop',2,20,1,'Loop, s',updLabels);
+  cSel(d,P,'q',[[.5,'Fast (½)'],[.75,'Normal (¾)'],[1,'Full']],'Preview');
+  cChk(d,P,'aa','Smooth edges');
+  cSel(d,P,'pngScale',[[1,'×1'],[2,'×2'],[3,'×3']],'PNG scale',updLabels);
+  cSel(d,P,'mp4Scale',[[1,'×1'],[2,'×2']],'MP4 scale',updLabels);
+  cSel(d,P,'fps',[[24,'24'],[25,'25'],[30,'30'],[60,'60']],'MP4 fps');
+  cSel(d,P,'mq',[[.08,'Light'],[.15,'Normal'],[.3,'High']],'MP4 quality');
+  cRange(d,P,'seed',1,99999,1,'Seed');
+  d.append(el('div',{className:'hint',id:'sizeHint'}));
+  updLabels();
+  panel.scrollTop=sc;
+}
+function updLabels(){
+  const [bw,bh]=baseSize();$('#bPng').textContent=`PNG ×${P.pngScale}`;
+  const h=$('#sizeHint');if(h)h.textContent=`PNG ${bw*P.pngScale}×${bh*P.pngScale} · MP4 ${bw*P.mp4Scale}×${bh*P.mp4Scale}, ${P.loop}s loop`;
+}
+
+
+/* ================= font upload ================= */
+/* ================= font upload ================= */
+/* fvar reader (axes of a variable font): TTF/OTF/WOFF; WOFF2 is brotli-compressed and can't be read here */
+async function readFvar(buf){
+  const dv=new DataView(buf);
+  const tag=o=>String.fromCharCode(dv.getUint8(o),dv.getUint8(o+1),dv.getUint8(o+2),dv.getUint8(o+3));
+  const sig=tag(0);
+  const inflate=async u8=>{const ds=new DecompressionStream('deflate');const w=ds.writable.getWriter();w.write(u8);w.close();return new Uint8Array(await new Response(ds.readable).arrayBuffer())};
+  const grab=async name=>{
+    if(sig==='wOFF'){const n=dv.getUint16(12);
+      for(let i=0;i<n;i++){const o=44+i*20;if(tag(o)===name){const off=dv.getUint32(o+4),cl=dv.getUint32(o+8),ol=dv.getUint32(o+12);
+        const raw=new Uint8Array(buf,off,cl);const u8=cl<ol?await inflate(raw):raw.slice();return new DataView(u8.buffer,u8.byteOffset,u8.byteLength)}}
+      return null}
+    if(sig==='wOF2')throw new Error('woff2');
+    const base=sig==='ttcf'?dv.getUint32(12):0,n=dv.getUint16(base+4);
+    for(let i=0;i<n;i++){const o=base+12+i*16;if(tag(o)===name)return new DataView(buf,dv.getUint32(o+8),dv.getUint32(o+12))}
+    return null};
+  const tbl=await grab('fvar');if(!tbl)return [];
+  const names={};
+  try{const nt=await grab('name');if(nt){const cnt=nt.getUint16(2),so=nt.getUint16(4);
+    for(let i=0;i<cnt;i++){const o=6+i*12,pid=nt.getUint16(o),id=nt.getUint16(o+6),len=nt.getUint16(o+8),off=nt.getUint16(o+10);
+      if(names[id]&&pid!==3)continue;let t='';
+      if(pid===3||pid===0){for(let j=0;j<len;j+=2)t+=String.fromCharCode(nt.getUint16(so+off+j))}
+      else if(pid===1){for(let j=0;j<len;j++)t+=String.fromCharCode(nt.getUint8(so+off+j))}
+      if(t)names[id]=t}}}catch(e){}
+  const ao=tbl.getUint16(4),cnt=tbl.getUint16(8),sz=tbl.getUint16(10),axes=[];
+  const t4=o=>String.fromCharCode(tbl.getUint8(o),tbl.getUint8(o+1),tbl.getUint8(o+2),tbl.getUint8(o+3)),fx=o=>tbl.getInt32(o)/65536;
+  for(let i=0;i<cnt;i++){const o=ao+i*sz,tg=t4(o);axes.push({tag:tg,min:fx(o+4),def:fx(o+8),max:fx(o+12),name:names[tbl.getUint16(o+18)]||AXNAMES[tg]||tg})}
+  return axes;
+}
+const AXNAMES={wght:'Weight',wdth:'Width',slnt:'Slant',ital:'Italic',opsz:'Optical size'};
+let fontCount=0;
+$('#fFont').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;e.target.value='';
+  try{
+    const buf=await f.arrayBuffer();let axes=[],note='';
+    try{axes=await readFvar(buf.slice(0))}
+    catch(err){if(err&&err.message==='woff2'){axes=[{tag:'wght',min:100,def:400,max:900,name:'Weight'},{tag:'wdth',min:50,def:100,max:200,name:'Width'}];
+      note='WOFF2: axes can\'t be read, showing typical wght/wdth. Load TTF/OTF for the exact axes.'}}
+    const fam='LLUser'+(++fontCount),wa=axes.find(a=>a.tag==='wght'),wd=axes.find(a=>a.tag==='wdth');
+    let ff=null,lastErr=null;
+    for(const desc of [()=>{const d={};if(wa&&wa.min>=1&&wa.max<=1000)d.weight=`${wa.min} ${wa.max}`;if(wd)d.stretch=`${wd.min}% ${wd.max}%`;return d},()=>({}),()=>({weight:'100 900'})]){
+      try{ff=new FontFace(fam,buf.slice(0),desc());await ff.load();break}catch(err){lastErr=err;ff=null}}
+    if(!ff)throw lastErr||new Error('browser rejected the font');
+    document.fonts.add(ff);
+    let name=f.name.replace(/\.[^.]+$/,'');while(READ_FONTS[name]&&!USERF[name])name+=' *';
+    USERF[name]={axes};READ_FONTS[name]=`"${fam}"`;
+    const vals={};axes.forEach(a=>vals[a.tag]=a.def);
+    P.rfont=name;P.rax=vals;
+    lastVar='';changed();buildUI();toast('Font loaded: '+name+(axes.length?` · ${axes.length} axes`:''));
+    if(note)setTimeout(()=>alert(note),50);
+  }catch(err){alert('Could not load this font: '+(err&&err.message||err))}
+};
+
+/* ================= export ================= */
+function dl(blob,name){const a=el('a',{href:URL.createObjectURL(blob),download:name});a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+const tick=()=>new Promise(r=>setTimeout(r,0));
+const needsWarm=()=>false;
+async function warm(phEnd,fps,btn,label){
+  const N=Math.max(1,Math.round(P.loop*fps));
+  for(let i=0;i<N;i++){render(((phEnd-1+i/N)%1+1)%1,1/fps);if(i%6===0){btn.textContent=`${label} warm ${Math.round(i/N*100)}%`;await tick()}}
+}
+/* ================= wall preview ================= */
+const wcv=$('#wall'),wctx=wcv.getContext('2d');
+let wallNoise=null,wallSet=null;
+function wallTexture(){
+  if(wallNoise)return wallNoise;wallNoise=el('canvas');wallNoise.width=wallNoise.height=256;const c=wallNoise.getContext('2d');
+  for(let i=0;i<9000;i++){c.fillStyle=R()<.5?'rgba(0,0,0,.12)':'rgba(255,255,255,.035)';c.fillRect(R()*256,R()*256,1+R()*2,1+R()*2)}return wallNoise}
+/* settings that every banner on the wall shares (format, timing, export, wall itself) */
+const WALL_KEEP=['fmt','q','aa','loop','pngScale','mp4Scale','fps','mq','wall','wallN','wallMode','wallPeople','wallTex','tshow','preset','custom',...TXT_KEYS];
+/* a fixed set of random designs, so the wall doesn't change on every redraw; the dice reshuffles it */
+/* ---------- dark concrete wall: panels, joints, tie holes, cracks, stains, poster scraps ---------- */
+let wallSeed=1,wallBG=null;
+function wMulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function buildWallBG(W,H){
+  const key=W+'x'+H+':'+wallSeed+':'+(P.wallTex?1:0);if(wallBG&&wallBG.key===key)return wallBG.cv;
+  const cvs=el('canvas');cvs.width=W;cvs.height=H;const c=cvs.getContext('2d'),r=wMulberry(wallSeed*9973+7),rr=(a,b)=>a+r()*(b-a),s=W/2000;
+  let g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2b2926');g.addColorStop(1,'#1c1b19');c.fillStyle=g;c.fillRect(0,0,W,H);
+  if(P.wallTex){
+    /* mottling: big soft patches, lighter and darker */
+    for(let i=0;i<70;i++){const x=rr(0,W),y=rr(0,H),R=rr(60,320)*s,l=r()<.5;g=c.createRadialGradient(x,y,0,x,y,R);
+      g.addColorStop(0,l?'rgba(255,245,230,.045)':'rgba(0,0,0,.12)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x-R,y-R,2*R,2*R)}
+    /* concrete panels: joints with a dark groove and a lit lower/right lip, formwork tie holes */
+    const pw=W/rr(2.6,3.6),ph=H/rr(1.6,2.2),ox=-rr(0,pw),oy=-rr(0,ph);
+    const groove=(x0,y0,x1,y1,vert)=>{c.strokeStyle='rgba(0,0,0,.55)';c.lineWidth=4*s;c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke();
+      c.strokeStyle='rgba(255,240,220,.07)';c.lineWidth=1.5*s;const d=2.6*s;c.beginPath();c.moveTo(x0+(vert?d:0),y0+(vert?0:d));c.lineTo(x1+(vert?d:0),y1+(vert?0:d));c.stroke()};
+    for(let x=ox;x<W;x+=pw)groove(x,0,x,H,true);for(let y=oy;y<H;y+=ph)groove(0,y,W,y,false);
+    for(let x=ox;x<W;x+=pw)for(let y=oy;y<H;y+=ph)for(let i=1;i<=2;i++)for(let j=1;j<=2;j++){const hx=x+pw*i/3,hy=y+ph*j/3,R=rr(5,8)*s;
+      g=c.createRadialGradient(hx-R*.3,hy-R*.3,0,hx,hy,R);g.addColorStop(0,'rgba(0,0,0,.75)');g.addColorStop(.7,'rgba(0,0,0,.45)');g.addColorStop(1,'rgba(255,240,220,.06)');
+      c.fillStyle=g;c.beginPath();c.arc(hx,hy,R,0,TAU);c.fill()}
+    /* water stains: streaks running down from the joints */
+    for(let i=0;i<14;i++){const x=rr(0,W),y=oy+ph*Math.floor(rr(0,H/ph+1)),w=rr(10,60)*s,L=rr(.15,.6)*H;
+      g=c.createLinearGradient(0,y,0,y+L);g.addColorStop(0,'rgba(0,0,0,.22)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x,y,w,L);
+      if(r()<.3){g=c.createLinearGradient(0,y,0,y+L*.6);g.addColorStop(0,'rgba(120,60,25,.14)');g.addColorStop(1,'rgba(120,60,25,0)');c.fillStyle=g;c.fillRect(x+w*.3,y,w*.4,L*.6)}}
+    /* cracks: jagged random walks with small branches */
+    const crack=(x,y,a,len,w,depth)=>{c.strokeStyle='rgba(0,0,0,.7)';c.lineWidth=w;c.beginPath();c.moveTo(x,y);
+      const pts=[[x,y]];for(let k=0;k<len;k++){a+=rr(-.55,.55);x+=Math.cos(a)*rr(6,16)*s;y+=Math.sin(a)*rr(6,16)*s;c.lineTo(x,y);pts.push([x,y]);
+        if(depth<2&&r()<.06)crack(x,y,a+rr(-1.2,1.2),Math.floor(len*.4),w*.6,depth+1)}c.stroke();
+      c.strokeStyle='rgba(255,240,220,.06)';c.lineWidth=w*.6;c.beginPath();pts.forEach(([px,py],k)=>k?c.lineTo(px+w,py+w):c.moveTo(px+w,py+w));c.stroke()};
+    for(let i=0;i<rr(4,8);i++)crack(rr(0,W),r()<.5?rr(0,H*.3):rr(H*.6,H),r()<.5?rr(-.6,.6)+Math.PI*.5:rr(-.4,.4)+(r()<.5?0:Math.PI),Math.floor(rr(12,40)),rr(1,2.2)*s,0);
+    /* spalls: chipped lighter patches */
+    for(let i=0;i<10;i++){const x=rr(0,W),y=rr(0,H),R=rr(6,22)*s;c.fillStyle='rgba(255,245,230,.05)';c.beginPath();
+      for(let k=0;k<7;k++){const a=k/7*TAU,q=R*rr(.5,1.1);k?c.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q):c.moveTo(x+Math.cos(a)*q,y+Math.sin(a)*q)}c.fill()}
+    /* scraps of old posters and tape left on the wall */
+    const papers=['#8a8479','#77716a','#6e675d','#7d6a42','#6a3a33','#4f5d66','#807a70']; /* dirty, faded paper: close to the wall tone */
+    for(let i=0;i<rr(3,7);i++){const x=rr(0,W),y=rr(0,H),w=rr(15,70)*s,h=rr(10,55)*s,rot=rr(-.25,.25);c.save();c.translate(x,y);c.rotate(rot);
+      c.fillStyle=papers[Math.floor(r()*papers.length)];c.globalAlpha=rr(.12,.28);c.beginPath();c.moveTo(0,0);
+      for(let k=1;k<=8;k++)c.lineTo(w*k/8,rr(-4,4)*s);for(let k=1;k<=6;k++)c.lineTo(w+rr(-5,5)*s,h*k/6);for(let k=7;k>=0;k--)c.lineTo(w*k/8,h+rr(-8,8)*s);c.closePath();c.fill();
+      if(r()<.4){c.globalAlpha=.1;c.fillStyle='#bdb7ab';c.fillRect(-6*s,-4*s,rr(20,40)*s,9*s)} /* tape */
+      c.restore()}
+  }
+  c.globalAlpha=1;c.fillStyle=c.createPattern(wallTexture(),'repeat');c.fillRect(0,0,W,H); /* fine grain */
+  wallBG={key,cv:cvs};return cvs;
+}
+function makeWallSet(){
+  /* work on a throw-away copy: the panel's controls stay bound to the real P */
+  const orig=P;wallSet=[null];
+  /* each random banner gets its own built-in font(s), different from the current poster's; a loaded font stays on the current poster only */
+  const fl=WALL_FONTS().map(([k,map])=>Object.keys(map).filter(n=>!(typeof USERF!=='undefined'&&USERF[n])&&n!==orig[k]).sort(()=>R()-.5));
+  for(let i=1;i<8;i++){P=JSON.parse(JSON.stringify(orig));randAll();
+    WALL_FONTS().forEach(([k,map,ax],j)=>{if(fl[j].length){P[k]=fl[j][(i-1)%fl[j].length];if(ax)P[ax]={}}});
+    if(P.rmo==='reveal')P.rmo='none'; /* a static banner must show its text: Line reveal is empty at the start of the loop */
+    WALL_KEEP.forEach(k=>delete P[k]);wallSet.push(P)}
+  P=orig;makeCrowd();wallSeed=ri(1,1e6);dirty=true; /* new wall surface too */
+}
+/* one passer-by in side view, walking (not running), opaque. L = look from makeCrowd(); 8 head-units tall */
+function drawWalker(c,x,foot,h,L,dir){
+  const u=h/8,wd=L.wd;c.save();c.translate(x,foot);c.scale(dir,1);c.lineCap='round';c.lineJoin='round';
+  /* no flat colours: every part is filled with a gradient from the lit upper-left to the shadowed lower-right */
+  const lx=-dir,GC={};
+  const G=col=>{if(GC[col])return GC[col];const g=c.createLinearGradient(lx*u*1.8,-u*8.2,-lx*u*1.8,0);
+    g.addColorStop(0,wShade(col,1.35));g.addColorStop(.38,col);g.addColorStop(1,wShade(col,.5));return GC[col]=g};
+  const hipY=-u*3.9,shY=-u*6.45,st=L.stride;
+  /* height differs by body length, not by scale: the body is stretched vertically, the head keeps its size and sits on top */
+  const hv=L.hv||1,HT=shY*(hv-1);
+  const leg=(a,col)=>{const kx=Math.sin(a)*u*1.95,ky=hipY+Math.cos(a)*u*1.95,fx=kx+Math.sin(a*.55)*u*1.6,fy=-u*.62; /* ankle sits inside the shoe */
+    c.strokeStyle=G(col);c.lineWidth=u*.78*L.legW;c.beginPath();c.moveTo(0,hipY);c.lineTo(kx,ky);c.lineTo(fx,fy);c.stroke();
+    if(L.cuffs){c.strokeStyle=G(wShade(col,1.25));c.lineWidth=u*.8*L.legW;c.beginPath();c.moveTo(fx-(fx-kx)*.08,fy-(fy-ky)*.08);c.lineTo(fx,fy);c.stroke()}
+    /* shoe with a sole */
+    c.fillStyle=G(L.shoe);c.beginPath();c.roundRect(fx-u*.35,-u*.5,u*1.1,u*.44,[u*.12,u*.3,u*.08,u*.08]);c.fill();
+    c.fillStyle=G(L.sole);c.beginPath();c.roundRect(fx-u*.35,-u*.12,u*1.12,u*.12,u*.04);c.fill()};
+  let hand=null;
+  const arm=(a,col,front)=>{const ex=Math.sin(a)*u*1.35,ey=shY+u*.25+Math.cos(a)*u*1.35,hx=ex+Math.sin(a+.35)*u*1.15,hy=ey+Math.cos(a+.35)*u*1.15;
+    c.strokeStyle=G(col);c.lineWidth=u*.6*wd;c.beginPath();c.moveTo(u*.05,shY+u*.25);c.lineTo(ex,ey);c.lineTo(hx,hy);c.stroke();
+    c.strokeStyle=G(wShade(col,.72));c.lineWidth=u*.62*wd;c.beginPath();c.moveTo(ex+(hx-ex)*.82,ey+(hy-ey)*.82);c.lineTo(hx,hy);c.stroke(); /* cuff */
+    c.fillStyle=G(L.skin);c.beginPath();c.ellipse(hx+Math.sin(a)*u*.05,hy+u*.2,u*.2,u*.27,0,0,TAU);c.fill();if(front)hand=[hx,hy+u*.2]};
+  /* behind the body */
+  if(L.hair===1){c.save();c.translate(0,HT);c.fillStyle=G(L.hairC);c.beginPath();c.roundRect(-u*.5,-u*7.75,u*.95,u*1.95,u*.4);c.fill();c.restore()}
+  c.save();c.scale(1,hv); /* body */
+  if(L.bag==='backpack'){c.fillStyle=G(L.bagC);c.beginPath();c.roundRect(-u*1.6*wd,shY+u*.05,u*.9,u*2.3,u*.3);c.fill();
+    c.fillStyle=G(wShade(L.bagC,.75));c.beginPath();c.roundRect(-u*1.75*wd,shY+u*1.2,u*.35,u*.9,u*.12);c.fill()}
+  leg(-st,L.legs2);arm(st*1.1,L.coat2);
+  leg(st,L.legs);
+  /* coat or jacket: rounded shoulders, A-line down to coatLen */
+  const bot=-u*L.coatLen,bw=u*(.95+(3.9-L.coatLen)*.08)*wd;
+  c.fillStyle=G(L.coat);c.beginPath();c.moveTo(-u*.72*wd,shY+u*.15);c.quadraticCurveTo(-u*.75*wd,shY-u*.15,-u*.35,shY-u*.2);c.lineTo(u*.45,shY-u*.2);
+  c.quadraticCurveTo(u*.82*wd,shY-u*.1,u*.8*wd,shY+u*.3);c.lineTo(bw,bot);c.quadraticCurveTo(0,bot+u*.2,-bw,bot);c.closePath();c.fill();
+  {const g=c.createLinearGradient(lx*bw,0,-lx*bw,0);g.addColorStop(0,'rgba(255,240,220,.18)');g.addColorStop(.45,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.38)');c.fillStyle=g;c.fill()}
+  /* coat details: front edge, collar, pocket, belt, hem */
+  const dk=wShade(L.coat,.72);c.strokeStyle=dk;c.lineWidth=u*.07;
+  c.beginPath();c.moveTo(u*.62*wd,shY+u*.35);c.lineTo(bw*.86,bot+u*.05);c.stroke();
+  if(L.buttons)for(let k=0;k<3;k++){c.fillStyle=dk;c.beginPath();c.arc(u*.45*wd+(bw*.8-u*.45*wd)*(k/3),shY+u*.8+k*(bot-shY-u*.8)/3.2,u*.07,0,TAU);c.fill()}
+  c.fillStyle=dk;c.beginPath();c.moveTo(-u*.1,shY-u*.18);c.lineTo(u*.55,shY-u*.12);c.lineTo(u*.2,shY+u*.55);c.closePath();c.fill();
+  c.strokeStyle=dk;c.lineWidth=u*.06;c.beginPath();c.moveTo(-u*.1,hipY+u*.35);c.lineTo(u*.55,hipY+u*.3);c.stroke();
+  if(L.belt){c.fillStyle=dk;c.fillRect(-u*.85*wd,hipY-u*.15,u*1.75*wd,u*.18)}
+  c.fillStyle=G(wShade(L.coat,.85));c.beginPath();c.moveTo(-bw,bot);c.quadraticCurveTo(0,bot+u*.2,bw,bot);c.lineTo(bw*.99,bot-u*.15);c.quadraticCurveTo(0,bot+u*.05,-bw*.99,bot-u*.15);c.fill();
+  if(L.bag==='shoulder'){c.strokeStyle=G(L.bagC);c.lineWidth=u*.12;c.beginPath();c.moveTo(u*.4,shY-u*.1);c.lineTo(-u*.6,hipY+u*.2);c.stroke();
+    c.fillStyle=G(L.bagC);c.beginPath();c.roundRect(-u*1.25,hipY-u*.1,u*1.1,u*.9,u*.15);c.fill();c.fillStyle=G(wShade(L.bagC,.75));c.fillRect(-u*1.25,hipY-u*.1,u*1.1,u*.25)}
+  /* neck, scarf, head */
+  c.fillStyle=G(wShade(L.skin,.9));c.fillRect(-u*.02,shY-u*.62,u*.4,u*.5);
+  if(L.scarf){c.fillStyle=G(L.scarf);c.beginPath();c.roundRect(-u*.28,shY-u*.48,u*.9,u*.52,u*.2);c.fill();c.fillRect(u*.08,shY,u*.3,u*1.25);
+    c.fillStyle=G(wShade(L.scarf,.8));c.fillRect(u*.08,shY+u*1.05,u*.3,u*.12)}
+  c.restore();c.save();c.translate(0,HT); /* head */
+  if(L.hair===5){c.fillStyle=G(L.coat2);c.beginPath();c.ellipse(-u*.05,-u*7.3,u*.72,u*.78,0,0,TAU);c.fill()} /* hood behind the head */
+  {const g=c.createRadialGradient(u*.18+lx*u*.25,-u*7.6,u*.05,u*.18,-u*7.35,u*.7);g.addColorStop(0,wShade(L.skin,1.18));g.addColorStop(.6,L.skin);g.addColorStop(1,wShade(L.skin,.62));
+  c.fillStyle=g;c.beginPath();c.ellipse(u*.18,-u*7.35,u*.5,u*.6,0,0,TAU);c.fill()}
+  c.beginPath();c.moveTo(u*.64,-u*7.45);c.lineTo(u*.82,-u*7.18);c.lineTo(u*.6,-u*7.12);c.fill(); /* nose */
+  c.fillStyle=G(wShade(L.skin,.85));c.beginPath();c.ellipse(-u*.05,-u*7.3,u*.12,u*.17,0,0,TAU);c.fill(); /* ear */
+  c.fillStyle='#1a1512';c.beginPath();c.arc(u*.45,-u*7.42,u*.05,0,TAU);c.fill(); /* eye */
+  c.strokeStyle=G(wShade(L.skin,.7));c.lineWidth=u*.04;c.beginPath();c.moveTo(u*.5,-u*6.98);c.lineTo(u*.62,-u*6.98);c.stroke(); /* mouth */
+  if(L.beard){c.fillStyle=G(L.hairC);c.beginPath();c.ellipse(u*.32,-u*6.95,u*.36,u*.26,.2,0,Math.PI);c.fill()}
+  if(L.glasses){c.strokeStyle='#151515';c.lineWidth=u*.05;c.strokeRect(u*.36,-u*7.52,u*.26,u*.18);c.beginPath();c.moveTo(u*.36,-u*7.45);c.lineTo(-u*.02,-u*7.4);c.stroke()}
+  /* hair / hats */
+  c.fillStyle=G(L.hairC);
+  if(L.hair<=2){c.beginPath();c.ellipse(u*.05,-u*7.55,u*.55,u*.48,-.25,Math.PI*.85,Math.PI*2.1);c.fill();c.fillRect(-u*.3,-u*7.6,u*.2,u*.55)}
+  if(L.hair===2){c.beginPath();c.arc(-u*.42,-u*7.78,u*.3,0,TAU);c.fill()}
+  if(L.hair===3||L.hair===4){c.fillStyle=G(L.hatC);c.beginPath();c.ellipse(u*.12,-u*7.62,u*.6,u*.56,0,Math.PI,TAU);c.fill();c.fillRect(-u*.48,-u*7.64,u*1.2,u*.22);
+    c.fillStyle=G(wShade(L.hatC,.8));c.fillRect(-u*.48,-u*7.48,u*1.2,u*.08);if(L.hair===4){c.fillStyle=G(L.hatC);c.fillRect(u*.3,-u*7.52,u*.78,u*.13)}}
+  if(L.hair===5){c.strokeStyle=G(wShade(L.coat2,.8));c.lineWidth=u*.14;c.beginPath();c.ellipse(u*.15,-u*7.32,u*.6,u*.7,0,-Math.PI*.9,Math.PI*.45);c.stroke()}
+  if(L.phones){c.strokeStyle='#161616';c.lineWidth=u*.1;c.beginPath();c.ellipse(-u*.02,-u*7.45,u*.55,u*.55,0,Math.PI*1.05,Math.PI*1.95);c.stroke();c.fillStyle='#161616';c.beginPath();c.ellipse(-u*.05,-u*7.3,u*.17,u*.22,0,0,TAU);c.fill()}
+  c.restore();c.save();c.scale(1,hv); /* front arm and what it holds */
+  arm(-st*1.1,L.coat,true);
+  if(hand&&L.cup){c.fillStyle='#f2efe9';c.fillRect(hand[0]-u*.18,hand[1]-u*.62,u*.36,u*.6);c.fillStyle='#3a2a20';c.fillRect(hand[0]-u*.2,hand[1]-u*.66,u*.4,u*.1);c.fillStyle='#b08a5a';c.fillRect(hand[0]-u*.18,hand[1]-u*.4,u*.36,u*.18)}
+  if(hand&&L.bag==='tote'){c.strokeStyle=G(wShade(L.bagC,.7));c.lineWidth=u*.06;c.beginPath();c.moveTo(hand[0]-u*.3,hand[1]+u*.3);c.lineTo(hand[0],hand[1]);c.lineTo(hand[0]+u*.3,hand[1]+u*.3);c.stroke();
+    c.fillStyle=G(L.bagC);c.beginPath();c.roundRect(hand[0]-u*.55,hand[1]+u*.28,u*1.1,u*1.25,u*.08);c.fill()}
+  if(hand&&L.phone&&!L.cup&&L.bag!=='tote'){c.fillStyle='#111';c.beginPath();c.roundRect(hand[0]-u*.1,hand[1]-u*.45,u*.22,u*.45,u*.05);c.fill()}
+  c.restore();
+  c.restore();
+}
+/* horizontal motion blur: average of shifted copies, so the body stays solid and only the edges smear */
+function drawPasserBy(c,x,foot,h,blur,L,dir){
+  const pad=h*.6,w=Math.ceil(h*.8+pad*2),hh=Math.ceil(h*1.1);
+  const a=el('canvas');a.width=w;a.height=hh;const ac=a.getContext('2d');drawWalker(ac,w/2,hh-2,h,L,dir);
+
+  /* smooth box motion blur by doubling: each pass averages the image with itself shifted (2 taps, alpha .5 each),
+     6 passes = 64 evenly spaced taps over the blur length — no ghost copies and no 8-bit banding */
+  let cur=a,sh=blur/63;const BW=w+Math.ceil(blur)+2;
+  for(let k=0;k<6;k++){const t=el('canvas');t.width=BW;t.height=hh;const tc=t.getContext('2d');tc.globalCompositeOperation='lighter';tc.globalAlpha=.5;
+    tc.drawImage(cur,0,0);tc.drawImage(cur,sh,0);cur=t;sh*=2}
+  c.save();c.filter=`blur(${Math.max(.5,h*.004).toFixed(1)}px)`; /* a touch of defocus, like the street photos */
+  c.drawImage(cur,x-w/2-blur/2,foot-hh+2);c.restore();
+}
+/* mid and light tones, so the silhouettes read against the dark wall */
+const W_COATS=['#b9a083','#5f7358','#7d838b','#9a4a3f','#4a6290','#8a8f96','#c4b9a8','#7a5a44','#3f6f86','#a8935a','#d0cbc2','#b06a3a','#6c5a8a','#e0dbd2'];
+const W_SKINS=['#f0cdb0','#e0b799','#c99b7f','#a97a5c','#8f6449','#5e3f2c'];
+const W_HAIRS=['#151010','#2a1d16','#4a3020','#a07a50','#c9a46c','#6b6b6b'];
+const W_DARKS=['#4a4f57','#3b4a63','#5a5550','#6b6f76','#3f3a34','#2f3a4c','#7a7468'];
+/* darken/lighten any #rgb or #rrggbb colour (hex2rgb expands the short form) */
+const wShade=(col,k)=>{const v=col.startsWith('rgb')?col.match(/[\d.]+/g).slice(0,3).map(Number):hex2rgb(col).map(x=>x*255);
+  return 'rgb('+v.map(x=>Math.min(255,Math.round(x*k))).join(',')+')'}; /* accepts #rgb, #rrggbb and rgb() */
+/* a cached crowd: count, depth, looks and directions vary; the Wall dice reshuffles it */
+let wallCrowd=null;
+function makeCrowd(){
+  const mx=clamp(P.wallPeople|0,0,8) /* at most 8 people in the scene */,n=mx?ri(Math.ceil(mx/3),mx):0,ppl=[];
+  for(let i=0;i<n;i++){
+    const coat=pick(W_COATS),legs=pick(W_DARKS),d=R(),hv=rf(.88,1.1); /* d: 0 far … 1 close to the camera */
+    ppl.push({d,x:R(),dir:R()<.5?1:-1,hv:rf(.84,1.12),knee:rf(.2,.3),blur:rf(.1,.2), /* higher minimum: nobody stands still */
+      L:{hv,coat,coat2:wShade(coat,.82),legs,legs2:wShade(legs,.8),skin:pick(W_SKINS),hairC:pick(W_HAIRS),shoe:pick(['#5a4636','#e8e4dc','#4a4a52','#7a2a22','#b8a27a','#2f3a4c']),
+        hair:pick([0,0,1,1,2,3,4,5]),sole:pick(['#e8e4dc','#2a2a2a','#8a6a4a']),cuffs:R()<.3,buttons:R()<.5,belt:R()<.25,beard:R()<.2,glasses:R()<.25,phones:R()<.15,phone:R()<.2,hatC:pick(['#111','#7a2a22','#d8d2c6','#2c3b57','#3d4a3a']),
+        coatLen:pick([3.35,3.35,3.1,2.6,2.3]),wd:rf(.85,1.18),legW:rf(.85,1.1),stride:rf(.2,.32),
+        bag:pick([null,null,'backpack','shoulder','tote']),bagC:pick(['#6b4a2e','#2a3550','#111','#c9b48a','#7a2a22']),
+        scarf:R()<.3?pick(['#b23a2e','#d9c27a','#e8e4dc','#2f5d50']):null,cup:R()<.2}});
+  }
+  ppl.sort((a,b)=>a.d-b.d);wallCrowd={mx,ppl};
+}
+function renderWall(ph,scale=1){
+  wallRects=[];
+  const W=2000*scale,H=1125*scale;if(wcv.width!==W){wcv.width=W;wcv.height=H}
+  const c=wctx,n=clamp(P.wallN|0,1,8),[b0w,b0h]=baseSize(),a=b0w/b0h,gapF=.035;
+  /* close-up of the wall, no floor: banners tight in a row, as if pasted next to each other */
+  const bH=Math.min(H*.62,W*.92/(a*(n+(n-1)*gapF))),bW=bH*a,gap=bW*gapF;
+  const cy=H*.43,x0=(W-(n*bW+(n-1)*gap))/2;
+  c.drawImage(buildWallBG(W,H),0,0); /* cached concrete wall */
+  if(P.wallMode==='mix'&&!wallSet)makeWallSet();
+  if(!wallCrowd||wallCrowd.mx!==clamp(P.wallPeople|0,0,8))makeCrowd();
+  const orig=P,wasExp=exporting;
+  exporting=true;renderK=clamp(bH/b0h,.15,2.5);ensureSize();
+  try{
+    for(let i=0;i<n;i++){
+      P=JSON.parse(JSON.stringify(orig)); /* each banner renders from a copy */
+      if(P.wallMode==='mix'){ /* the current poster (own design and text) hangs in the middle, random designs with neighbouring presets around it */
+        const m=Math.floor(n/2);
+        if(i!==m){Object.assign(P,JSON.parse(JSON.stringify(wallSet[(i<m?i+1:i)%wallSet.length])));
+          const L=PRESETS.length,pr=PRESETS[(((P.preset|0)+i-m)%L+L)%L];setTxt(pr)}}
+      else if(P.wallMode==='series'){const L=PRESETS.length,pr=PRESETS[(((P.preset|0)+i)%L+L)%L];setTxt(pr)}
+      flushVar(); /* fresh font axes for this banner */
+      render(P.wallMode==='phases'?(ph+i/n)%1:ph); /* phases: n moments spread over the loop */
+      P=orig;
+      const x=x0+i*(bW+gap),y=cy-bH/2;wallRects[i]=[x,y,bW,bH];
+      c.save();c.shadowColor='rgba(0,0,0,.6)';c.shadowBlur=16*scale;c.shadowOffsetY=6*scale;c.fillStyle='#000';c.fillRect(x,y,bW,bH);c.restore();
+      c.drawImage(cv,x,y,bW,bH);
+      c.fillStyle='rgba(255,255,255,.22)';c.fillRect(x,y,bW,Math.max(1,scale));
+    }
+  }finally{P=orig;renderK=null;exporting=wasExp;ensureSize()}
+  /* passers-by: farther ones smaller and less blurred, closer ones big with feet below the frame */
+  /* cut at the knee by the bottom edge; height differs by body length (hv), not by scale */
+  /* everyone at the same distance (same scale); d only orders who walks in front */
+  wallCrowd.ppl.forEach(p=>{const h=H*.7,hv=p.L.hv||1;
+    let foot=H+h*hv*(p.knee||.25);
+    /* nobody taller than 2/3 of the frame: if the head would rise above H/3, the person sits lower (cut above the knee) */
+    const top=foot-h*(1+.81*(hv-1));if(top<H/3)foot+=H/3-top;
+    drawPasserBy(c,W*(-.05+p.x*1.1),foot,h,h*p.blur,p.L,p.dir)});
+}
+/* ---------- click a neighbouring banner on the wall: it becomes the current poster, with the user's text ---------- */
+let wallRects=[];
+function adoptBanner(i){
+  const n=wallRects.length,m=Math.floor(n/2);
+  if(P.wallMode!=='mix'||!wallSet||i===m)return;
+  const k=(i<m?i+1:i)%wallSet.length,v=wallSet[k];if(!v)return;
+  /* the poster being replaced takes the clicked slot, so nothing is lost; a loaded font never moves to a neighbour */
+  const old=JSON.parse(JSON.stringify(P));WALL_KEEP.forEach(x=>delete old[x]);
+  const FL=typeof WALL_FONTS==='function'?WALL_FONTS():[['rfont',READ_FONTS,'rax']];
+  FL.forEach(([fk,map,ax])=>{if(typeof USERF!=='undefined'&&USERF[old[fk]]){const alt=Object.keys(map).filter(q=>!USERF[q]&&q!==v[fk]);if(alt.length){old[fk]=alt[Math.floor(R()*alt.length)];if(ax)old[ax]={}}}});
+  wallSet[k]=old;
+  Object.assign(P,JSON.parse(JSON.stringify(v))); /* design keys only: text, format and timing stay as they are */
+  if(typeof fixText==='function')try{fixText()}catch(e){}
+  setWall(false);changed();buildUI();toast('Now editing this poster · Wall shows the previous one in its place');
+}
+function wallHit(e){const r=wcv.getBoundingClientRect(),x=(e.clientX-r.left)*wcv.width/r.width,y=(e.clientY-r.top)*wcv.height/r.height;
+  return wallRects.findIndex(b=>x>=b[0]&&x<=b[0]+b[2]&&y>=b[1]&&y<=b[1]+b[3])}
+wcv.onmousemove=e=>{const i=wallHit(e);wcv.style.cursor=(P.wallMode==='mix'&&i>=0&&i!==Math.floor(wallRects.length/2))?'pointer':'default'};
+wcv.onclick=e=>{const i=wallHit(e);if(i<0)return;if(P.wallMode!=='mix'){toast('Clicking a banner works in Random designs mode');return}adoptBanner(i)};
+function setWall(v){P.wall=v;$('#app').classList.toggle('wallon',v);$('#bWall').classList.toggle('on',v);$('#cWall').checked=v;$('#bMp4').disabled=v;if(v)openS.add('wall');dirty=true}
+/* variable-font axes come from the canvas element styles: force a recalc and drop cached fonts before each banner */
+function flushVar(){try{if(typeof applyVariations==='function')applyVariations();
+  document.querySelectorAll('canvas').forEach(x=>{if(x.style.fontVariationSettings)getComputedStyle(x).fontVariationSettings});
+  ['dctx','mDctx','sctx','mctx'].forEach(n=>{try{const c=eval(n);if(c)c.font='1px serif'}catch(e){}})}catch(e){}}
+/* i = -1 restores the user's own text (Custom); 0…n-1 are the samples. Leaving Custom keeps it in P.custom */
+function applyPreset(i){const n=PRESETS.length;
+  if(P.preset===-1||P.preset==null)P.custom=txtSnap();
+  if(i===-1){if(!P.custom)return;P.preset=-1;Object.assign(P,JSON.parse(JSON.stringify(P.custom)));changed();buildUI();toast('Custom');return}
+  P.preset=((i%n)+n)%n;const pr=PRESETS[P.preset];setTxt(pr);changed();buildUI();toast(pr.n)}
+function stepPreset(k){const ids=[...(P.custom?[-1]:[]),...PRESETS.map((_,i)=>i)];const j=Math.max(0,ids.indexOf(P.preset??-1));applyPreset(ids[(j+k+ids.length)%ids.length])}
+async function exportPNG(){
+  if(exporting)return;
+  if(P.wall){exporting=true;try{renderWall(phase(),2);const b=await new Promise(r=>wcv.toBlob(r,'image/png'));dl(b,`carpet-lab-wall-${P.seed}-${wcv.width}x${wcv.height}.png`)}
+    catch(e){alert('PNG error: '+(e&&e.message||e))}finally{exporting=false;renderWall(phase());dirty=true}return}exporting=true;const btn=$('#bPng'),ph=phase();
+  try{renderK=P.pngScale;ensureSize();if(needsWarm())await warm(ph,30,btn,'PNG');render(ph,1/30);
+    const b=await new Promise(r=>cv.toBlob(r,'image/png'));dl(b,`carpet-lab-${P.seed}-${RW}x${RH}.png`)}
+  catch(e){alert('PNG error: '+(e&&e.message||e))}
+  finally{renderK=null;exporting=false;ensureSize();dirty=true;updLabels()}
+}
+async function exportMP4(){
+  if(exporting||P.wall)return;
+  if(!window.VideoEncoder||!window.VideoFrame||!window.Mp4Muxer){alert('MP4 export needs WebCodecs (Chrome / Edge / Safari 16.4+) and internet to load the muxer.');return}
+  const btn=$('#bMp4'),fps=P.fps,N=Math.round(P.loop*fps);exporting=true;
+  try{
+    renderK=P.mp4Scale;ensureSize();render(0,1/fps);
+    const w=RW,h=RH,bitrate=Math.round(w*h*fps*P.mq);
+    let codec=null;
+    for(const c of ['avc1.640034','avc1.640033','avc1.640028','avc1.4d0028','avc1.42001f']){
+      try{const s=await VideoEncoder.isConfigSupported({codec:c,width:w,height:h,bitrate,framerate:fps});if(s.supported){codec=c;break}}catch(e){}}
+    if(!codec)throw new Error(`H.264 is not supported at ${w}×${h} — try MP4 scale ×1`);
+    if(needsWarm())await warm(0,fps,btn,'MP4');
+    const muxer=new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),video:{codec:'avc',width:w,height:h},fastStart:'in-memory'});
+    let err=null;const enc=new VideoEncoder({output:(ch,meta)=>muxer.addVideoChunk(ch,meta),error:e=>{err=e}});
+    enc.configure({codec,width:w,height:h,bitrate,framerate:fps});
+    for(let i=0;i<N;i++){
+      if(err)throw err;render(i/N,1/fps);
+      const vf=new VideoFrame(cv,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});
+      enc.encode(vf,{keyFrame:i%fps===0});vf.close();
+      while(enc.encodeQueueSize>6)await new Promise(r=>setTimeout(r,2));
+      if(i%4===0){btn.textContent=`MP4 ${Math.round(i/N*100)}%`;await tick()}
+    }
+    await enc.flush();if(err)throw err;muxer.finalize();
+    dl(new Blob([muxer.target.buffer],{type:'video/mp4'}),`carpet-lab-${P.seed}-${w}x${h}.mp4`);
+  }catch(e){alert('MP4 error: '+(e&&e.message||e))}
+  finally{renderK=null;exporting=false;ensureSize();dirty=true;btn.textContent='MP4'}
+}
+
+/* ================= wiring ================= */
+const act=f=>()=>{f();changed();buildUI()};
+const doDay=act(dayCarpet),doAll=act(randAll),doCar=act(randCarpet),doSym=act(randSym),doWv=act(randWeave),doTxt=act(randText),doLay=act(()=>{randLayout();fixText()}),doCol=act(()=>{randColors();plateSane()});
+$('#bAll').onclick=doAll;$('#bDay').onclick=doDay;$('#bCar').onclick=doCar;$('#bSym').onclick=doSym;$('#bWv').onclick=doWv;$('#bTxt').onclick=doTxt;$('#bLay').onclick=doLay;$('#bCol').onclick=doCol;
+$('#bPng').onclick=exportPNG;$('#bMp4').onclick=exportMP4;
+$('#bWall').onclick=()=>{setWall(!P.wall);changed();buildUI()};
+/* on the wall Random also reshuffles the other banners, the people and the wall */
+{const f=$('#bAll').onclick;$('#bAll').onclick=()=>{f();if(P.wall){makeWallSet();buildUI()}}}
+const setPlay=v=>{playing=v;$('#bPlay').textContent=v?'❚❚':'▶'};
+$('#bPlay').onclick=()=>setPlay(!playing);
+$('#scrub').oninput=e=>{setPlay(false);clock=e.target.value/1000*P.loop;dirty=true};
+window.addEventListener('keydown',e=>{
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key.toLowerCase();
+  if(k==='r'){doAll();if(P.wall){makeWallSet();buildUI()}}else if(k==='k')doCar();else if(k==='s')doSym();else if(k==='v')doWv();else if(k==='t')doTxt();else if(k==='l')doLay();else if(k==='c')doCol();else if(k==='d')doDay();
+  else if(k===' '){e.preventDefault();setPlay(!playing)}
+  else if(k===']')stepPreset(1);else if(k==='[')stepPreset(-1);
+  else if(k==='b'){setWall(!P.wall);changed();buildUI()}
+});
+fixText();setWall(!!P.wall);buildUI();
+const preload=Object.values(READ_FONTS).flatMap(f=>[300,400,500,700,900].map(w=>`${w} 30px ${f}`));
+Promise.all(preload.map(f=>document.fonts.load(f).catch(()=>{}))).then(()=>{fontsTick++;dirty=true});
+document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',()=>{fontsTick++;dirty=true});
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

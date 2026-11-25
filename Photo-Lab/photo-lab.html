@@ -1,0 +1,1618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Photo Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;700&family=Archivo:wght@400;500;700;900&family=Archivo+Black&family=Anton&family=Unbounded:wght@800&family=Rubik+Mono+One&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Instrument+Serif&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
+<style>
+/* minimal UI: white, hairlines, one neutral sans, grey labels, no ornaments — the poster is the only colour */
+:root{--bg:#f4f4f4;--panel:#fff;--line:#d4d4d4;--tx:#111;--mut:#555;--hov:#ececec;--trk:#bdbdbd}
+@media (prefers-color-scheme: dark){:root{--bg:#0d0d0d;--panel:#161616;--line:#3a3a3a;--tx:#f2f2f2;--mut:#b0b0b0;--hov:#242424;--trk:#555}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:13px/1.4 "Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+#app{display:grid;grid-template-columns:1fr 300px;height:100vh}
+#stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+#top{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding:14px 20px}
+#top .logo{font-weight:700;margin-right:14px}
+#top .sp{flex:1}
+button,select,input,textarea{font:inherit;color:var(--tx)}
+button{background:none;border:0;padding:6px 10px;color:var(--tx);font-weight:500;cursor:pointer;white-space:nowrap;border-radius:6px;transition:color .12s,background .12s}
+button:hover{color:var(--tx);background:var(--hov)}
+button kbd{font:inherit;font-weight:400;color:var(--mut);margin-left:4px}
+#view{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px 32px 24px}
+canvas#cv{max-width:100%;max-height:100%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 30px rgba(0,0,0,.06)}
+#bar{display:flex;gap:12px;align-items:center;padding:12px 20px 16px}
+#bar button{width:32px;padding:6px 0;text-align:center}
+#bar input[type=range]{flex:1}
+#tlab{color:var(--mut);font-variant-numeric:tabular-nums;min-width:40px;text-align:right}
+#panel{overflow:auto;background:var(--panel);border-left:1px solid var(--line);padding:8px 0 40px}
+details{border-bottom:1px solid var(--line);padding:0 20px}
+details:last-of-type{border-bottom:0}
+summary{cursor:pointer;padding:12px 0;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;font-weight:600}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"";order:-1;width:5px;height:5px;border-right:1.5px solid var(--tx);border-bottom:1.5px solid var(--tx);transform:rotate(-45deg);margin:0 6px 0 1px;transition:transform .15s}
+details[open]>summary::after{transform:rotate(45deg)}
+details[open]{padding-bottom:12px}
+summary .tag{font-weight:400;color:var(--mut)}
+summary button.dice{order:5}summary input.hdr{order:6}
+summary button.dice{margin-left:auto;padding:3px;line-height:0;color:var(--mut)}
+summary button.dice:hover{color:var(--tx)}
+summary button.dice svg{width:17px;height:17px}
+summary input.hdr{margin:0 0 0 6px;cursor:pointer}
+summary:not(:has(.dice))>input.hdr{margin-left:auto}
+details.off>summary{color:var(--mut)}
+details.off>*:not(summary){opacity:.5}
+.row{display:grid;grid-template-columns:88px 1fr 34px;gap:10px;align-items:center;margin:7px 0}
+.row.wide{grid-template-columns:88px 1fr}
+.row label{color:var(--mut);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .v{color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
+.row select,.row input[type=text],textarea{width:100%;background:var(--panel);border:1px solid var(--trk);border-radius:6px;padding:5px 7px;outline:none}
+.row select:focus,.row input[type=text]:focus,textarea:focus{border-color:var(--mut)}
+textarea{resize:vertical;min-height:30px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--trk)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;margin-top:-5.5px;border-radius:50%;background:var(--tx);border:0}
+input[type=range]::-moz-range-track{height:2px;background:var(--trk)}
+input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--tx);border:0}
+.row input[type=color]{width:100%;height:24px;border:1px solid var(--trk);border-radius:6px;background:transparent;padding:2px;cursor:pointer}
+input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+input[type=color]::-webkit-color-swatch{border:0;border-radius:4px}
+input[type=checkbox]{accent-color:var(--tx);width:15px;height:15px}
+.row input[type=checkbox]{justify-self:start;margin:0}
+.inks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.inks input{width:100%;height:24px;border:1px solid var(--trk);border-radius:6px;background:transparent;padding:2px;cursor:pointer}
+.inks input.dim{opacity:.25}
+.hint{color:var(--mut);margin:6px 0 8px;line-height:1.45}
+#top button.on{background:var(--hov)}
+#bWall{display:inline-flex;align-items:center;gap:6px}
+#cWall{margin:0;pointer-events:none} /* the button toggles; the box only shows the state */
+button:disabled{opacity:.35;cursor:default}
+canvas#wall{max-width:100%;max-height:100%;display:none}
+#app.wallon canvas#cv{display:none}
+#app.wallon canvas#wall{display:block}
+#toast{position:fixed;left:50%;bottom:60px;transform:translateX(-50%);background:var(--tx);color:var(--panel);padding:7px 12px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+@media (max-width:820px){#app{grid-template-columns:1fr;grid-template-rows:60vh auto;height:auto}#panel{border-left:0;border-top:1px solid var(--line)}}
+.inks{grid-template-columns:repeat(6,1fr)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="top">
+      <div class="logo">Photo Lab</div>
+      <button id="bAll" title="Randomize everything except text, photo and format">Random <kbd>R</kbd></button>
+      <button id="bFx" title="Randomize the three photo effects">Effects <kbd>E</kbd></button>
+      <button id="bOpt" title="Randomize echo, streaks, split, prism and light leaks">Optics <kbd>O</kbd></button>
+      <button id="bTxt" title="Randomize the text × photo interaction">Text <kbd>T</kbd></button>
+      <button id="bLay" title="Randomize the readable layout">Layout <kbd>L</kbd></button>
+      <button id="bCol" title="Random palette and grade">Colors <kbd>C</kbd></button>
+      <button id="bPhoto" title="Load one or more photos (or drop them on the page, or paste). N = next photo">Photo + <kbd>N</kbd></button>
+      <button id="bWall" title="Preview a row of static banners on a wall"><input type="checkbox" id="cWall" tabindex="-1"> Wall <kbd>V</kbd></button>
+      <span class="sp"></span>
+      <button id="bPng">PNG ×2</button>
+      <button id="bMp4">MP4</button>
+    </div>
+    <div id="view"><canvas id="cv"></canvas><canvas id="wall"></canvas></div>
+    <div id="bar">
+      <button id="bPlay" title="Play / pause (space)">❚❚</button>
+      <input type="range" id="scrub" min="0" max="1000" value="0">
+      <span id="tlab">0.0s</span>
+    </div>
+  </div>
+  <div id="panel"></div>
+</div>
+<div id="toast"></div>
+<input type="file" id="fFont" accept=".ttf,.otf,.woff,.woff2" hidden>
+<input type="file" id="fPhoto" accept="image/*" multiple hidden>
+<script>
+'use strict';
+/* Photo Lab — two layers: a readable Swiss text layer and a photo bent by chained effects (strips, tiles, smear, wave, rings, liquify, shards, mirror),
+   then optics (echo, streak, RGB split, cut edges, prism ghosts and rainbows) and a colour grade; the large text is a mask the photo reacts to. */
+/* ================= basics ================= */
+const $=s=>document.querySelector(s);
+const TAU=Math.PI*2, CAP=.72;
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const R=Math.random, ri=(a,b)=>a+Math.floor(R()*(b-a+1)), rf=(a,b)=>a+R()*(b-a), pick=a=>a[Math.floor(R()*a.length)];
+function hsh(n){const x=Math.sin(n*127.1+P.seed*.0137)*43758.5453;return x-Math.floor(x)}
+function fmt(v){return Math.abs(v)>=100?Math.round(v):(Math.round(v*100)/100)}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('on'),1600)}
+
+/* ================= data ================= */
+const FORMATS={'3:4':[3,4],'4:5':[4,5],'2:3':[2,3],'A-series 1:√2':[1,Math.SQRT2],'F4 895×1280':[895,1280],'1:1':[1,1],'9:16':[9,16],'16:9':[16,9]};
+const READ_FONTS={'Inter':'"Inter"','Helvetica':'"Helvetica Neue",Helvetica,Arial,sans-serif','Space Grotesk':'"Space Grotesk"','IBM Plex Sans':'"IBM Plex Sans"','Archivo':'"Archivo"','IBM Plex Mono':'"IBM Plex Mono"','Instrument Serif':'"Instrument Serif"'};
+/* former broken-layer faces now live in the shared title list */
+Object.assign(READ_FONTS,{'Archivo Black':'"Archivo Black"','Anton':'"Anton"','Unbounded':'"Unbounded"','Rubik Mono One':'"Rubik Mono One"','Bricolage':'"Bricolage Grotesque"'});
+const TEMPLATES={giant:'Giant title',cells:'Letter cells',scatter:'Scattered words',columns:'Columns',bigdate:'Big date',corners:'Corners',stagger:'Staggered list',mirror:'Mirrored',vertical:'Vertical title',repeat:'Header + footer',axis:'Axis',bands:'Bands'};
+const RMOTION={none:'None',reveal:'Line reveal',slide:'Column slide',jump:'Grid jumps',rise:'Row drift',track:'Tracking',marquee:'Marquee title',step:'Step templates',drift:'Grid breathe'};
+const BLAYOUT={fill:'Fill page',stack:'Stack',repeat:'Repeat rows',letters:'Letter grid'};
+const BMOTION={none:'None',scroll:'Scroll',hscroll:'Line marquee',lines:'Line shift',pulse:'Pulse',breathe:'Tracking',wobble:'Wobble'};
+const CASES={none:'As typed',upper:'UPPER',lower:'lower'};
+const BLENDS={'source-over':'Normal','multiply':'Multiply','screen':'Screen','difference':'Difference','exclusion':'Exclusion'};
+/* text × photo: how the large letters act on the photo */
+/* shader codes stay fixed (index in this list); inside / outside / frosted were removed from the menu — the title vanished in them */
+const TMK=['none','inside','outside','displace','lens','invert','mono','knock','window','blur','lglass'];
+const TMODES={none:'None',displace:'Glass letters',lglass:'Liquid glass',lens:'Zoom inside',invert:'Invert',mono:'Grade swap',knock:'Knockout',window:'Window'};
+/* where an effect acts (screen space). pos −1…1 moves the line / band / centre, size 0…1 */
+const REGIONS=['All','Left part','Right part','Top part','Bottom part','Band across','Band down','Circle','Box','Inside text','Outside text','Random cells','Photo frame'];
+const REG_POS=[0,1,1,1,1,1,1,1,1,0,0,1,0],REG_SZ=[0,0,0,0,0,1,1,1,1,0,0,1,0];
+/* photo effects (coordinate warps), chained 1 → 2 → 3. ps = [label,min,max,step,default,[random lo,hi]]; refs = reference numbers */
+const FX={
+ strips:{n:'Strips',refs:'2, 6, 9',ops:['Echo','Shuffle','Reeded glass','Mirror'],ps:[['Width',.008,.3,.001,.06,[.02,.1]],['Amount',-2,2,.01,.75,[.35,1.1]],['Angle',-90,90,1,0,[0,0]]]},
+ tiles:{n:'Tiles',refs:'1, 14',ops:['Repeat rows','Shuffle','Mosaic','Mirror grid'],ps:[['Cell',.03,.5,.005,.12,[.06,.2]],['Amount',0,1,.01,.85,[.5,1]],['Aspect',.3,3,.01,1.3,[.8,1.8]]]},
+ smear:{n:'Smear',refs:'6, 12, 13',ops:['Right','Left','Up','Down','Outward ↔','Outward ↕'],ps:[['Line',-1,1,.01,.2,[-.45,.45]],['Wave',0,.2,.001,.02,[0,.05]],['Frequency',1,80,.1,12,[4,40]]]},
+ wave:{n:'Wave',refs:'11, 12',ops:['Sine','Zigzag','Steps','Glitch rows','Vertical sine'],ps:[['Amount',0,.4,.001,.05,[.015,.1]],['Frequency',1,80,.1,10,[3,35]],['Row',.004,.15,.001,.03,[.008,.05]]]},
+ rings:{n:'Rings',refs:'5',ops:['Alternate','Random','Spiral','Zoom rings'],ps:[['Ring',.01,.3,.001,.06,[.03,.11]],['Twist',-3,3,.01,.6,[-1.2,1.2]],['Center',-1,1,.01,0,[-.3,.3]]]},
+ liquify:{n:'Liquify',refs:'10, 11',ops:['Flow','Melt','Drag','Swirl'],ps:[['Amount',0,.6,.001,.12,[.04,.2]],['Scale',.3,12,.01,2.5,[1,5]],['Detail',1,5,1,3,[2,4]]]},
+ shards:{n:'Glass shards',refs:'3, 4, 7',ops:['Cuts','Voronoi'],ps:[['Count',2,8,1,4,[3,6]],['Offset',0,.4,.001,.08,[.03,.16]],['Scale var',0,1,.01,.2,[0,.45]]]},
+ mirror:{n:'Mirror',refs:'7',ops:['Mirror X','Mirror Y','Quad','Kaleido'],ps:[['Axis',-1,1,.01,0,[-.3,.3]],['Angle',-180,180,1,0],['Segments',2,12,1,6,[3,8]]]},
+ slit:{n:'Slit bands',refs:'6, 12',ops:['Rows','Columns','Zigzag','Wavy'],ps:[['Band',.004,.2,.001,.03,[.008,.06]],['Amount',0,1,.01,.5,[.25,.8]],['Column',-1,1,.01,0,[-.5,.5]]]},
+ droste:{n:'Zoom echo',refs:'3, 7',ops:['Nested','Spiral','Drifting'],ps:[['Scale',.3,.92,.01,.7,[.55,.85]],['Frame',.2,1.4,.01,.9,[.6,1.1]],['Center',-1,1,.01,0,[-.3,.3]]]},
+ rays:{n:'Rays',refs:'5',ops:['Alternate','Random','Fan zoom','Steps'],ps:[['Count',3,48,1,12,[6,28]],['Twist',-2,2,.01,.5,[-1,1]],['Center',-1,1,.01,0,[-.4,.4]]]},
+ pixel:{n:'Pixelate',refs:'14',ops:['Squares','Rows','Columns','Quadtree'],ps:[['Cell',.003,.12,.001,.025,[.008,.05]],['Jitter',0,1,.01,0,[0,.5]],['Aspect',.2,5,.01,1,[.5,2]]]},
+ luma:{n:'Luma drag',refs:'11, 13',ops:['Down','Up','Right','Left','Outward'],ps:[['Amount',0,.4,.001,.1,[.04,.18]],['Threshold',-1,1,.01,.6,[.4,.85]],['Softness',0,1,.01,.3,[.1,.5]]]},
+ fold:{n:'Accordion',refs:'2, 9',ops:['Vertical folds','Horizontal folds','Angled'],ps:[['Fold',.02,.4,.001,.08,[.04,.16]],['Depth',0,1,.01,.6,[.3,.9]],['Angle',-90,90,1,30,[-60,60]]]},
+ glitch:{n:'Glitch blocks',refs:'11, 14',ops:['Shift','Swap','Repeat'],ps:[['Block',.01,.3,.001,.06,[.025,.12]],['Amount',0,1,.01,.35,[.15,.55]],['Offset',0,.5,.001,.08,[.03,.2]]]},
+};
+const FKEYS=Object.keys(FX);
+const ECHO_BL=['Lighten','Darken','Screen','Average','Behind'];
+const PRISM_MODES=['Faces around','Parallel slabs','One side'];
+const LK_BLENDS=['Screen','Add (linear dodge)','Color dodge','Overlay','Soft light','Color burn','Multiply'];
+const LK_MODES=['Edge burn','Band','Blobs','Mixed'],LK_PALS=['Warm','Red','Magenta','Amber'];
+const GRADES=['Original','Mono','Duotone','Gradient map','Posterize'];
+/* [name (ref), ramp dark→light, paper, text, accent, grade] — named after the reference images */
+const PALETTES=[
+ ['Eyes (1)',['#1a1614','#8c6f60','#e8d6c8','#f4f3f0'],'#efeeec','#111111','#e4321b',0],
+ ['Cap (2)',['#0d0d0d','#6d6a66','#e9e6e0'],'#e9e6e0','#0d0d0d','#c0392b',1],
+ ['Bronze (3)',['#1c0d06','#7a3f22','#d99a6c','#fff4e6'],'#fff4e6','#1c0d06','#ffffff',3],
+ ['Prism (4)',['#24384d','#6c9cc4','#e8b4a0','#f4f1ea'],'#bcd3e3','#ffffff','#ff5a8a',0],
+ ['Rings (5)',['#2c3a48','#8a97a5','#e6e2da'],'#8c9aa8','#f2f2f2','#d23a2a',2],
+ ['Red room (6)',['#1a0606','#7a1c16','#d9d2c8','#f6f4f0'],'#f0eeea','#1a0606','#c4261c',3],
+ ['Coral (7)',['#3a1208','#c4622c','#f2b58a','#ffe3cc'],'#e8455a','#ffffff','#3a1208',0],
+ ['Flower (8)',['#050303','#6a1420','#d8506a','#f2d2c4'],'#0a0505','#f2d2c4','#d8506a',0],
+ ['Daylight (9)',['#0f1a14','#28553e','#c8ccc8','#f2f0ec'],'#2a2d2c','#f2f0ec','#2f8a52',0],
+ ['Blue coat (10)',['#111111','#0f6fbf','#e8402a','#ffffff'],'#ffffff','#111111','#0f6fbf',4],
+ ['Sky (11)',['#1d2a1a','#5a6a2a','#e8b0a0','#d6e4ee'],'#d6e4ee','#1d2a1a','#e8805a',0],
+ ['Stripes (12)',['#1a1a2a','#6c7488','#c89070','#eeeeec'],'#e8e8e6','#1a1a2a','#c89070',3],
+ ['Red PVC (13)',['#2a0404','#c41a10','#ff7a4a','#dfe9e8'],'#dfe9e8','#111111','#e42b16',2],
+ ['Ficus (14)',['#151517','#3c3d40','#8fa08a','#f6f6f4'],'#f6f6f4','#151517','#2f4a35',1],
+ ['Blueprint',['#06124a','#1f4fe0','#f0f0f0'],'#f0f0f0','#06124a','#1f4fe0',2],
+ ['Acid',['#111111','#7a5cff','#e9ff3b'],'#e9ff3b','#111111','#7a5cff',4],
+];
+
+function mkFx(type,on,o={}){return Object.assign({on,type,op:0,p:FX[type].ps.map(q=>q[4]),sp:0,reg:0,rpos:0,rsz:.6,glass:false,gs:.5,gd:.6},o)}
+/* effects whose pieces have cut edges, so they can take a liquid-glass rim */
+const CUTS=f=>['strips','tiles','shards','rings','slit','droste','rays','pixel','fold','glitch'].includes(f.type)||f.type==='wave'&&f.op===3;
+const DEF={
+ fmt:'3:4',q:.75,aa:true,loop:8,seed:1234,
+ title:'Open Jam #30',desc:'Noise Kitchen\n2.12.2026 / 18:00\nKino, Petrohradská\n@noise.kitchen',preset:-1,custom:{title:'Open Jam #30',desc:'Noise Kitchen\n2.12.2026 / 18:00\nKino, Petrohradská\n@noise.kitchen'}, /* the user's own default text */
+ wall:false,wallN:5,wallMode:'mix',wallPeople:2,wallTex:true,
+ tpl:'giant',rfont:'Inter',tw:900,tspan:1,body:14,mid:2.4,lead:1.15,cols:8,rows:12,margin:38,gutter:12,stairs:0,rcase:'upper',rcol:'text',band:false,rblend:'source-over',grid:false,
+ rax:{},
+ rmo:'none',rmoAmt:.5,rmoSpd:1,
+ tshow:true,tmode:'invert',tamt:.4,tblur:0,tdisp:.7,tfrost:0,tfill:'none',tsrc:'big',
+ /* photo */
+ photo:'demo',frame:'full',bx:.12,by:.1,bw:.76,bh:.62,zoom:1,px:0,py:0,flip:false,pedge:0,key:0,
+ fx:[mkFx('strips',true,{op:0,p:[.055,.8,0],sp:1,reg:2,rpos:-.15}),mkFx('wave',false),mkFx('rings',false)],
+ /* optics */
+ eOn:false,oOn:true,echo:2,edx:.14,edy:0,eblend:4,esc:1,efall:.8,ereg:0,erpos:0,ersz:.6,esp:0,
+ strk:0,sang:0,sreg:1,srpos:0,srsz:.6,ssp:0,
+ chr:0,chrA:0,edgeM:0,leak:0,
+ /* prism held in front of the lens (refs prism-19…23, 3, 4) */
+ /* light leaks (refs leak-25…30) */
+ lkOn:false,lkAmt:1,lkMode:3,lkAng:0,lkSize:.5,lkSoft:.5,lkPal:0,lkSp:1,lkSeed:5,lkPos:0,lkN:2,lkBlend:0,
+ prOn:false,prGh:true,prA:1.4,prN:3,prAng:30,prMode:0,prShift:.18,prScale:1.2,prRot:20,prFlip:true,prBlur:.5,prDisp:.5,prRain:0,prRainW:.4,prROff:.5,prHaze:0,prSp:1,prSeed:7,leakA:60,leakW:.4,leakSp:1,
+ /* colour */
+ pal:['#1a1614','#8c6f60','#e8d6c8','#f4f3f0','#f4f3f0','#f4f3f0'],nCol:4,grade:0,gmix:1,con:1,sat:1,expo:0,grain:.08,
+ paper:'#efeeec',txt:'#111111',acc:'#e4321b',
+ pngScale:2,mp4Scale:1,fps:30,mq:.15,
+};
+const LSKEY='photolab.v1';
+
+/* fictional events with very different amounts of text, to test the layout quickly */
+const PRESETS=[
+ {n:'One word',title:'Open',desc:''},
+ {n:'Club night',title:'Open Jam #30',desc:'Noise Kitchen\nFri 02.12 / 23:00\nKino, Petrohradská'},
+ {n:'Exhibition',title:'Pattern\nLanguage',desc:'Geometry, rhythm & optical noise\n14.01–28.02.2027\nHall 3, Kunsthalle\n@photo.lab'},
+ {n:'Concert',title:'Orchestra of Broken Clocks',desc:'Live in concert\n22.03.2027, 20:00\nRoxy, Dlouhá 33\nTickets at roxy.example'},
+ {n:'Lecture',title:'Type & Time',desc:'Lecture by Mira Holan\nWed 05.05 / 18:30\nRoom 204, Academy of Arts\nFree entry'},
+ {n:'Film night',title:'Kino Nocturne',desc:'Three short films about cities at night\nEvery Thursday in March\nAtrium cinema, 21:00\nOriginal version with subtitles\natrium.example'},
+ {n:'Festival line-up',title:'Basel Noise Festival',desc:'Three days of loud music\n12–14.06.2027\nKaserne, Basel\nVera Stone\nThe Long Hum\nNoor & Kit\nPale Static\nOdd Machines\nMarta Velez\nDJ Lumen\nbaselnoise.example'},
+ {n:'Symposium',title:'International Symposium on Generative Graphic Design',desc:'Two days of talks and workshops\n03–04.10.2027\nUniversity of Applied Arts\nRegistration open'},
+ {n:'Announcement',title:'Closed for Renovation',desc:'Back in spring'},
+];
+let P=JSON.parse(JSON.stringify(DEF));
+try{const s=JSON.parse(localStorage.getItem(LSKEY)||'null');if(s&&typeof s==='object'){Object.assign(P,s);
+  if(!Array.isArray(P.fx)||P.fx.length!==3||P.fx.some(x=>!x||!FX[x.type]))P.fx=JSON.parse(JSON.stringify(DEF.fx));
+  P.fx.forEach(x=>{const d=FX[x.type];if(!Array.isArray(x.p)||x.p.length!==d.ps.length)x.p=d.ps.map(q=>q[4]);
+    ['sp','reg','rpos','rsz','op'].forEach(k=>{if(typeof x[k]!=='number')x[k]=0});if(!x.rsz)x.rsz=.6;if(x.reg>=REGIONS.length)x.reg=0});
+  if(!Array.isArray(P.pal)||P.pal.length!==6)P.pal=DEF.pal.slice();
+  if(!FORMATS[P.fmt])P.fmt=DEF.fmt;if(!TEMPLATES[P.tpl])P.tpl=DEF.tpl;if(!TMODES[P.tmode])P.tmode=['inside','outside','blur'].includes(P.tmode)?'invert':DEF.tmode;
+  if(!READ_FONTS[P.rfont])P.rfont=DEF.rfont;
+  if(typeof P.desc!=='string')P.desc=DEF.desc;
+  if(!P.custom){const pr=PRESETS[P.preset];if(!pr||pr.title!==P.title||pr.desc!==P.desc){P.custom={title:P.title,desc:P.desc};P.preset=-1}}
+  if(typeof P.rax!=='object'||!P.rax)P.rax={};
+  if(typeof P.photo!=='string')P.photo='demo';
+  P.rmo='none'; /* Layout motion was removed: the text layer stays still */
+  P.leak=0; /* Light leak was replaced by the Prism group */
+  /* Cut edges left Optics: Liquid glass is now per effect, Soft prism and Seam are gone */
+  if(P.edgeM===1&&s.fx)P.fx.forEach(x=>{if(CUTS(x)&&x.glass==null){x.glass=true;x.gs=P.edgeS??.5;x.gd=P.edgeD??.6}});P.edgeM=0;
+  if(typeof s.eOn!=='boolean'){P.eOn=(s.echo|0)>0;if(!(P.echo>0))P.echo=2} /* Echo and Optics got on/off checkboxes */
+  if(typeof s.oOn!=='boolean')P.oOn=true;
+  P.fx.forEach(x=>{if(typeof x.glass!=='boolean')x.glass=false;if(typeof x.gs!=='number')x.gs=.5;if(typeof x.gd!=='number')x.gd=.6});
+  if(s.prOn==null&&s.prA!=null){P.prOn=s.prA>0||s.prRain>0;P.prGh=s.prA>0;P.prA=1.4} /* Ghosts was 0…1, now 1…3 with an on/off */
+  if(!(P.prA>=1))P.prA=1;
+}}catch(e){}
+let saveH=0;function saveSoon(){clearTimeout(saveH);saveH=setTimeout(()=>{try{localStorage.setItem(LSKEY,JSON.stringify(P))}catch(e){}},300)}
+
+/* ================= WebGL photo engine ================= */
+const glc=document.createElement('canvas');
+const gl=glc.getContext('webgl2',{premultipliedAlpha:false,preserveDrawingBuffer:true,antialias:false,alpha:false});
+if(!gl)alert('WebGL2 is not available in this browser — the photo layer needs it.');
+const VS=`#version 300 es
+in vec2 aP;out vec2 vUv;void main(){vUv=aP*.5+.5;gl_Position=vec4(aP,0.,1.);}`;
+const FSRC=`#version 300 es
+precision highp float;
+in vec2 vUv;out vec4 o;
+uniform vec2 uRes;uniform float uT,uSeed,uAA,uAsp;
+uniform sampler2D uTxt,uPh;
+uniform float uPhA,uClip,uKey,uTexH;uniform vec4 uFit,uBox;uniform int uEdgeM;uniform vec3 uPaper;
+uniform vec4 uEA[3],uEB[3],uEC[3],uEG[3];
+uniform vec4 uEc1,uEc2,uEc3,uSt1,uSt2,uChr,uLeak,uPr1,uPr2,uPr3,uPr4,uLk1,uLk2,uLk3;
+uniform int uTMode;uniform float uTAmt,uTBlur,uTGl,uTDisp,uTFrost;
+uniform int uGrade,uN;uniform vec3 uPal[6];uniform vec4 uTone;uniform float uGrain;
+#define TAU 6.2831853
+#define PI 3.14159265
+float h21(vec2 p){p=fract(p*vec2(123.34,456.21)+uSeed*.001);p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float h11(float n){return fract(sin(n*12.9898+uSeed*.37)*43758.5453);}
+mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,s,-s,c);}
+float tri(float x){return abs(fract(x)-.5)*2.;}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+ return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+1.),f.x),f.y);}
+float fbm(vec2 p,float n){float s=0.,a=.5,t=0.;for(int k=0;k<5;k++){if(float(k)>=n)break;s+=a*vn(p);t+=a;p=p*2.03+17.1;a*=.5;}return s/t;}
+vec3 spec(float x){return .5+.5*cos(TAU*(x+vec3(0.,.33,.67)));}
+float lum(vec3 c){return dot(c,vec3(.299,.587,.114));}
+float gEdge,gIns,gShade;
+
+/* ---------- the photo, placed in its frame (world units: poster height = 1, centre = 0, y up) ---------- */
+vec4 srcL(vec2 s,float lb){
+ if(uClip>.5&&(s.x<uBox.x||s.x>uBox.z||s.y<uBox.y||s.y>uBox.w))return vec4(uPaper,0.);
+ vec2 fc=(uBox.xy+uBox.zw)*.5,fs=uBox.zw-uBox.xy;float fa=fs.x/fs.y;vec2 uv;
+ if(uPhA>fa)uv=vec2((s.x-fc.x)/(fs.y*uPhA),(s.y-fc.y)/fs.y);else uv=vec2((s.x-fc.x)/fs.x,(s.y-fc.y)*uPhA/fs.x);
+ uv=uv/uFit.x+.5-uFit.yz*.25;if(uFit.w>.5)uv.x=1.-uv.x;
+ if(uEdgeM==1&&(uv.x<0.||uv.y<0.||uv.x>1.||uv.y>1.))return vec4(uPaper,0.);
+ if(uEdgeM==2)uv=1.-abs(1.-mod(uv,2.));
+ /* fixed level of detail from the frame scale: implicit mip selection blows up at cuts (neighbours read far-apart
+    parts of the photo) and paints the seams with the photo's average grey */
+ float ih=(uPhA>fa?fs.y:fs.x/uPhA)*uFit.x,lod=max(0.,log2(uTexH/(ih*uRes.y))-.5);
+ vec3 c=textureLod(uPh,clamp(uv,0.,1.),lod+lb).rgb;float a=1.;
+ if(uKey>0.){float l=lum(c),sat=max(c.r,max(c.g,c.b))-min(c.r,min(c.g,c.b)),th=1.-uKey*.6;
+  a=1.-smoothstep(th-.04,th+.04,l)*(1.-smoothstep(.06,.2,sat));c=mix(uPaper,c,a);}
+ return vec4(c,a);
+}
+vec4 src(vec2 s){return srcL(s,0.);}
+/* ---------- prism: the photo shot through a glass prism held near the lens ---------- */
+/* a defocused copy seen in one face of the prism: blurred (higher mip + small disc) and split by colour across the face */
+vec3 ghostS(vec2 q,vec2 n,float lb,float dsp,float r){vec3 c=vec3(0.);
+ for(int k=0;k<5;k++){vec2 o=k==0?vec2(0.):vec2(cos(float(k)*1.5708+.6),sin(float(k)*1.5708+.6))*r;
+  c.r+=srcL(q+o+n*dsp,lb).r;c.g+=srcL(q+o,lb).g;c.b+=srcL(q+o-n*dsp,lb).b;}
+ return c*.2;}
+/* spectrum of a prism caustic: violet → blue → green → yellow → red across the band, hottest (near white-yellow) in the middle */
+vec3 rainbow(float x){float h=clamp(.5-x*.45,0.,1.)*.78;
+ vec3 c=clamp(vec3(abs(h*6.-3.)-1.,2.-abs(h*6.-2.),2.-abs(h*6.-4.)),0.,1.);
+ c*=exp(-pow(abs(x),3.)*.6);                       /* crisp band: colours stay separate, soft only at the very sides */
+ return mix(c,vec3(1.,.95,.7)*c.g,.12);}
+vec3 gCaust;
+vec3 prism(vec3 base,vec2 p,vec2 w0){
+ gCaust=vec3(0.);if(uPr1.x<=0.&&uPr3.z<=0.)return base;
+ int nf=int(uPr1.y+.5),md=int(uPr1.w+.5);float sp=uPr4.y,sd=uPr4.z,lb=.5+uPr3.x*4.,soft=.004+uPr3.x*.06;vec3 col=base;
+ for(int i=0;i<5;i++){if(i>=nf)break;float fi=float(i),h=h11(fi*7.13+sd),h2=h11(fi*3.71+sd+1.),h3=h11(fi*5.17+sd+2.);
+  float th,d,wd=9.;
+  if(md==0){th=uPr1.z+fi*TAU/float(nf)+(h-.5)*.7;d=.14+.2*h2;}                 /* faces around the subject */
+  else if(md==1){th=uPr1.z;d=(fi/float(max(nf,1))-.45)*uAsp*1.2+h*.1;wd=.12+.2*h2;} /* parallel slabs across the frame */
+  else{th=uPr1.z+(h-.5)*.35;d=.08+.3*h2*(fi+1.)/float(nf);}                       /* stacked on one side */
+  /* Ghosts strength k (1…3): above 1 the faces cut deeper into the frame and the copies get bolder */
+  float k=max(uPr1.x,1.);if(md==1)wd*=1.+.35*(k-1.);else d/=1.+.3*(k-1.);
+  d+=.03*sin(TAU*(uT*sp+h));
+  vec2 n=vec2(cos(th),sin(th));float t=dot(w0,n);
+  float m=smoothstep(d-soft,d+soft,t);if(md==1)m*=1.-smoothstep(d+wd-soft,d+wd+soft,t);
+  if(m>.002&&uPr1.x>0.){
+   vec2 a=n*d,r=w0-a;
+   if(uPr2.w>.5&&h3>.35)r-=2.*dot(r,n)*n;                     /* a reflecting face shows the picture mirrored */
+   float sc=mix(1.,uPr2.y,h),ang=uPr2.z*(h2-.5)*2.;r=rot(ang)*r/sc;
+   vec2 q=a+r-n*uPr2.x*(.6+.8*h3)*(1.+.35*(k-1.));
+   vec3 g=ghostS(p+(q-w0),n,lb,uPr3.y*.014,uPr3.x*.012);
+   float kk=clamp((k-1.)*.5,0.,1.);                            /* 0 at Ghosts 1 … 1 at Ghosts 3 */
+   g=mix(g,max(g,col),.3*(1.-kk));                                     /* the copy is light passing through glass: a little additive */
+   col=mix(col,g,m*mix(.82+.08*(h-.5),1.,kk));}               /* at the maximum the copies are fully opaque */
+  /* a face throws its rainbow: a spectral band parallel to its edge (on it, or drifted off it),
+     centred on the stretch of edge nearest the subject (where the light through the prism lands on the picture) */
+  if(uPr3.z>0.&&(i==0||(i==1&&h3<.6))){float W=.012+uPr3.w*.05; /* one or two faces, like the refs */
+   float off=W*.7+(h11(fi*13.1+sd)-.35)*.32*uPr4.w;   /* Rainbow drift: the band may sit away from the edge, always parallel to it */
+   float x=(t-d-off)/W;vec2 pp=vec2(-n.y,n.x);float u=dot(w0,pp);
+   float u0=(h11(fi*9.3+sd)-.5)*.25+.05*sin(TAU*(uT*sp+h2)),L=.07+.13*h11(fi*11.7+sd);
+   gCaust+=rainbow(x)*exp(-pow((u-u0)/L,2.))*(.8+.2*h);}
+ }
+ if(uPr4.x>0.)col=mix(col,srcL(p,lb+2.5).rgb,uPr4.x*.35)+uPr4.x*.05;   /* haze: glow + lifted blacks */
+ return col;
+}
+/* ---------- light leaks: light fogging the film (refs leak-25…30) ---------- */
+/* colour by strength, like burnt film: faint = deep red, then orange, yellow, and white where it is strongest */
+vec3 burnRamp(float L,int pal){
+ vec3 c0,c1,c2,c3;
+ if(pal==1){c0=vec3(.45,.0,.02);c1=vec3(.9,.08,.04);c2=vec3(1.,.35,.12);c3=vec3(1.,.8,.6);}          /* red */
+ else if(pal==2){c0=vec3(.4,.0,.25);c1=vec3(.9,.15,.45);c2=vec3(1.,.5,.6);c3=vec3(1.,.88,.85);}      /* magenta */
+ else if(pal==3){c0=vec3(.45,.2,.0);c1=vec3(.95,.55,.05);c2=vec3(1.,.82,.25);c3=vec3(1.,.96,.75);}    /* amber */
+ else{c0=vec3(.5,.04,.02);c1=vec3(.95,.3,.05);c2=vec3(1.,.65,.15);c3=vec3(1.,.92,.6);}               /* warm */
+ vec3 c=mix(vec3(0.),c0,smoothstep(0.,.3,L));
+ c=mix(c,c1,smoothstep(.25,.6,L));c=mix(c,c2,smoothstep(.55,.95,L));c=mix(c,c3,smoothstep(.9,1.3,L));
+ return mix(c,vec3(1.),smoothstep(1.25,1.8,L));}
+float leakField(vec2 w){
+ int md=int(uLk1.y+.5);float sd=uLk2.w,sp=uLk2.z,sz=uLk1.w,sf=uLk2.x,L=0.;
+ vec2 n=vec2(cos(uLk1.z),sin(uLk1.z)),pp=vec2(-n.y,n.x);
+ float fl=1.+.12*sin(TAU*(uT*sp+h11(sd)));                       /* the leak breathes a little over the loop */
+ bool mixB=h11(sd+3.)<.5;
+ if(md==0||(md==3&&mixB)){                                      /* edge burn: the film fogged from the side of the frame */
+  for(int k=0;k<2;k++){if(k==1&&h11(sd+5.)<.55)break;vec2 nn=k==0?n:-n;
+   float ext=.5*(abs(nn.x)*uAsp+abs(nn.y)),u=dot(w,vec2(-nn.y,nn.x));
+   float x=ext-dot(w,nn)+(vn(vec2(u*5.+sd*3.,sd+float(k)*7.+.4*sin(TAU*uT*sp)))-.5)*(.03+.09*sf);
+   float W=(.04+.22*sz)*(k==1?.6:1.);
+   L+=1.7*exp(-pow(max(x,0.)/W,1.+sf))*fl;}}
+ if(md==1||(md==3&&!mixB)){                                      /* band: a stripe of light across the frame */
+  float t=dot(w,n)-uLk3.x*.4-.04*sin(TAU*(uT*sp+h11(sd+1.)));
+  float wd=(.02+.13*sz)*(1.+.3*(vn(vec2(dot(w,pp)*3.,sd))-.5)),q=abs(t)/wd;
+  float core=1.-smoothstep(1.-.6*sf-.05,1.+.3*sf,q);
+  L+=(1.05*core*(1.15-.35*q)+.45*exp(-q*q*.35))*fl;}
+ int nb=md==2?int(uLk3.y+.5):(md==3?1:0);                         /* blobs: soft clouds of light, distorted */
+ for(int i=0;i<4;i++){if(i>=nb)break;float fi=float(i),h=h11(fi*3.3+sd+9.),h2=h11(fi*5.9+sd+11.);
+  float ba=h*TAU;vec2 c=vec2(cos(ba)*uAsp*.5,sin(ba)*.5)*(.75+.4*h2)+.05*vec2(sin(TAU*(uT*sp+h)),cos(TAU*(uT*sp+h2))); /* blobs sit toward the frame edges */
+  float R=.1+.3*sz*(.6+.6*h11(fi*7.1+sd));
+  vec2 wq=w+(vec2(fbm(w*3.+sd+fi,3.),fbm(w*3.+sd+fi+9.,3.))-.5)*(.1+.3*sf);
+  float d=length(wq-c)/R;L+=1.4*exp(-d*d*(1.6-sf))*fl;}
+ return L*uLk1.x;
+}
+vec4 look(vec2 p){vec4 s=src(p);
+ if(uChr.x>0.){vec2 d=vec2(cos(uChr.y),sin(uChr.y))*uChr.x*.012;s.r=src(p+d).r;s.b=src(p-d).b;}
+ return s;}
+/* ---------- where an effect acts ---------- */
+float regM(float rr,float pos,float sz,vec2 w,float bw){
+ int r=int(rr+.5);float hw=.5*uAsp;
+ if(r==1)return step(w.x,pos*hw);
+ if(r==2)return step(pos*hw,w.x);
+ if(r==3)return step(-pos*.5,w.y);
+ if(r==4)return step(w.y,-pos*.5);
+ if(r==5)return step(abs(w.y+pos*.5),sz*.5);
+ if(r==6)return step(abs(w.x-pos*hw),sz*.5*uAsp);
+ if(r==7)return step(length(w-vec2(0.,-pos*.5)),sz*.5);
+ if(r==8){vec2 d=abs(w-vec2(0.,-pos*.5));return step(d.x,(bw>0.?bw:sz*uAsp)*.5)*step(d.y,sz*.5);}
+ if(r==9)return gIns;
+ if(r==10)return 1.-gIns;
+ if(r==11){vec2 c=floor(w/(.04+sz*.25));return step(h21(c+.5),.5+pos*.45);}
+ if(r==12)return step(uBox.x,w.x)*step(w.x,uBox.z)*step(uBox.y,w.y)*step(w.y,uBox.w);
+ return 1.;
+}
+/* ---------- photo effects: they move the point the photo is read from ---------- */
+vec2 warp(vec2 p,int i){
+ vec4 A=uEA[i],B=uEB[i];int ty=int(B.y+.5),op=int(A.w+.5);float ph=uT*B.x,an=sin(TAU*ph),cn=B.x>0.?cos(TAU*ph):1.;
+ /* grid effects inside a Box region start their grid at the box corner, so cells fit the box (ref 14) */
+ vec4 C=uEC[i];bool gt=C.w>.5&&(ty==0||ty==1||ty==8||ty==11||ty==13||ty==14);vec2 org=gt?vec2(-C.z*.5,-C.x*.5-C.y*.5):vec2(0.);p-=org;
+ if(ty==0){ /* strips: echo / shuffle / reeded glass / mirror */
+  float W=A.x;mat2 R=rot(A.z*PI/180.);vec2 q=R*p;float c=floor(q.x/W),f=fract(q.x/W),h=h21(vec2(c,3.));
+  if(op==0)q.x-=c*W*A.y*(1.+.35*an);
+  else if(op==1){q.y+=(h-.5)*A.y*.5+.06*A.y*sin(TAU*(ph+h))*step(.5,B.x);q.x+=(h21(vec2(c,9.))-.5)*A.y*W*2.;}
+  else if(op==2)q.x=(c+.5)*W+(f-.5)*W*(1.-2.*A.y)*(1.+.3*an)-c*W*.15*A.y*an;
+  else{if(mod(c,2.)>.5)q.x=(c+1.-f)*W;q.y+=mod(c,2.)*A.y*.15*(1.+an);}
+  gEdge=min(gEdge,min(f,1.-f)*W);p=transpose(R)*q;
+ }else if(ty==1){ /* tiles: repeat rows / shuffle / mosaic / mirror grid */
+  vec2 cs=vec2(A.x*A.z,A.x),id=floor(p/cs),f=fract(p/cs);float st=B.x>0.?floor(uT*B.x*4.):0.;vec2 sr=id;
+  if(op==0){sr.x=floor(mix(id.x,0.,A.y)+.5)+(B.x>0.?floor(2.*sin(TAU*(ph+id.y*.13))+.5):0.);f.y+=(h21(id+st+.3)-.5)*.25*A.y;p=(sr+f)*cs;}
+  else if(op==1){sr=id+floor((vec2(h21(id+st),h21(id+st+17.))-.5)*A.y*6.+.5);p=(sr+f)*cs;}
+  else if(op==2){vec2 Bc=cs*2.,r=p/Bc;float sz=1.;vec2 lid=floor(r);
+   for(int k=0;k<3;k++){lid=floor(r/sz);if(h21(lid+vec2(float(k)*31.,sz*7.))<.45)break;sz*=.5;}
+   vec2 lf=fract(r/sz),cen=(lid+.5)*sz*Bc;float hh=h21(lid*1.7+sz*3.+st);
+   vec2 off=(vec2(h21(lid+5.+st),h21(lid+11.+st))-.5)*Bc*2.*A.y;float z=mix(1.,.45+hh*.5,A.y);
+   if(hh<A.y)p=cen+off+(lf-.5)*sz*Bc*z;f=lf;cs=sz*Bc;}
+  else{vec2 m=mod(id,2.);f=mix(f,1.-f,m);sr=id-m+(B.x>0.?vec2(floor(st*.5),0.)*2.:vec2(0.));p=(sr+f)*cs;}
+  gEdge=min(gEdge,min(min(f.x,1.-f.x)*cs.x,min(f.y,1.-f.y)*cs.y));
+ }else if(ty==2){ /* smear: pixels beyond a (wavy) line are stretched */
+  bool vt=op==2||op==3||op==5;vec2 q=vt?p.yx:p;float L=A.x*(vt?.5:.5*uAsp)+.08*an;
+  float wv=A.y*sin(q.y*A.z+TAU*ph),line=L+wv,d=0.;
+  if(op==0||op==2){if(q.x>line){d=q.x-line;q.x=line;}}
+  else if(op==1||op==3){if(q.x<line){d=line-q.x;q.x=line;}}
+  else{float lim=abs(L)+.02+wv;if(abs(q.x)>lim){d=abs(q.x)-lim;q.x=sign(q.x)*lim;}}
+  if(d>0.)q.y+=A.y*.6*sin(d*A.z*.5-TAU*ph)*smoothstep(0.,.08,d);
+  p=vt?q.yx:q;
+ }else if(ty==3){ /* wave / zigzag / steps / glitch rows */
+  float s=p.y*A.y+TAU*ph;
+  if(op==0)p.x+=A.x*sin(s);
+  else if(op==1)p.x+=A.x*(tri(s/TAU)-.5)*2.;
+  else if(op==2)p.x+=A.x*floor(sin(s)*3.+.5)/3.;
+  else if(op==3){float r=floor(p.y/A.z),st=B.x>0.?floor(uT*B.x*6.):0.;p.x+=(h21(vec2(r,st))-.5)*2.*A.x*step(.45,h21(vec2(r,st+50.)));gEdge=min(gEdge,min(fract(p.y/A.z),1.-fract(p.y/A.z))*A.z);}
+  else p.y+=A.x*sin(p.x*A.y+TAU*ph);
+ }else if(ty==4){ /* rings, each turned */
+  vec2 c=vec2(0.,-A.z*.5),q=p-c;float r=length(q),k=floor(r/A.x),a;
+  if(op==0)a=(mod(k,2.)*2.-1.)*A.y;else if(op==1)a=(h21(vec2(k,3.))-.5)*2.*A.y;else if(op==2)a=k*A.y*.25;else a=0.;
+  q=rot(a*cn)*q;if(op==3)q*=1.+(h21(vec2(k,7.))-.5)*A.y*.4*cn;
+  float fr=fract(r/A.x);gEdge=min(gEdge,min(fr,1.-fr)*A.x);p=q+c;
+ }else if(ty==5){ /* liquify: noise flow, melting, horizontal drag, swirl */
+  vec2 lo=.5*vec2(cos(TAU*ph),sin(TAU*ph));
+  vec2 n=vec2(fbm(p*A.y+lo,A.z),fbm(p*A.y+lo+vec2(5.2,1.3),A.z))-.5;
+  if(op==0)p+=n*A.x;else if(op==1)p.y+=abs(n.x)*A.x*2.5;else if(op==2)p.x+=n.x*A.x*2.5;else p=rot(n.x*A.x*14.)*p;
+ }else if(ty==6){ /* glass shards: straight cuts or voronoi, each piece shifted and scaled */
+  vec2 id=vec2(0.);
+  if(op==0){float bits=0.;for(int k=0;k<8;k++){if(float(k)>=A.x)break;float fk=float(k);
+    vec2 pt=(vec2(h11(fk*3.1+1.),h11(fk*5.7+2.))-.5)*vec2(uAsp,1.)*.8;float a=h11(fk*7.3+4.)*PI;
+    float d=dot(p-pt,vec2(cos(a),sin(a)));bits+=step(0.,d)*exp2(fk);gEdge=min(gEdge,abs(d));}
+   id=vec2(bits,1.);}
+  else{float sc=A.x*.7;vec2 g=p*sc,gi=floor(g);float d1=9.,d2=9.;
+   for(int j=-1;j<=1;j++)for(int i2=-1;i2<=1;i2++){vec2 c=gi+vec2(float(i2),float(j));vec2 pt=c+.15+.7*vec2(h21(c+.1),h21(c+4.2));float dd=length(g-pt);
+    if(dd<d1){d2=d1;d1=dd;id=c;}else if(dd<d2)d2=dd;}
+   gEdge=min(gEdge,(d2-d1)*.5/sc);}
+  float h=h21(id+.3),h2=h21(id+7.7),h3=h21(id+3.1),oa=h*TAU+TAU*ph;
+  p=p*(1.+(h3-.5)*A.z)+vec2(cos(oa),sin(oa))*A.y*(.3+h2);
+ }else if(ty==7){ /* mirror / kaleido */
+  float ax=A.x*.5*uAsp+.05*an;
+  if(op==0)p.x=ax-abs(p.x-ax);
+  else if(op==1){float ay=-A.x*.5+.05*an;p.y=ay+abs(p.y-ay);}
+  else if(op==2){vec2 c=vec2(ax,0.);p=c-abs(p-c);}
+  else{float n=max(2.,A.z),sg=TAU/n;vec2 q=rot(A.y*PI/180.+sg*ph)*p;float a=mod(atan(q.y,q.x),sg);a=abs(a-sg*.5);p=vec2(cos(a),sin(a))*length(q);}
+ }else if(ty==8){ /* slit bands: inside a band one column (or row) is stretched across */
+  float col=A.z*.5*uAsp+.06*an;
+  if(op==1){float id=floor(p.x/A.x),f=fract(p.x/A.x);if(h21(vec2(id,2.))<A.y)p.y=A.z*.5+(h21(vec2(id,5.))-.5)*.5+.05*sin(TAU*(ph+h21(vec2(id,8.))));gEdge=min(gEdge,min(f,1.-f)*A.x);}
+  else if(op==0){float id=floor(p.y/A.x),f=fract(p.y/A.x);if(h21(vec2(id,2.))<A.y)p.x=col+(h21(vec2(id,5.))-.5)*.5*uAsp+.05*sin(TAU*(ph+h21(vec2(id,8.))));gEdge=min(gEdge,min(f,1.-f)*A.x);}
+  else{float x=p.x;p.x=col;float z=op==2?(tri(x/(A.x*4.)+ph)-.5)*2.:sin(x/A.x*1.5+TAU*ph);p.y+=z*A.y*.15;}
+ }else if(ty==9){ /* zoom echo: the picture nested inside itself (droste); zooms one level per loop */
+  vec2 c=vec2(0.,-A.z*.5),q=p-c;float sc=A.x,fr=A.y;
+  float m=max(abs(q.x)/(uAsp*.5),abs(q.y)/.5)/fr;
+  if(m<1.){float z=pow(sc,-uT*B.x);m*=z;float k=floor(log(max(m,1e-5))/log(sc));float s=pow(sc,k);
+   float kl=k+uT*B.x; /* level counted in the unzoomed picture, so spin and drift wrap with the loop */
+   q=q*z/s;if(op==1)q=rot(kl*.35)*q;if(op==2)q+=vec2(.06,.03)*kl*fr;
+   float mm=m/s;gEdge=min(gEdge,(1.-mm)*.5*fr*s/z);p=c+q;}
+ }else if(ty==10){ /* rays: wedges around a centre, each turned or scaled */
+  vec2 c=vec2(0.,-A.z*.5),q=p-c;float sg=TAU/max(3.,A.x),a=atan(q.y,q.x),k=floor(a/sg),f=fract(a/sg);float r=length(q),t;
+  if(op==0)t=(mod(k,2.)*2.-1.)*A.y*.3;else if(op==1)t=(h21(vec2(k,4.))-.5)*A.y*.6;else if(op==3)t=k*A.y*.05;else t=0.;
+  q=rot(t*cn)*q;if(op==2)q*=1.+(h21(vec2(k,6.))-.5)*A.y*cn;
+  gEdge=min(gEdge,min(f,1.-f)*sg*r);p=c+q;
+ }else if(ty==11){ /* pixelate: squares, rows, columns, quadtree */
+  vec2 cs=vec2(A.x*A.z,A.x)*(1.+.25*an);float st=B.x>0.?floor(uT*B.x*4.):0.;
+  if(op==3){vec2 r=p/(cs*8.);float sz=1.;vec2 id=floor(r);for(int k=0;k<4;k++){id=floor(r/sz);if(h21(id+vec2(float(k)*19.,sz*3.))<.4)break;sz*=.5;}cs*=8.*sz;}
+  vec2 id=floor(p/cs),f=fract(p/cs);vec2 q=(id+.5+(vec2(h21(id+st),h21(id+st+9.))-.5)*A.y)*cs;
+  if(op==1){q.x=p.x;f.x=.5;}else if(op==2){q.y=p.y;f.y=.5;}
+  gEdge=min(gEdge,min(min(f.x,1.-f.x)*cs.x,min(f.y,1.-f.y)*cs.y));p=q;
+ }else if(ty==12){ /* luma drag: bright (or dark) pixels pull the picture along — pixel-sort look */
+  vec2 dr=op==0?vec2(0.,1.):op==1?vec2(0.,-1.):op==2?vec2(-1.,0.):op==3?vec2(1.,0.):normalize(p+1e-4)*-1.;
+  float th=A.y,sf=.02+A.z*.3,am=A.x*(1.+.35*an);
+  for(int k=0;k<5;k++){float l=lum(src(p).rgb);float w=th>=0.?smoothstep(th-sf,th+sf,l):1.-smoothstep(-th-sf,-th+sf,l);p+=dr*w*am*.2;}
+ }else if(ty==13){ /* accordion: the picture folded like paper, alternate panels in shade */
+  mat2 R=rot(op==1?PI*.5:op==2?A.z*PI/180.:0.);vec2 q=R*p;float W=A.x,sh=2.*W*floor(B.x+.5)*uT;
+  float x=q.x+sh,c=floor(x/W),f=fract(x/W),odd=mod(c,2.);float e=mix(f,f*f*(3.-2.*f),A.y);
+  q.x=(c+e)*W-sh;gShade*=1.-A.y*.7*(odd>.5?f:1.-f)*(odd>.5?1.:.45);gEdge=min(gEdge,min(f,1.-f)*W);p=transpose(R)*q;
+ }else if(ty==14){ /* glitch blocks: rectangles shifted, swapped or repeated */
+  float st=B.x>0.?floor(uT*B.x*4.):0.;float row=floor(p.y/A.x),cw=A.x*(.6+2.5*h21(vec2(row,1.)));
+  vec2 id=vec2(floor(p.x/cw),row),f=vec2(fract(p.x/cw),fract(p.y/A.x));
+  if(h21(id+st+.7)<A.y){vec2 hh=vec2(h21(id+st+2.),h21(id+st+5.))-.5;
+   if(op==0)p.x+=hh.x*A.z*2.;else if(op==1)p+=hh*A.z*2.;else p.x=(id.x-1.-floor(h21(id+st+8.)*3.))*cw+f.x*cw;
+   gEdge=min(gEdge,min(min(f.x,1.-f.x)*cw,min(f.y,1.-f.y)*A.x));}
+ }
+ return p+org;
+}
+vec3 grade(vec3 c){
+ float l=lum(c);vec3 g=c;int n=max(uN,2);
+ if(uGrade==1)g=vec3(l);
+ else if(uGrade==2)g=mix(uPal[0],uPal[n-1],l);
+ else if(uGrade==3){float x=clamp(l,0.,1.)*float(n-1);int k=int(min(floor(x),float(n-2)));g=mix(uPal[k],uPal[k+1],x-float(k));}
+ else if(uGrade==4){int k=int(clamp(floor(l*float(n)),0.,float(n-1)));g=uPal[k];}
+ return mix(c,g,uTone.w);
+}
+vec3 shadeCol(vec2 fc){
+ vec2 uv=fc/uRes;float m=textureLod(uTxt,uv,uTBlur).a;float ins=step(.5,m);gIns=ins;
+ vec2 w0=(fc-uRes*.5)/uRes.y,p=w0;gEdge=9.;gShade=1.;
+ /* Glass letters: the whole poster bends around the letters. Its floor is set high (Amount and Soften start strong),
+    so it stays a big lens-like warp, unlike the thin Liquid glass rim */
+ if(uTMode==3){float lv=uTGl;vec2 e=vec2(exp2(lv))/uRes;float mb=textureLod(uTxt,uv,lv).a;float A=.45+.55*uTAmt;
+  vec2 gr=vec2(textureLod(uTxt,uv+vec2(e.x,0.),lv).a-textureLod(uTxt,uv-vec2(e.x,0.),lv).a,textureLod(uTxt,uv+vec2(0.,e.y),lv).a-textureLod(uTxt,uv-vec2(0.,e.y),lv).a);
+  p=p*(1.-mb*(.08+A*.3))+gr*(.02+A*.1);}
+ if(uTMode==4&&ins>.5)p=p/(1.4+uTAmt*2.5);
+ float tm=uTMode==1?ins:uTMode==2?1.-ins:1.;
+ /* each effect may give its own cuts a liquid-glass rim; cuts of effects without glass are not tracked */
+ float gGS=.5,gGD=.6;
+ for(int i=0;i<3;i++){if(uEB[i].z>.5&&tm>.5&&regM(uEB[i].w,uEC[i].x,uEC[i].y,w0,uEC[i].z)>.5){float pe=gEdge;p=warp(p,i);
+  if(gEdge<pe){if(uEG[i].x>.5){gGS=uEG[i].y;gGD=uEG[i].z;}else gEdge=pe;}}}
+ /* liquid glass on the cuts: every piece gets a thick glass rim — near its edge the picture is pulled in from the inside
+    and split by colour */
+ float ge=min(gEdge,1.);vec2 gg=vec2(dFdx(ge),dFdy(ge));float ggl=length(gg);vec2 gn=vec2(0.);float gk=0.,gdm=0.;
+ if(gEdge<1.&&ggl>.3/uRes.y&&ggl<4./uRes.y){float gw=.004+.026*gGS;
+  if(gEdge<gw){gn=gg/ggl;float t=1.-gEdge/gw;gk=t*t*(3.-2.*t);
+   gk*=smoothstep(1.5,4.5,gEdge*uRes.y); /* the 1–2 px right at the seam stay put: the normal is unreliable there */
+   gdm=gk*gk*gw*(.8+1.6*gGS);p+=gn*gdm;}}
+ /* Liquid glass letters: each letter a slab of thick glass — a rim along the contour pulls the picture in from the
+    inside and splits it by colour; the middle of the letter stays clear */
+ if(uTMode==10&&ins>.5){float L=uTGl;vec2 e=vec2(exp2(L))/uRes;float mb=textureLod(uTxt,uv,L).a;
+  vec2 gr=vec2(textureLod(uTxt,uv+vec2(e.x,0.),L).a-textureLod(uTxt,uv-vec2(e.x,0.),L).a,textureLod(uTxt,uv+vec2(0.,e.y),L).a-textureLod(uTxt,uv-vec2(0.,e.y),L).a);
+  float grl=length(gr);
+  if(grl>.002){float rim=1.-smoothstep(.5,.97,mb);rim=rim*rim*(3.-2.*rim);
+   gn=gr/grl;gk=rim;gdm=pow(rim,1.2)*(.016+.07*uTAmt);gGD=uTDisp;}
+  p=p*(1.-(.05+.08*uTAmt))+gn*gdm;}   /* the slab also magnifies a little, so the letter reads by the jump at its contour */
+ vec4 s;
+ if(uTMode==9&&ins>.5){float r=.004+uTAmt*.03;s=vec4(0.);for(int k=0;k<16;k++){float a=float(k)*2.39996,rr=r*sqrt((float(k)+.5)/16.);s+=look(p+vec2(cos(a),sin(a))*rr);}s/=16.;}
+ else if(uSt1.x>0.&&regM(uSt1.z,uSt2.x,uSt2.y,w0,0.)>.5){
+  vec2 d=vec2(cos(uSt1.y),sin(uSt1.y))*uSt1.x*(1.+.5*sin(TAU*uT*uSt1.w));float j=h21(fc*.37)-.5;s=vec4(0.);
+  for(int k=0;k<24;k++)s+=look(p+d*((float(k)+.5+j)/24.-.5));s/=24.;}
+ else s=look(p);
+ /* dispersion: red bends more than green, blue less — an RGB fringe along every rim, as strong as the refraction */
+ if(gk>0.&&gGD>0.){float dd=gdm*gGD*.35+gk*gGD*.0012;s.r=look(p+gn*dd).r;s.b=look(p-gn*dd).b;}
+ /* frosted glass letters (Liquid glass and Glass letters): the picture inside goes soft and a little milky */
+ if((uTMode==10||uTMode==3)&&ins>.5&&uTFrost>0.){float lb=1.+uTFrost*4.,r=uTFrost*.012;vec3 fr=vec3(0.);
+  for(int k=0;k<5;k++){vec2 o=k==0?vec2(0.):vec2(cos(float(k)*1.5708+.4),sin(float(k)*1.5708+.4))*r;fr+=srcL(p+o,lb).rgb;}
+  s.rgb=mix(s.rgb,fr*.2,min(1.,uTFrost*1.6));s.rgb=mix(s.rgb,vec3(1.),uTFrost*.12);}
+ int en=int(uEc1.x+.5);
+ if(en>0&&regM(uEc2.z,uEc3.x,uEc3.y,w0,0.)>.5){
+  vec2 off=uEc1.yz*(1.+.4*sin(TAU*uT*uEc2.w));int bl=int(uEc1.w+.5);vec3 acc=s.rgb,avg=s.rgb;float aa=s.a,sum=1.;
+  for(int k=1;k<=15;k++){if(k>en)break;float fk=float(k);vec4 e=look(p*pow(uEc2.x,fk)-off*fk);float f=pow(uEc2.y,fk);vec3 ec=mix(uPaper,e.rgb,f);
+   if(bl==0)acc=max(acc,ec);else if(bl==1)acc=min(acc,ec);else if(bl==2)acc=1.-(1.-acc)*(1.-e.rgb*f);
+   else if(bl==3){avg+=e.rgb*f;sum+=f;}
+   else{vec3 un=mix(uPaper,ec,e.a);acc=mix(un,acc,aa);aa=aa+(1.-aa)*e.a;}}
+  s.rgb=bl==3?avg/sum:acc;}
+ s.rgb=prism(s.rgb,p,w0);
+ vec3 c=s.rgb*gShade*exp2(uTone.z);c=(c-.5)*uTone.x+.5;c=clamp(mix(vec3(lum(c)),c,uTone.y),0.,1.);
+ vec3 col=grade(c);
+ if(uTMode==6&&ins>.5)col=uGrade==0?vec3(lum(c)):c;
+ if(uPr3.z>0.){vec3 cc=clamp(gCaust*uPr3.z,0.,1.);float ca=max(cc.r,max(cc.g,cc.b));
+  if(ca>.001){vec3 hue=cc/ca;   /* prism caustics: coloured light — it tints the picture with its own hue, then glows a little */
+   col=mix(col,col*hue*1.7+hue*.22,ca*.6);col=1.-(1.-col)*(1.-cc*.55);}}
+ if(uLk1.x>0.){float L=leakField(w0);int pl=int(uLk2.y+.5),bm=int(uLk3.z+.5);vec3 b=burnRamp(L,pl);
+  /* light leak blend. Light modes (screen, add, dodge) add the burn colour and blow out to white at the core;
+     tint modes (overlay, soft light) colour the picture; dark modes (colour burn, multiply) burn it like scorched film */
+  float a=clamp(L*.9,0.,1.);vec3 t=burnRamp(bm>=5?clamp(L,.3,.75):clamp(L,.55,1.05),pl);   /* dark modes take the deep red end of the ramp */
+  if(bm==0)col=1.-(1.-col)*(1.-b);
+  else if(bm==1)col=min(col+b,1.);
+  else if(bm==2)col=min(col/max(1.-b*.8,.15),1.);
+  else if(bm==3){vec3 ov=mix(2.*col*t,1.-2.*(1.-col)*(1.-t),step(.5,col));col=mix(col,ov,a);}
+  else if(bm==4){vec3 sl=(1.-2.*t)*col*col+2.*t*col;col=mix(col,sl,a);}
+  else if(bm==5){vec3 cb=1.-min((1.-col)/max(t,.05),1.);col=mix(col,cb,a*.85);}
+  else col=mix(col,col*t,a);
+  if(bm<3)col=mix(col,b,smoothstep(1.4,2.2,L)*.6);}
+ if(uLeak.x>0.){float a=uLeak.y;vec2 dr=vec2(cos(a),sin(a));float t=dot(w0,dr)+.12*sin(TAU*uT*uLeak.w),wd=.03+uLeak.z*.15;
+  float b=exp(-pow((t+.18)/wd,2.))+.7*exp(-pow((t-.22)/(wd*.6),2.));col=1.-(1.-col)*(1.-spec(t*1.6+w0.y*.4)*b*uLeak.x);}
+ if(uTMode==5&&ins>.5)col=1.-col;
+ if(uTMode==7&&ins>.5)col=uPaper;
+ if(uTMode==8&&ins<.5)col=uPaper;
+ col+=(h21(floor(fc)*.731+3.1)-.5)*uGrain*.3;
+ return col;
+}
+void main(){
+ vec3 c=vec3(0.);
+ if(uAA>1.5){for(int i=0;i<4;i++){vec2 off=vec2(float(i&1),float(i>>1))*.5-.25;c+=shadeCol(gl_FragCoord.xy+off);}c*=.25;}
+ else c=shadeCol(gl_FragCoord.xy);
+ o=vec4(clamp(c,0.,1.),1.);
+}`;
+let PROG=null,txTex=null;const UL={};
+const U=n=>{if(!(n in UL))UL[n]=gl.getUniformLocation(PROG,n);return UL[n]};
+if(gl){
+  const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS)){console.error(gl.getShaderInfoLog(x));throw new Error('shader: '+gl.getShaderInfoLog(x))}return x};
+  PROG=gl.createProgram();gl.attachShader(PROG,sh(gl.VERTEX_SHADER,VS));gl.attachShader(PROG,sh(gl.FRAGMENT_SHADER,FSRC));
+  gl.bindAttribLocation(PROG,0,'aP');gl.linkProgram(PROG);if(!gl.getProgramParameter(PROG,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(PROG));
+  const vao=gl.createVertexArray();gl.bindVertexArray(vao);
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  txTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,txTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+}
+function hex2rgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return [(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]}
+
+/* ================= photo library: demo still life + the user's photos (IndexedDB, survive reloads) ================= */
+const MAXSIDE=2048;
+const PHOTOS={};      /* id → {cv (canvas), tex, w, h} once decoded */
+let LIB=[];           /* [{id,name,blob}] stored photos */
+function mkTex(cvs){
+  const t=gl.createTexture();gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,cvs);gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.activeTexture(gl.TEXTURE0);return t}
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* placeholder photo until the user loads one: a lit studio still life (plant in a tall vase, sphere, cylinder, arch) */
+function makeDemo(){
+  const W=1200,H=1600,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),r=mulberry(77);
+  let g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#dcd6cd');g.addColorStop(.66,'#c9c1b6');g.addColorStop(.665,'#b7ada1');g.addColorStop(1,'#9d9387');x.fillStyle=g;x.fillRect(0,0,W,H);
+  g=x.createRadialGradient(W*.28,H*.2,0,W*.28,H*.2,W);g.addColorStop(0,'rgba(255,250,240,.5)');g.addColorStop(1,'rgba(255,250,240,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  /* pale arch on the backdrop */
+  g=x.createLinearGradient(260,0,940,0);g.addColorStop(0,'#e9b9aa');g.addColorStop(1,'#d79a8a');x.fillStyle=g;x.globalAlpha=.75;
+  x.beginPath();x.moveTo(260,1060);x.lineTo(260,520);x.arc(600,520,340,Math.PI,0);x.lineTo(940,1060);x.fill();x.globalAlpha=1;
+  const shadow=(cx,cy,rx,ry,a)=>{x.save();x.translate(cx,cy);x.scale(1,ry/rx);g=x.createRadialGradient(0,0,0,0,0,rx);g.addColorStop(0,`rgba(40,28,18,${a})`);g.addColorStop(1,'rgba(40,28,18,0)');x.fillStyle=g;x.beginPath();x.arc(0,0,rx,0,Math.PI*2);x.fill();x.restore()};
+  shadow(640,1420,360,70,.5);shadow(950,1420,190,40,.45);shadow(250,1430,190,40,.4);
+  /* blue cylinder */
+  const cyl=(cx,top,bot,w,cs)=>{g=x.createLinearGradient(cx-w/2,0,cx+w/2,0);g.addColorStop(0,cs[2]);g.addColorStop(.3,cs[1]);g.addColorStop(.55,cs[0]);g.addColorStop(1,cs[2]);
+    x.fillStyle=g;x.beginPath();x.ellipse(cx,bot,w/2,w*.12,0,0,Math.PI);x.lineTo(cx-w/2,top);x.lineTo(cx+w/2,top);x.fill();
+    x.fillStyle=cs[1];x.beginPath();x.ellipse(cx,top,w/2,w*.12,0,0,Math.PI*2);x.fill()};
+  cyl(250,1130,1420,250,['#7aa1c6','#b6d0e6','#34557a']);
+  /* tall dark vase with a rounded bottom and horizontal texture */
+  const vl=450,vr=750,vt=760,vb=1430;
+  x.save();x.beginPath();x.moveTo(vl,vt);x.lineTo(vl,vb-150);x.quadraticCurveTo(vl,vb,600,vb);x.quadraticCurveTo(vr,vb,vr,vb-150);x.lineTo(vr,vt);x.closePath();x.clip();
+  g=x.createLinearGradient(vl,0,vr,0);g.addColorStop(0,'#1b1b1d');g.addColorStop(.32,'#5c5c60');g.addColorStop(.5,'#3e3e42');g.addColorStop(1,'#141416');x.fillStyle=g;x.fillRect(vl,vt,vr-vl,vb-vt);
+  for(let i=0;i<500;i++){x.fillStyle=r()<.5?'rgba(255,255,255,.06)':'rgba(0,0,0,.12)';x.fillRect(vl+r()*300,vt+r()*(vb-vt),20+r()*120,1+r()*2)}
+  x.restore();x.fillStyle='#0e0e10';x.beginPath();x.ellipse(600,vt,150,26,0,0,Math.PI*2);x.fill();
+  /* plant: stems and glossy leaves */
+  x.strokeStyle='#4a3a2a';x.lineWidth=7;x.lineCap='round';
+  const stems=[[600,770,560,300],[600,770,700,380],[600,770,480,470],[610,770,760,560]];
+  stems.forEach(([a,b,c2,d])=>{x.beginPath();x.moveTo(a,b);x.quadraticCurveTo((a+c2)/2+30,(b+d)/2,c2,d);x.stroke()});
+  for(let i=0;i<26;i++){const s=stems[i%stems.length],t=.25+r()*.75,lx=s[0]+(s[2]-s[0])*t+(r()-.5)*40,ly=s[1]+(s[3]-s[1])*t,a=(r()-.5)*2.4-Math.PI/2,L=70+r()*70;
+    x.save();x.translate(lx,ly);x.rotate(a);g=x.createLinearGradient(0,-L*.3,L,L*.3);g.addColorStop(0,'#16301f');g.addColorStop(.5,'#3f6b4c');g.addColorStop(.7,'#9ab7a0');g.addColorStop(1,'#1d3a27');
+    x.fillStyle=g;x.beginPath();x.ellipse(L*.55,0,L*.55,L*.24,0,0,Math.PI*2);x.fill();x.strokeStyle='rgba(220,240,220,.35)';x.lineWidth=2;x.beginPath();x.moveTo(4,0);x.lineTo(L,0);x.stroke();x.restore()}
+  /* red sphere */
+  g=x.createRadialGradient(905,1240,10,950,1300,150);g.addColorStop(0,'#ffb3a0');g.addColorStop(.35,'#e8442a');g.addColorStop(.8,'#8a160a');g.addColorStop(1,'#4a0a04');
+  x.fillStyle=g;x.beginPath();x.arc(950,1290,140,0,Math.PI*2);x.fill();
+  /* film grain */
+  const id=x.getImageData(0,0,W,H),d=id.data;for(let i=0;i<d.length;i+=4){const n=(r()-.5)*14;d[i]+=n;d[i+1]+=n;d[i+2]+=n}x.putImageData(id,0,0);
+  return c;
+}
+function photoFor(id){
+  if(PHOTOS[id]&&PHOTOS[id].tex)return PHOTOS[id];
+  if(id!=='demo'&&LIB.some(q=>q.id===id))decodePhoto(id);
+  if(!PHOTOS.demo){const c=makeDemo();PHOTOS.demo={cv:c,tex:mkTex(c),w:c.width,h:c.height}}
+  return PHOTOS.demo;
+}
+const decoding=new Set();
+async function decodePhoto(id){
+  if(decoding.has(id))return;decoding.add(id);
+  try{const it=LIB.find(q=>q.id===id);if(!it)return;const bm=await createImageBitmap(it.blob);
+    const c=document.createElement('canvas');c.width=bm.width;c.height=bm.height;c.getContext('2d').drawImage(bm,0,0);
+    PHOTOS[id]={cv:c,tex:mkTex(c),w:c.width,h:c.height};dirty=true}
+  catch(e){console.error(e)}finally{decoding.delete(id)}
+}
+/* IndexedDB */
+let DB=null;
+function idb(){return DB?Promise.resolve(DB):new Promise((res,rej)=>{const r=indexedDB.open('photolab',1);r.onupgradeneeded=()=>r.result.createObjectStore('photos',{keyPath:'id'});r.onsuccess=()=>{DB=r.result;res(DB)};r.onerror=()=>rej(r.error)})}
+const idbReq=(mode,f)=>idb().then(db=>new Promise((res,rej)=>{const q=f(db.transaction('photos',mode).objectStore('photos'));q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
+async function loadLib(){try{LIB=(await idbReq('readonly',s=>s.getAll())).sort((a,b)=>a.t-b.t)}catch(e){LIB=[]}
+  if(P.photo!=='demo'&&!LIB.some(q=>q.id===P.photo))P.photo=LIB.length?LIB[LIB.length-1].id:'demo';
+  photoFor(P.photo);buildUI();dirty=true}
+/* files → downscaled JPEG in the library; the last one becomes the current photo */
+async function addPhotos(files){
+  let last=null;
+  for(const f of files){if(!f||!/^image\//.test(f.type))continue;
+    try{const bm=await createImageBitmap(f),k=Math.min(1,MAXSIDE/Math.max(bm.width,bm.height));
+      const c=document.createElement('canvas');c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);
+      const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));const id='p'+Date.now().toString(36)+Math.floor(R()*1e4);
+      const it={id,name:(f.name||'pasted').replace(/\.[^.]+$/,''),blob,t:Date.now()};
+      try{await idbReq('readwrite',s=>s.put(it))}catch(e){console.warn('photo not stored',e)}
+      LIB.push(it);PHOTOS[id]={cv:c,tex:mkTex(c),w:c.width,h:c.height};last=id}
+    catch(e){alert('Could not read '+(f.name||'image')+': '+(e&&e.message||e))}}
+  if(last){P.photo=last;changed();buildUI();toast(files.length>1?files.length+' photos loaded':'Photo loaded')}
+}
+async function removePhoto(id){
+  if(id==='demo')return;try{await idbReq('readwrite',s=>s.delete(id))}catch(e){}
+  if(PHOTOS[id]){gl.deleteTexture(PHOTOS[id].tex);delete PHOTOS[id]}
+  const i=LIB.findIndex(q=>q.id===id);LIB.splice(i,1);P.photo=LIB.length?LIB[Math.min(i,LIB.length-1)].id:'demo';changed();buildUI()}
+function stepPhoto(k){const ids=['demo',...LIB.map(q=>q.id)];const j=Math.max(0,ids.indexOf(P.photo));P.photo=ids[(j+k+ids.length)%ids.length];
+  photoFor(P.photo);changed();buildUI();toast(P.photo==='demo'?'Demo still life':(LIB.find(q=>q.id===P.photo)||{}).name)}
+
+function renderPhoto(ph){
+  const t=ph-Math.floor(ph);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,RW,RH);gl.useProgram(PROG);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,txTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,dcv);gl.generateMipmap(gl.TEXTURE_2D);
+  const PH=photoFor(P.photo);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,PH.tex);gl.activeTexture(gl.TEXTURE0);
+  gl.uniform1i(U('uTxt'),0);gl.uniform1i(U('uPh'),1);
+  const asp=RW/RH;
+  gl.uniform2f(U('uRes'),RW,RH);gl.uniform1f(U('uT'),t);gl.uniform1f(U('uSeed'),P.seed%1000);gl.uniform1f(U('uAsp'),asp);
+  gl.uniform1f(U('uAA'),(exporting||P.aa)?2:1);
+  gl.uniform1f(U('uPhA'),PH.w/PH.h);gl.uniform1f(U('uTexH'),PH.h);gl.uniform4f(U('uFit'),P.zoom,P.px,P.py,P.flip?1:0);
+  const box=P.frame==='box';const bx=box?P.bx:0,by=box?P.by:0,bw=box?P.bw:1,bh=box?P.bh:1;
+  gl.uniform4f(U('uBox'),(bx-.5)*asp,.5-(by+bh),(bx+bw-.5)*asp,.5-by);gl.uniform1f(U('uClip'),box?1:0);
+  gl.uniform1i(U('uEdgeM'),P.pedge|0);gl.uniform1f(U('uKey'),P.key);gl.uniform3fv(U('uPaper'),hex2rgb(P.paper));
+  const ea=[],eb=[],ec=[];P.fx.forEach(f=>{const q=f.p.slice(),box=f.reg===8,bw=f.rsz*(f.rw>0?f.rw:asp);
+    /* in a Box region a whole number of tiles / strips fills the box (ref 14) */
+    if(box&&f.type==='tiles'){const k=f.op===2?2:1,ny=Math.max(1,Math.round(f.rsz/(q[0]*k))),cy=f.rsz/(ny*k),nx=Math.max(1,Math.round(bw/(cy*q[2]*k)));q[0]=cy;q[2]=bw/(nx*k)/cy}
+    if(box&&f.type==='strips'&&!q[2])q[0]=bw/Math.max(1,Math.round(bw/q[0]));
+    ea.push(q[0],q[1],q[2],f.op);eb.push(f.sp,FKEYS.indexOf(f.type),f.on?1:0,f.reg);ec.push(f.rpos,f.rsz,box?bw:0,box?1:0)});
+  gl.uniform4fv(U('uEA'),ea);gl.uniform4fv(U('uEB'),eb);gl.uniform4fv(U('uEC'),ec);
+  gl.uniform4fv(U('uEG'),P.fx.flatMap(f=>[f.glass&&CUTS(f)?1:0,f.gs??.5,f.gd??.6,0]));
+  gl.uniform4f(U('uEc1'),P.eOn?P.echo:0,P.edx,P.edy,P.eblend);gl.uniform4f(U('uEc2'),P.esc,P.efall,P.ereg,P.esp);gl.uniform4f(U('uEc3'),P.erpos,P.ersz,0,0);
+  gl.uniform4f(U('uSt1'),P.oOn?P.strk:0,P.sang*Math.PI/180,P.sreg,P.ssp);gl.uniform4f(U('uSt2'),P.srpos,P.srsz,0,0);
+  gl.uniform4f(U('uChr'),P.oOn?P.chr:0,P.chrA*Math.PI/180,0,0);
+  gl.uniform4f(U('uLeak'),0,0,0,0);
+  gl.uniform4f(U('uLk1'),P.lkOn?P.lkAmt:0,P.lkMode,P.lkAng*Math.PI/180,P.lkSize);gl.uniform4f(U('uLk2'),P.lkSoft,P.lkPal,P.lkSp,P.lkSeed);gl.uniform4f(U('uLk3'),P.lkPos,P.lkN,P.lkBlend|0,0);
+  const prOn=!!P.prOn;
+  gl.uniform4f(U('uPr1'),prOn&&P.prGh?Math.max(1,P.prA):0,P.prN,P.prAng*Math.PI/180,P.prMode);gl.uniform4f(U('uPr2'),P.prShift,P.prScale,P.prRot*Math.PI/180,P.prFlip?1:0);
+  gl.uniform4f(U('uPr3'),P.prBlur,P.prDisp,prOn?P.prRain:0,P.prRainW);gl.uniform4f(U('uPr4'),prOn?P.prHaze:0,P.prSp,P.prSeed,P.prROff??.5);
+  gl.uniform1i(U('uTMode'),P.tshow?TMK.indexOf(P.tmode):0);gl.uniform1f(U('uTAmt'),P.tamt);
+  gl.uniform1f(U('uTBlur'),P.tblur>0?Math.max(0,P.tblur+Math.log2(RH/1200)):0);
+  /* mask blur used to find the letter edges: Glass letters starts wide (3.5), the Liquid glass rim starts thinner (2.5) */
+  gl.uniform1f(U('uTGl'),Math.max(0,(P.tmode==='lglass'?3:3.5)+P.tblur*.5+Math.log2(RH/1200)));gl.uniform1f(U('uTDisp'),P.tdisp??.7);gl.uniform1f(U('uTFrost'),P.tfrost??0);
+  const pal=[];for(let i=0;i<6;i++)pal.push(...hex2rgb(P.pal[i]||'#000'));gl.uniform3fv(U('uPal'),pal);
+  gl.uniform1i(U('uGrade'),P.grade|0);gl.uniform1i(U('uN'),clamp(P.nCol|0,2,6));
+  gl.uniform4f(U('uTone'),P.con,P.sat,P.expo,P.gmix);gl.uniform1f(U('uGrain'),P.grain);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+/* ================= canvases & sizes ================= */
+const cv=$('#cv'),ctx=cv.getContext('2d');
+const mctx=document.createElement('canvas').getContext('2d');
+const dcv=document.createElement('canvas'),dctx=dcv.getContext('2d');      /* large text = the mask the pattern reacts to */
+const mDcv=document.createElement('canvas'),mDctx=mDcv.getContext('2d');   /* measuring with display axes */
+/* canvas text takes font-variation-settings from the canvas element's own style, so these live (hidden) in the DOM */
+const hiddenHost=el('div');hiddenHost.style.cssText='position:fixed;left:-99999px;top:0;width:1px;height:1px;overflow:hidden;visibility:hidden;pointer-events:none';
+document.body.append(hiddenHost);[dcv,mDcv].forEach(x=>hiddenHost.append(x));
+const USERF={};
+const axesOf=name=>(USERF[name]&&USERF[name].axes)||[];
+const varStr=(name,vals)=>{const a=axesOf(name);return a.length?a.map(x=>`"${x.tag}" ${vals[x.tag]??x.def}`).join(', '):'normal'};
+function axWeight(name,vals,fb){const w=axesOf(name).find(x=>x.tag==='wght');return w&&w.min>=1&&w.max<=1000?Math.round(vals.wght??w.def):fb}
+let lastVar='';
+function applyVariations(){const r=varStr(P.rfont,P.rax);if(r===lastVar)return;lastVar=r;dcv.style.fontVariationSettings=r;mDcv.style.fontVariationSettings=r;
+  /* force a style recalc and drop the cached canvas font, otherwise back-to-back renders (the wall) draw with the previous axes */
+  getComputedStyle(dcv).fontVariationSettings;getComputedStyle(mDcv).fontVariationSettings;dctx.font='1px serif';mDctx.font='1px serif'}
+let RW=0,RH=0,renderK=null,exporting=false;
+function baseSize(){const [a,b]=FORMATS[P.fmt];if(a<=b)return [Math.round(1600*a/b/2)*2,1600];return [1600,Math.round(1600*b/a/2)*2]}
+function ensureSize(){
+  const [bw,bh]=baseSize(),k=renderK??P.q,w=Math.round(bw*k/2)*2,h=Math.round(bh*k/2)*2;
+  if(w!==RW||h!==RH){RW=w;RH=h;cv.width=glc.width=dcv.width=w;cv.height=glc.height=dcv.height=h}
+}
+const applyCase=(s,c)=>c==='upper'?s.toUpperCase():c==='lower'?s.toLowerCase():s;
+const HAS_LS='letterSpacing' in ctx;
+/* ================= readable layer ================= */
+function grid(W,H,ph){
+  const u=H/1000;let m=P.margin*u,g=P.gutter*u;
+  if(P.rmo==='drift'){const s=Math.sin(TAU*ph*P.rmoSpd);m*=1+P.rmoAmt*.6*s;g*=1+P.rmoAmt*1.2*Math.sin(TAU*ph*P.rmoSpd+1.3)}
+  const cols=P.cols,rows=P.rows,cw=(W-2*m-(cols-1)*g)/cols,rh=(H-2*m-(rows-1)*g)/rows;
+  return {u,m,g,cols,rows,cw,rh,W,H,x:i=>m+i*(cw+g),y:j=>m+j*(rh+g),span:n=>n*cw+(n-1)*g,right:W-m,bottom:H-m}
+}
+const BODY_FAM='"Inter"';
+const DFAM=()=>READ_FONTS[P.rfont]||READ_FONTS.Inter;
+let STEP=0; /* staircase offset per line break, px */
+function fit(text,wt,w,big=true){
+  if(!String(text).trim())return Infinity; /* empty line: no size, callers take min() */
+  const ls=text.split('\n'),m=big?mDctx:mctx;m.font=`${wt} 100px ${big?DFAM():BODY_FAM}`;if(HAS_LS)m.letterSpacing='0px';
+  let s=1e9;ls.forEach((l,i)=>{const lw=Math.max(1,m.measureText(l).width);s=Math.min(s,Math.max(w*.25,w-i*STEP)*100/lw)});return s}
+/* word-wrap small text to a width (long description lines fold instead of running off the sheet) */
+function wrapTo(text,wt,sz,w){
+  const m=mctx;m.font=`${wt} ${sz}px ${BODY_FAM}`;if(HAS_LS)m.letterSpacing='0px';
+  return String(text).split('\n').map(line=>{const ws=line.split(/ +/),out=[];let cur='';
+    ws.forEach(word=>{const t=cur?cur+' '+word:word;if(cur&&m.measureText(t).width>w){out.push(cur);cur=word}else cur=t});
+    out.push(cur);return out.join('\n')}).join('\n')}
+function blockH(it){const n=it.s.split('\n').length;return (n-1)*it.sz*it.lh+it.sz*CAP}
+function nextRow(G,yEnd){return Math.max(0,Math.ceil((yEnd-G.m+G.g*.5)/(G.rh+G.g)-1e-3))}
+function tplItems(name,G,T){
+  const S=P.body*G.u,M=S*P.mid,c=G.cols,Rw=G.rows,it=[];
+  const add=o=>{o=Object.assign({wt:400,al:'left',rot:0,lh:P.lead,ls:0},o);const empty=!String(o.s||'').trim();if(empty){o.s='';o.sz=0}
+    o.big=o.k==='title'||o.sz>=S*1.8;
+    if(!empty&&!o.big&&!o.rot){const aw=o.mw??(o.al==='right'?o.x-G.m:o.al==='center'?2*Math.min(o.x-G.m,G.right-o.x):G.right-o.x);if(aw>o.sz*2){o.s=wrapTo(o.s,o.wt,o.sz,aw);
+      /* a single word longer than the space can't fold: shrink it to fit */
+      mctx.font=`${o.wt} ${o.sz}px ${BODY_FAM}`;const mw=Math.max(...o.s.split('\n').map(l=>mctx.measureText(l).width));if(mw>aw)o.sz*=aw/mw}}
+    if(o.vb!=null)o.y=o.vb-blockH(o);if(!empty)it.push(o);return o};
+  const D=T.D||[];
+  /* every description line its own element, spread over up to 4 columns, bottom-aligned */
+  const footPer=()=>D.length?Math.ceil(D.length/Math.min(4,D.length)):0;
+  /* columns of the footer: a long line shrinks a little (to 80%), then folds inside its column */
+  const footPlan=()=>{const per=footPer();if(!per)return [];const nc=Math.ceil(D.length/per),cw=c/nc,out=[];
+    for(let j=0;j<nc;j++){const ch=D.slice(j*per,(j+1)*per),right=nc>1&&j===nc-1;
+      const c0=Math.round(j*cw),c1=j===nc-1?c:Math.round((j+1)*cw),w=G.span(Math.max(1,c1-c0))-(j===nc-1?0:G.g);
+      const fs=Math.min(S,Math.max(S*.8,Math.min(...ch.map(t=>fit(t,400,w,false)))));
+      out.push({lines:ch.map(t=>wrapTo(t,400,fs,w)),fs,w,x:right?G.right:G.x(c0),al:right?'right':'left'})}
+    return out};
+  const footH=()=>{const pl=footPlan();return pl.length?Math.max(...pl.map(p=>p.lines.reduce((a,l)=>a+l.split('\n').length,0)*p.fs*P.lead))+S*1.6:S};
+  const footer=()=>footPlan().forEach(p=>{let vb=G.bottom;
+    for(let r=p.lines.length-1;r>=0;r--){const o=add({k:'sub',s:p.lines[r],x:p.x,vb,sz:p.fs,al:p.al,mw:p.w});vb=o.y-p.fs*(P.lead-CAP)}});
+  const span=n=>G.span(Math.max(1,Math.min(c,Math.round(n))));
+  const end=o=>o.y+blockH(o);
+  const half=Math.floor(c/2),tw=P.tw;
+  const DP=T.date+'\n'+T.place;
+  switch(name){
+  case 'columns':{
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:fit(T.title,tw,span(c*P.tspan)),wt:tw,lh:1});
+    const sb=add({k:'sub',s:T.sub,x:G.x(0),y:G.y(nextRow(G,end(t))),sz:S});
+    add({k:'date',s:DP,x:G.x(half),y:G.y(Math.max(Math.floor(Rw*.45),nextRow(G,end(sb))+1)),sz:Math.min(M,fit(DP,500,span(c-half))),wt:500,lh:1.05});
+    add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:S*.85});
+    break}
+  case 'bigdate':{
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:fit(T.title,tw,span(c*P.tspan)),wt:tw,lh:1});
+    const r=nextRow(G,end(t));
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(r),sz:S});
+    add({k:'place',s:T.place,x:G.x(half),y:G.y(r),sz:S*1.4,wt:500});
+    const ds=fit(T.date,500,G.span(c));const d=add({k:'date',s:T.date,x:G.x(0),vb:G.bottom,sz:ds,wt:500,lh:1});
+    add({k:'credit',s:T.credit,x:G.right,vb:d.y-d.sz*.18,sz:S*.85,al:'right'});
+    break}
+  case 'corners':{
+    const ts=Math.min(fit(T.title,tw,span(c/2)),M*1.7);
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:ts,wt:tw,lh:1});
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(nextRow(G,end(t))),sz:S});
+    add({k:'date',s:T.date,x:G.right,y:G.y(0),sz:Math.min(ts*.8,fit(T.date,500,span(c-half))),al:'right',wt:500,lh:1});
+    add({k:'place',s:T.place,x:G.x(0),vb:G.bottom,sz:Math.min(ts*.8,fit(T.place,500,span(half))),wt:500,lh:1});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S*.85,al:'right'});
+    break}
+  case 'stagger':{ /* every element one step further right and down */
+    const st=Math.max(1,Math.floor((c-2)/4));
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:Math.min(M*1.6,fit(T.title,tw,span(c*.6))),wt:tw,lh:1});
+    const s=add({k:'sub',s:T.sub,x:G.x(st),y:G.y(nextRow(G,end(t))),sz:S});
+    const d=add({k:'date',s:T.date,x:G.x(st*2),y:G.y(nextRow(G,end(s))+1),sz:Math.min(M,fit(T.date,500,span(c-st*2))),wt:500,lh:1.05});
+    add({k:'place',s:T.place,x:G.x(Math.min(c-1,st*3)),y:G.y(nextRow(G,end(d))),sz:S*1.4,wt:500});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S*.85,al:'right'});
+    break}
+  case 'mirror':{
+    const top=[],third=span(c/3)-G.g,pl=T.place.split('\n')[0];
+    const ts=Math.min(S*1.5,...[T.date,T.credit,pl].map(s=>fit(s,500,third,false)));
+    top.push(add({k:'date',s:T.date,x:G.x(0),y:G.y(0),sz:ts,wt:500}));
+    top.push(add({k:'credit',s:T.credit,x:G.W/2,y:G.y(0),sz:ts,al:'center',wt:500}));
+    top.push(add({k:'place',s:pl,x:G.right,y:G.y(0),sz:ts,al:'right',wt:500}));
+    top.push(add({k:'title',s:T.title,x:G.x(0),y:G.y(0)+ts*1.9,sz:fit(T.title,tw,G.span(c)),wt:tw,lh:1}));
+    top.forEach(o=>it.push(Object.assign({},o,{x:G.W-o.x,y:G.H-o.y,rot:Math.PI,k:o.k+'M'})));
+    break}
+  case 'vertical':{
+    const tl=T.title.split('\n').length;
+    const ts=Math.min(fit(T.title,tw,G.H-2*G.m),span(c*.4)/tl);
+    add({k:'title',s:T.title,x:G.m,y:G.bottom,sz:ts,wt:tw,lh:1,rot:-Math.PI/2});
+    const cx=G.x(Math.ceil(c*.45));
+    const s=add({k:'sub',s:T.sub,x:cx,y:G.y(0),sz:S});
+    add({k:'date',s:DP,x:cx,y:G.y(nextRow(G,end(s))+1),sz:Math.min(M,fit(DP,500,G.right-cx)),wt:500,lh:1.05});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S*.85,al:'right'});
+    break}
+  case 'repeat':{
+    const t1=T.title.replace(/\n/g,' ');
+    const t=add({k:'title',s:t1,x:G.x(0),y:G.y(0),sz:fit(t1,tw,G.span(c)),wt:tw,lh:1});
+    const r=nextRow(G,end(t));
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(r),sz:S});
+    add({k:'place',s:T.place,x:G.right,y:G.y(r),sz:S,al:'right'});
+    const cr=add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:S*.85});
+    add({k:'date',s:T.date,x:G.x(0),vb:cr.y-S*1.2,sz:fit(T.date,500,G.span(c)),wt:500,lh:1});
+    break}
+  case 'axis':{
+    const ax=G.x(half),words=T.title.replace(/\n/g,' ').split(' ').join('\n');
+    const t=add({k:'title',s:words,x:ax,y:G.y(0),sz:fit(words,tw,G.right-ax),wt:tw,lh:1});
+    const s=add({k:'sub',s:T.sub,x:ax,y:G.y(nextRow(G,end(t))),sz:S});
+    add({k:'date',s:DP,x:ax,y:G.y(nextRow(G,end(s))+1),sz:Math.min(M,fit(DP,500,G.right-ax)),wt:500,lh:1.05});
+    add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:S*.85});
+    break}
+  case 'bands':{
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:Math.min(M*1.3,fit(T.title,tw,span(c*.6))),wt:tw,lh:1.15,box:1});
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(nextRow(G,end(t))+1),sz:S});
+    add({k:'date',s:T.date,x:G.x(half),y:G.y(Math.floor(Rw*.3)),sz:Math.min(M,fit(T.date,500,span(c-half))),wt:500,box:1});
+    const pl=T.place.split('\n')[0],ps=fit(pl,700,span(c*.7));
+    const big=add({k:'place',s:pl,x:G.W/2,vb:G.bottom-(pl.trim()?ps*.1:0),sz:ps,wt:700,al:'center',lh:1,box:1});
+    add({k:'credit',s:T.credit,x:G.right,vb:big.y-big.sz*.35,sz:S*.85,al:'right'});
+    break}
+  case 'giant':{ /* title lines stretched to fill the page, small text in one footer row */
+    const T0=T.title.trim(),lines=(T0.includes('\n')?T0.split('\n'):T0.split(/\s+/)).map(s=>s.trim()).filter(Boolean);
+    if(lines.length){
+      const foot=footH(),avail=G.H-2*G.m-foot,szs=lines.map(l=>fit(l,tw,G.span(c)));
+      const tot=szs.reduce((a,s)=>a+s*CAP,0),sy=clamp((avail-G.g*(lines.length-1))/Math.max(1,tot),.3,6);
+      let y=G.m;lines.forEach((l,i)=>{add({k:'title',s:l,x:G.x(0),y,sz:szs[i],wt:tw,lh:1,sy});y+=szs[i]*CAP*sy+G.g});
+    }
+    footer();
+    break}
+  case 'cells':{ /* every letter of the title in its own grid cell */
+    const ch=[...T.title.replace(/\s+/g,'')];const n=ch.length;
+    if(n){
+      const foot=footH(),avail=G.H-2*G.m-foot,aw=G.W-2*G.m;
+      const cc=Math.max(1,Math.min(n,Math.round(Math.sqrt(n*aw/avail*1.6)))),rr=Math.ceil(n/cc);
+      const cw=(aw-(cc-1)*G.g)/cc,chh=(avail-(rr-1)*G.g)/rr;
+      ch.forEach((t,i)=>{const q=i%cc,r=Math.floor(i/cc),sz=fit(t,tw,cw*.98);
+        add({k:'title',s:t,x:G.m+q*(cw+G.g)+cw/2,y:G.m+r*(chh+G.g),sz,wt:tw,lh:1,al:'center',sy:clamp(chh/(sz*CAP),.3,8)})});
+    }
+    footer();
+    break}
+  case 'scatter':{ /* one word per column, stepping down the page */
+    const words=[...T.title.split(/\s+/).map(w=>({w,k:'title'})),...D.join(' ').split(/\s+/).map(w=>({w,k:'sub'}))].filter(o=>o.w);
+    const n=words.length;
+    words.forEach((o,i)=>{const col=i%c,row=Math.round(i*(Rw-1)/Math.max(1,n-1));
+      add({k:o.k,s:o.w,x:G.x(col),y:G.y(row),sz:o.k==='title'?S*1.6:S,wt:o.k==='title'?tw:400})});
+    break}
+  }
+  return it;
+}
+function animItems(items,G,ph){
+  const m=P.rmo,a=P.rmoAmt,k=P.rmoSpd,n=items.length,step=G.cw+G.g;
+  items.forEach((it,i)=>{
+    if(m==='slide')it.x+=Math.round(a*3*Math.sin(TAU*ph*k+i*.9))*step;
+    else if(m==='jump'){const st=Math.floor(ph*k*4);it.x+=Math.round((hsh(i*7.1+st*3.3)-.5)*a*5)*step}
+    else if(m==='rise')it.y+=a*(G.rh+G.g)*1.5*Math.sin(TAU*ph*k+i*.7);
+    else if(m==='track')it.ls=a*.3*(.5+.5*Math.sin(TAU*ph*k+i*.6));
+    else if(m==='reveal'){const t0=.04+.5*i/Math.max(1,n);it.vis=ph>.94?0:clamp((ph-t0)/(.12+a*.2))}
+    else if(m==='marquee'&&it.k==='title')it.mq=ph*k;
+  });
+}
+function drawItem(c,it){
+  c.save();c.translate(it.x,it.y);if(it.rot)c.rotate(it.rot);if(it.sy)c.scale(1,it.sy);
+  const wt=it.big?axWeight(P.rfont,P.rax,it.wt):it.wt;
+  c.font=`${wt} ${it.sz}px ${it.big?DFAM():BODY_FAM}`;c.textAlign=it.al;c.textBaseline='alphabetic';
+  if(HAS_LS)c.letterSpacing=(it.ls*it.sz)+'px';
+  const lines=it.s.split('\n'),lh=it.sz*it.lh,fg=colorOf(P.rcol),dir=it.al==='right'?-1:1;
+  let budget=it.vis==null?1e9:Math.floor(it.vis*it.s.replace(/\n/g,'').length);
+  lines.forEach((ln,i)=>{
+    if(budget<=0)return;const shown=ln.slice(0,budget);budget-=ln.length;
+    const y=i*lh+it.sz*CAP,sx=it.mq!=null?0:i*STEP*dir;
+    if(it.box||P.band){const w=c.measureText(ln).width,pd=it.sz*.18;const x0=sx+(it.al==='right'?-w:it.al==='center'?-w/2:0);
+      c.fillStyle=P.acc;c.fillRect(x0-pd,y-it.sz*CAP-pd,w+2*pd,it.sz*CAP+2*pd+it.sz*.2)}
+    c.fillStyle=(it.box||P.band)?P.paper:fg;
+    if(it.mq!=null){const w=c.measureText(ln+'   ').width;const off=(it.mq*w)%w;c.textAlign='left';
+      for(let x=-off-w*Math.ceil(it.x/w);x<RW-it.x+w;x+=w)c.fillText(ln,x,y)}
+    else c.fillText(shown,sx,y);
+  });
+  c.restore();
+}
+function colorOf(k){return k==='ink1'?P.pal[0]:k==='bg'?P.paper:k==='acc'?P.acc:P.txt}
+const inMask=it=>it.big||P.tsrc==='all';
+/* lays out the readable layer and paints the mask text (large text, or all of it) into dcv */
+function layoutText(W,H,ph){
+  const G=grid(W,H,ph);STEP=P.stairs*(G.cw+G.g);
+  /* Title + Description; description lines map onto the template roles, extra lines stack in the last slot */
+  const D=applyCase(P.desc||'',P.rcase).split('\n').map(x=>x.trim()).filter(Boolean);
+  const T={title:applyCase(P.title||'',P.rcase),D,sub:D[0]||'',date:D[1]||'',place:D[2]||'',credit:D.slice(3).join('\n')};
+  let name=P.tpl;
+  if(P.rmo==='step'){const keys=Object.keys(TEMPLATES),st=Math.floor(ph*Math.max(2,P.rmoSpd*3));name=keys[(keys.indexOf(P.tpl)+st)%keys.length]}
+  const items=tplItems(name,G,T);animItems(items,G,ph);
+  dctx.setTransform(1,0,0,1,0,0);dctx.clearRect(0,0,W,H);
+  if(!P.tshow)return {G,items:[]}; /* copy layer hidden: no text and no mask */
+  items.forEach(it=>{if(inMask(it))drawItem(dctx,it)});
+  return {G,items};
+}
+function drawTextTop(c,L,W,H){
+  c.save();c.globalCompositeOperation=P.rblend;
+  L.items.forEach(it=>{if(!inMask(it))drawItem(c,it)});
+  if(P.tfill==='solid'||P.tmode==='none')c.drawImage(dcv,0,0);
+  c.restore();
+  const G=L.G;
+  if(P.grid&&!exporting){c.save();c.globalAlpha=.5;c.strokeStyle='#ff2bd6';c.lineWidth=Math.max(1,G.u*.8);
+    for(let i=0;i<G.cols;i++)c.strokeRect(G.x(i),G.m,G.cw,H-2*G.m);
+    for(let j=0;j<G.rows;j++){c.beginPath();c.moveTo(G.m,G.y(j));c.lineTo(W-G.m,G.y(j));c.stroke()}c.restore()}
+}
+/* ================= main render ================= */
+function render(ph){
+  ph-=Math.floor(ph); /* phase 1.0 is phase 0: stepped motions wrap cleanly */
+  ensureSize();applyVariations();
+  const L=layoutText(RW,RH,ph);
+  ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+  if(gl){renderPhoto(ph);ctx.drawImage(glc,0,0)}else{ctx.fillStyle=P.paper;ctx.fillRect(0,0,RW,RH)}
+  drawTextTop(ctx,L,RW,RH);
+}
+let clock=0,playing=true,last=performance.now(),dirty=true;
+const phase=()=>{const L=P.loop;return (((clock%L)+L)%L)/L};
+function frame(now){
+  const dt=Math.min(.1,(now-last)/1000);last=now;
+  if(!exporting&&P.wall){if(dirty){dirty=false;try{renderWall(phase())}catch(e){console.error(e)}}}
+  else if(!exporting){
+    if(playing){clock+=dt;dirty=true}
+    if(dirty){dirty=false;const ph=phase();try{render(ph)}catch(e){console.error(e)}
+      $('#scrub').value=Math.round(ph*1000);$('#tlab').textContent=(ph*P.loop).toFixed(1)+'s'}
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ================= randomizers ================= */
+function rq(q){let v=q[5]?rf(q[5][0],q[5][1]):rf(q[1],q[2]);if(q[3]>=1)v=Math.round(v);else v=Math.round(v/q[3])*q[3];return +clamp(v,q[1],q[2]).toFixed(4)}
+/* partial regions: mostly halves and bands, so "effect on a part of the photo" reads as a decision */
+function randRegion(o,k,full=.5){
+  if(R()<full){o[k]=0;return}
+  o[k]=pick([1,1,2,2,2,3,4,5,5,6,6,7,8,8,11,...(P.frame==='box'?[12,12]:[])]);
+  o[k.replace('reg','rpos')]=+rf(-.45,.45).toFixed(2);o[k.replace('reg','rsz')]=+rf(.3,.75).toFixed(2);
+}
+const FX_W=['strips','strips','strips','tiles','tiles','smear','smear','wave','wave','rings','liquify','liquify','shards','shards','mirror','slit','slit','droste','rays','pixel','luma','luma','fold','glitch','glitch'];
+function randFx(i){
+  const type=pick(FX_W),d=FX[type],f=mkFx(type,R()<[.95,.28,.06][i]);
+  f.op=ri(0,d.ops.length-1);f.p=d.ps.map(rq);f.sp=pick([0,0,1,1,1,2]);
+  if(type==='strips'&&R()<.25)f.p[2]=pick([90,-30,45,15]);
+  if(type==='wave'&&f.op===3)f.p[0]=+rf(.02,.15).toFixed(3);
+  if(type==='mirror'&&f.op===3)f.p[1]=ri(-90,90);
+  randRegion(f,'reg',type==='slit'&&f.op>=2?0:['tiles','rings','rays','droste','pixel'].includes(type)?.35:.55); /* a zigzag slit replaces the photo: keep it to a part */
+  if(type==='slit'&&f.op>=2&&[0,9,10].includes(f.reg))f.reg=pick([5,6,8]);
+  if(type==='tiles'&&R()<.4){f.reg=8;f.op=pick([1,2,2]);f.rsz=+rf(.4,.6).toFixed(2);f.rw=+rf(.6,1.1).toFixed(2);f.rpos=+rf(-.25,.15).toFixed(2)} /* ref 14: a box of shuffled pieces of the same photo */
+  if(CUTS(f)){f.glass=R()<.35;f.gs=+rf(.3,.9).toFixed(2);f.gd=+rf(.3,1).toFixed(2)}
+  P.fx[i]=f;
+}
+function randEffects(){for(let i=0;i<3;i++)randFx(i);if(!P.fx.some(f=>f.on))P.fx[0].on=true;P.seed=ri(1,99999)}
+function randOptics(){randEcho();randOpt();randPrism();randLeaks()}
+function randLeaks(on=R()<.25){
+  P.lkOn=on;P.lkMode=pick([0,0,1,1,2,2,3]);P.lkAmt=+rf(.7,1.25).toFixed(2);
+  P.lkAng=P.lkMode===0?pick([0,180,0,180,90,-90,ri(-180,180)]):P.lkMode===1?pick([0,0,10,-10,90,ri(-40,40)]):ri(-180,180);
+  P.lkSize=+rf(.3,.9).toFixed(2);P.lkSoft=+rf(.2,.8).toFixed(2);P.lkPal=pick([0,0,0,1,2,3]);
+  P.lkBlend=pick([0,0,0,1,2,2,3,4,5,6]);P.lkPos=+rf(-.6,.6).toFixed(2);P.lkN=ri(1,3);P.lkSp=pick([0,1,1]);P.lkSeed=ri(1,999);
+}
+function randEcho(){
+  P.eOn=R()<.28;P.echo=R()<.8?ri(1,4):ri(5,12);P.edx=+rf(-.22,.22).toFixed(3);P.edy=+(R()<.5?0:rf(-.15,.15)).toFixed(3);P.eblend=pick([0,0,2,3,4,4,4]);
+  P.esc=pick([1,1,1,1.06,.94]);P.efall=+rf(.55,.95).toFixed(2);P.esp=pick([0,1,1]);randRegion(P,'ereg',.6);
+}
+function randOpt(){
+  P.strk=R()<.15?+rf(.06,.3).toFixed(3):0;P.sang=pick([0,0,0,90,-25,30]);P.ssp=pick([0,1]);randRegion(P,'sreg',.3);
+  P.chr=R()<.22?+rf(.2,1).toFixed(2):0;P.chrA=pick([0,0,90,45]);
+  P.oOn=P.strk>0||P.chr>0;P.leak=0;
+}
+function randText(){
+  P.tmode=pick(['none','displace','displace','lglass','lglass','lens','invert','invert','invert','mono','mono','knock','window']);P.tdisp=+rf(.4,1.1).toFixed(2);P.tfrost=(P.tmode==='lglass'||P.tmode==='displace')&&R()<.4?+rf(.2,.7).toFixed(2):0;
+  P.tamt=+rf(.1,1).toFixed(2);P.tblur=R()<.2?ri(1,3):0;
+  const quiet=['none','displace'].includes(P.tmode);
+  P.tfill=quiet?'solid':(R()<.75?'none':'solid');P.tsrc=R()<.2?'all':'big';
+}
+function randLayout(){
+  P.tpl=pick(Object.keys(TEMPLATES)); /* the photo is the hero: no extra weight on Giant title */P.stairs=pick([0,0,0,1,2]);
+  if(!USERF[P.rfont]){P.rfont=pick(Object.keys(READ_FONTS).filter(n=>!USERF[n]));P.rax={}}P.tw=pick([500,700,900,900]);
+  P.tspan=+rf(.45,1).toFixed(2);P.body=ri(11,20);P.mid=+rf(1.7,3.2).toFixed(2);P.lead=+rf(1.05,1.3).toFixed(2);
+  P.cols=pick([4,6,6,8,8,12]);P.rows=pick([6,8,12,12,16]);P.margin=ri(22,60);P.gutter=ri(6,22);
+  P.rcase=pick(['none','upper','upper','lower']);P.band=R()<.1;P.rblend='source-over';
+}
+function setPalette(pl){const c=pl[1];P.pal=[0,1,2,3,4,5].map(i=>c[Math.min(i,c.length-1)]);P.nCol=c.length;P.paper=pl[2];P.txt=pl[3];P.acc=pl[4];P.grade=pl[5]}
+function randColors(){
+  setPalette(pick(PALETTES));if(R()<.5)P.grade=0;else if(R()<.3)P.grade=pick([1,2,3,4]); /* refs are mostly the photo's own colour */
+  P.gmix=P.grade&&R()<.2?+rf(.5,.85).toFixed(2):1;
+  P.con=+pick([1,1,rf(.85,1.4)]).toFixed(2);P.sat=+pick([1,1,1,rf(.4,1.4)]).toFixed(2);P.expo=+pick([0,0,rf(-.4,.4)]).toFixed(2);
+  P.grain=+pick([0,.06,.1,.2,rf(.2,.5)]).toFixed(2);
+}
+/* framing: mostly full bleed, sometimes the photo sits in a box on the paper (refs 10, 13, 14) */
+function randFrame(){
+  P.zoom=+pick([1,1,rf(1,1.6)]).toFixed(2);P.px=+rf(-.4,.4).toFixed(2);P.py=+rf(-.4,.4).toFixed(2);P.flip=R()<.3;
+  P.frame=R()<.25?'box':'full';
+  if(P.frame==='box'){P.bw=+rf(.45,.85).toFixed(2);P.bh=+rf(.4,.75).toFixed(2);P.bx=+rf(.05,.95-P.bw).toFixed(2);P.by=+rf(.05,.92-P.bh).toFixed(2)}
+  P.pedge=pick([0,0,1,2]);
+}
+/* prism: about a third of posters; when on, ghosts + caustics, sometimes only one of them */
+function randPrism(on=R()<.32){
+  P.prSeed=ri(1,999);P.prMode=pick([0,0,0,1,1,2]);P.prN=P.prMode===1?ri(2,4):ri(2,4);P.prAng=ri(-90,90);
+  P.prShift=+rf(.08,.3).toFixed(3);P.prScale=+rf(1,1.5).toFixed(2);P.prRot=ri(0,45);P.prFlip=R()<.6;
+  P.prBlur=+rf(.3,.85).toFixed(2);P.prDisp=+rf(.3,1).toFixed(2);P.prRainW=+rf(.2,.7).toFixed(2);P.prROff=+rf(0,1).toFixed(2);P.prSp=pick([0,1,1,2]);
+  P.prHaze=R()<.5?+rf(.15,.5).toFixed(2):0;
+  P.prOn=on;const k=R();P.prGh=k<.85;P.prA=+rf(1,2.2).toFixed(2);P.prRain=k>.25||!P.prGh?+rf(.45,.95).toFixed(2):0;
+}
+function randAll(){randLayout();randFrame();randEffects();randOptics();randText();randColors();
+  /* an interaction needs letters big enough to carry it */
+  const needBig=P.tfill==='none'||['lens','window','knock','lglass'].includes(P.tmode);
+  if(P.tmode!=='none'&&needBig&&(P.tmode==='window'||P.tfill==='none'||R()<.7))P.tpl=pick(['giant','giant','cells','vertical','axis','bigdate']);
+  if(P.tmode==='window')P.frame='full'; /* the letters are the frame */
+}
+
+/* ================= UI ================= */
+const panel=$('#panel');
+const openS=new Set(); /* every group starts collapsed; open state is kept only while the page is open */
+const DICE_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="8.5" r=".9" fill="currentColor"/><circle cx="12" cy="12" r=".9" fill="currentColor"/><circle cx="8.5" cy="15.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="15.5" r=".9" fill="currentColor"/></svg>';
+function changed(){dirty=true;saveSoon()}
+function el(t,props={}){return Object.assign(document.createElement(t),props)}
+function sec(id,title,{dice,on,tag}={}){
+  const d=el('details');d.open=openS.has(id);
+  d.addEventListener('toggle',()=>{d.open?openS.add(id):openS.delete(id)});
+  const s=el('summary');s.append(title);if(tag)s.append(el('span',{className:'tag',textContent:tag}));
+  if(on){const [o,k]=on;const hc=el('input',{type:'checkbox',className:'hdr',checked:!!o[k],title:'On / off'});
+    hc.addEventListener('click',e=>e.stopPropagation());
+    hc.addEventListener('input',()=>{o[k]=hc.checked;d.classList.toggle('off',!hc.checked);changed()});
+    s.append(hc);d.classList.toggle('off',!o[k])}
+  if(dice){const b=el('button',{type:'button',className:'dice',title:'Randomize this group',innerHTML:DICE_SVG});
+    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();dice();changed();buildUI()});s.append(b)}
+  d.append(s);panel.append(d);return d;
+}
+function rowEl(d,label,ctl,v){const r=el('div',{className:'row'+(v?'':' wide')});r.append(el('label',{textContent:label}),ctl);if(v)r.append(v);d.append(r);return r}
+function cRange(d,o,k,mn,mx,st,label,cb){
+  const i=el('input',{type:'range',min:mn,max:mx,step:st,value:o[k]}),v=el('span',{className:'v',textContent:fmt(o[k])});
+  i.oninput=()=>{o[k]=+i.value;v.textContent=fmt(o[k]);changed();cb&&cb()};rowEl(d,label,i,v)}
+function cSel(d,o,k,opts,label,cb){
+  const s=el('select');const list=Array.isArray(opts)?opts:Object.entries(opts);
+  list.forEach(op=>{const [val,t]=Array.isArray(op)?op:[op,op];s.append(el('option',{value:val,textContent:t}))});
+  s.value=String(o[k]);s.onchange=()=>{o[k]=typeof o[k]==='number'?+s.value:s.value;changed();cb&&cb()};rowEl(d,label,s)}
+function cChk(d,o,k,label){const i=el('input',{type:'checkbox',checked:!!o[k]});i.onchange=()=>{o[k]=i.checked;changed()};rowEl(d,label,i)}
+function cText(d,o,k,label,area){const i=el(area?'textarea':'input',area?{rows:area}:{type:'text'});i.value=o[k];i.oninput=()=>{o[k]=i.value;changed()};rowEl(d,label,i)}
+function cColor(d,o,k,label){const i=el('input',{type:'color',value:o[k]});i.oninput=()=>{o[k]=i.value;changed()};rowEl(d,label,i)}
+let fontTarget='read';
+/* font dropdown with "Load font file…" inside it, plus axis sliders when the chosen font is variable */
+function cFont(d,key,map,target,vals){
+  const s=el('select'),cur=P[key];
+  Object.keys(map).forEach(n=>s.append(el('option',{value:n,textContent:(USERF[n]?'★ ':'')+n+(axesOf(n).length?' (variable)':'')})));
+  if(target)s.append(el('option',{value:'__load',textContent:'Load font file…'}));
+  s.value=cur;
+  s.onchange=()=>{if(s.value==='__load'){s.value=P[key];fontTarget=target;$('#fFont').click();return}P[key]=s.value;changed();buildUI()};
+  rowEl(d,'Font',s);
+  const ax=axesOf(P[key]);
+  ax.forEach(a=>{if(vals[a.tag]==null)vals[a.tag]=a.def;cRange(d,vals,a.tag,a.min,a.max,(a.max-a.min)>20?1:.01,a.name)});
+  if(ax.length){const b=el('button',{textContent:'Reset axes'});b.onclick=()=>{ax.forEach(a=>vals[a.tag]=a.def);changed();buildUI()};rowEl(d,'',b)}
+}
+/* region selector + only the sliders that region uses */
+function cRegion(d,o,k,pk,sk,ak){
+  cSel(d,o,k,REGIONS.map((m,j)=>[j,m]),'Region',buildUI);
+  if(REG_POS[o[k]])cRange(d,o,pk,-1,1,.01,o[k]===11?'Density':'Position');
+  if(REG_SZ[o[k]])cRange(d,o,sk,.05,1,.01,o[k]===11?'Cell size':'Size');
+  if(ak&&o[k]===8){if(!(o[ak]>0))o[ak]=+(RW/RH).toFixed(2);cRange(d,o,ak,.3,3,.01,'Box aspect')}
+}
+function buildUI(){
+  const sc=panel.scrollTop;panel.innerHTML='';
+  let d;
+  if(P.wall){d=sec('wall','Wall',{tag:'static preview',dice:makeWallSet});
+    cRange(d,P,'wallN',2,8,1,'Banners');
+    cSel(d,P,'wallMode',[['mix','Random designs + presets'],['series','Series — presets'],['repeat','Repeat'],['phases','Loop phases']],'Show');
+    cRange(d,P,'wallPeople',0,8,1,'People, max');
+    cChk(d,P,'wallTex','Concrete texture');
+    d.append(el('div',{className:'hint',textContent:'Random designs: the current poster hangs in the middle, the others are random designs with neighbouring text presets (and other photos from your library). The dice reshuffles designs and people. Click a neighbouring poster to make it the current one (with your text). PNG exports the wall.'}))}
+  d=sec('text','Copy',{on:[P,'tshow']});
+  const sl=el('select');sl.append(el('option',{value:-1,textContent:P.custom?'Custom — your text':'Custom — type your own'}));
+  PRESETS.forEach((pr,i)=>{const n=pr.desc?pr.desc.split('\n').length:0;sl.append(el('option',{value:i,textContent:pr.n+' · '+(n?n+' line'+(n>1?'s':''):'title only')}))});
+  sl.value=String(P.preset??-1);sl.onchange=()=>applyPreset(+sl.value);rowEl(d,'Preset',sl);
+  const toCustom=()=>{P.preset=-1;P.custom={title:P.title,desc:P.desc};sl.value='-1';sl.options[0].textContent='Custom — your text'};
+  cText(d,P,'title','Title',3);d.lastChild.querySelector('textarea').addEventListener('input',toCustom);
+  d.append(el('div',{className:'hint',textContent:'The large text (title) is the mask the photo reacts to. Line breaks make lines in Giant title.'}));
+  cText(d,P,'desc','Description',9);d.lastChild.querySelector('textarea').addEventListener('input',toCustom);
+  d.append(el('div',{className:'hint',textContent:'Each line is a separate element: the first lines take the template’s main slots (subtitle, date, place), the rest stack at the end.'}));
+
+  const pname=P.photo==='demo'?'Demo still life':((LIB.find(q=>q.id===P.photo)||{}).name||'…');
+  d=sec('photo','Photo',{dice:randFrame,tag:pname});
+  const ps=el('select');ps.append(el('option',{value:'demo',textContent:'Demo still life'}));
+  LIB.forEach(q=>ps.append(el('option',{value:q.id,textContent:q.name})));ps.append(el('option',{value:'__load',textContent:'Load photo…'}));
+  ps.value=P.photo;ps.onchange=()=>{if(ps.value==='__load'){ps.value=P.photo;$('#fPhoto').click();return}P.photo=ps.value;photoFor(P.photo);changed();buildUI()};
+  rowEl(d,'Photo',ps);
+  if(P.photo!=='demo'){const b=el('button',{textContent:'Remove from library'});b.onclick=()=>{if(confirm('Remove this photo from the library?'))removePhoto(P.photo)};rowEl(d,'',b)}
+  cSel(d,P,'frame',[['full','Full bleed'],['box','Box on paper']],'Frame',buildUI);
+  if(P.frame==='box'){cRange(d,P,'bx',0,1,.01,'Box X');cRange(d,P,'by',0,1,.01,'Box Y');cRange(d,P,'bw',.1,1,.01,'Box W');cRange(d,P,'bh',.1,1,.01,'Box H')}
+  cRange(d,P,'zoom',.5,4,.01,'Zoom');cRange(d,P,'px',-2,2,.01,'Pan X');cRange(d,P,'py',-2,2,.01,'Pan Y');cChk(d,P,'flip','Flip');
+  cSel(d,P,'pedge',[[0,'Stretch edge pixels'],[1,'Paper'],[2,'Mirror']],'Outside photo');
+  cRange(d,P,'key',0,1,.01,'Key out light bg');
+  d.append(el('div',{className:'hint',textContent:'Drop photos on the page, paste them, or use Photo + (N steps through the library). Photos are kept in this browser. Key out turns a light studio background into paper, so echoes go behind the subject and smears leave it clean.'}));
+
+  d=sec('lay','Layout',{dice:randLayout,tag:'Swiss grid'});
+  cSel(d,P,'tpl',TEMPLATES,'Template');
+  cFont(d,'rfont',READ_FONTS,'read',P.rax);
+  if(!axesOf(P.rfont).some(a=>a.tag==='wght'))cSel(d,P,'tw',[[300,'Light'],[400,'Regular'],[500,'Medium'],[700,'Bold'],[900,'Black']],'Title weight');
+  cRange(d,P,'tspan',.3,1,.01,'Title span');
+  cRange(d,P,'body',8,30,1,'Body size');
+  cRange(d,P,'mid',1.2,4,.01,'Date scale');
+  cRange(d,P,'lead',.9,1.6,.01,'Leading');
+  cRange(d,P,'stairs',0,4,.25,'Stairs');
+  cRange(d,P,'cols',2,16,1,'Columns');cRange(d,P,'rows',2,24,1,'Rows');
+  cRange(d,P,'margin',0,120,1,'Margin');cRange(d,P,'gutter',0,60,1,'Gutter');
+  cSel(d,P,'rcase',CASES,'Case');
+  cSel(d,P,'rcol',[['text','Text color'],['acc','Accent'],['ink1','Darkest'],['bg','Paper']],'Color');
+  cSel(d,P,'rblend',BLENDS,'Blend');
+  cChk(d,P,'band','Bands');cChk(d,P,'grid','Show grid');
+
+
+  d=sec('tx','Text × photo',{dice:randText,tag:TMODES[P.tmode]});
+  cSel(d,P,'tmode',TMODES,'Interaction',buildUI);
+  cRange(d,P,'tamt',0,1,.01,'Amount');
+  cRange(d,P,'tblur',0,5,.5,P.tmode==='lglass'?'Rim width':'Soften');
+  if(P.tmode==='lglass')cRange(d,P,'tdisp',0,1.5,.01,'Dispersion');
+  if(P.tmode==='lglass'||P.tmode==='displace')cRange(d,P,'tfrost',0,1,.01,'Frosty');
+  cSel(d,P,'tfill',[['none','None — photo only'],['solid','Solid color']],'Text fill');
+  cSel(d,P,'tsrc',[['big','Large text'],['all','All text']],'Mask');
+  d.append(el('div',{className:'hint',textContent:'Glass letters bends the whole poster around the letters; Liquid glass gives each letter a thin glass rim with a colour split (Soften becomes Rim width). Amount works in Glass letters, Liquid glass and Zoom inside. With fill None the text exists only as a change in the photo. To keep an effect inside or outside the letters, use Region → Inside / Outside text in that effect.'}));
+
+  P.fx.forEach((f,i)=>{
+    const df=FX[f.type];
+    d=sec('fx'+i,'Effect '+(i+1),{dice:()=>randFx(i),on:[f,'on'],tag:df.n+' · '+df.ops[f.op]});
+    cSel(d,f,'type',FKEYS.map(k=>[k,FX[k].n+'  ('+FX[k].refs+')']),'Effect',()=>{const n=FX[f.type];f.p=n.ps.map(q=>q[4]);f.op=0;buildUI()});
+    cSel(d,f,'op',df.ops.map((m,j)=>[j,m]),'Variant',buildUI);
+    df.ps.forEach((q,j)=>cRange(d,f.p,j,q[1],q[2],q[3],q[0]));
+    cRange(d,f,'sp',0,4,1,'Speed');
+    cRegion(d,f,'reg','rpos','rsz','rw');
+    if(CUTS(f)){cChk(d,f,'glass','Liquid glass');d.lastChild.querySelector('input').addEventListener('change',buildUI);
+      if(f.glass){cRange(d,f,'gs',0,1,.01,'Glass strength');cRange(d,f,'gd',0,1.5,.01,'Dispersion')}}
+  });
+  panel.lastChild.append(el('div',{className:'hint',textContent:'Effects move the point each pixel reads from the photo, chained 1 → 2 → 3. Region keeps an effect to a part of the poster. Numbers in brackets are the reference images.'}));
+
+  d=sec('echo','Echo',{dice:()=>{randEcho();P.eOn=true},on:[P,'eOn'],tag:P.echo+'× '+ECHO_BL[P.eblend]});
+  cRange(d,P,'echo',1,15,1,'Copies');
+  cRange(d,P,'edx',-.5,.5,.001,'Offset X');cRange(d,P,'edy',-.5,.5,.001,'Offset Y');
+  cRange(d,P,'esc',.7,1.3,.01,'Scale');cRange(d,P,'efall',.1,1,.01,'Fade');
+  cSel(d,P,'eblend',ECHO_BL.map((m,j)=>[j,m]),'Blend');cRange(d,P,'esp',0,4,1,'Speed');
+  cRegion(d,P,'ereg','erpos','ersz');
+  d.append(el('div',{className:'hint',textContent:'Ghost copies of the photo (refs 3, 4, 7, 9). Behind puts them under the subject; it needs Key out or Paper outside the photo.'}));
+
+  d=sec('opt','Optics',{dice:()=>{randOpt();P.oOn=true},on:[P,'oOn']});
+  {const had=P.strk>0;cRange(d,P,'strk',0,.6,.001,'Streak',()=>{if((P.strk>0)!==had)buildUI()})}
+  if(P.strk>0){cRange(d,P,'sang',-90,90,1,'Streak angle');cRange(d,P,'ssp',0,4,1,'Streak speed');cRegion(d,P,'sreg','srpos','srsz')}
+  cRange(d,P,'chr',0,2,.01,'RGB split');cRange(d,P,'chrA',-180,180,1,'Split angle');
+  d.append(el('div',{className:'hint',textContent:'Streak = motion blur (ref 8). RGB split shifts the colour channels apart.'}));
+
+  d=sec('prism','Prism',{dice:()=>randPrism(true),on:[P,'prOn'],tag:PRISM_MODES[P.prMode]});
+  cChk(d,P,'prGh','Ghost copies');cRange(d,P,'prA',1,3,.01,'Ghosts');cRange(d,P,'prRain',0,1,.01,'Rainbows');
+  cSel(d,P,'prMode',PRISM_MODES.map((m,j)=>[j,m]),'Faces');cRange(d,P,'prN',1,5,1,'Count');cRange(d,P,'prAng',-180,180,1,'Angle');
+  cRange(d,P,'prShift',0,.6,.001,'Shift');cRange(d,P,'prScale',.8,2,.01,'Scale');cRange(d,P,'prRot',0,90,1,'Turn');cChk(d,P,'prFlip','Mirror faces');
+  cRange(d,P,'prBlur',0,1,.01,'Defocus');cRange(d,P,'prDisp',0,1.5,.01,'Dispersion');cRange(d,P,'prRainW',0,1,.01,'Rainbow width');cRange(d,P,'prROff',0,1,.01,'Rainbow drift');
+  cRange(d,P,'prHaze',0,1,.01,'Haze');cRange(d,P,'prSp',0,4,1,'Speed');cRange(d,P,'prSeed',1,999,1,'Variation');
+  d.append(el('div',{className:'hint',textContent:'As if shot through a glass prism held at the lens (refs prism-19…23): the faces show defocused, colour-split copies of the photo, rainbows fall where the light bends. Ghosts 1 = clear copies in the faces, higher = deeper faces and bolder copies. Untick Ghost copies for rainbows only.'}));
+
+  d=sec('lk','Light leaks',{dice:()=>randLeaks(true),on:[P,'lkOn'],tag:LK_MODES[P.lkMode]});
+  cSel(d,P,'lkMode',LK_MODES.map((m,j)=>[j,m]),'Leak',buildUI);cRange(d,P,'lkAmt',0,2,.01,'Amount');cSel(d,P,'lkPal',LK_PALS.map((m,j)=>[j,m]),'Color');cSel(d,P,'lkBlend',LK_BLENDS.map((m,j)=>[j,m]),'Blend');
+  cRange(d,P,'lkAng',-180,180,1,P.lkMode===0?'Side':'Angle');
+  if(P.lkMode===1||P.lkMode===3)cRange(d,P,'lkPos',-1,1,.01,'Position');
+  if(P.lkMode===2)cRange(d,P,'lkN',1,4,1,'Blobs');
+  cRange(d,P,'lkSize',0,1,.01,'Size');cRange(d,P,'lkSoft',0,1,.01,'Softness');cRange(d,P,'lkSp',0,4,1,'Speed');cRange(d,P,'lkSeed',1,999,1,'Variation');
+  d.append(el('div',{className:'hint',textContent:'Light fogging the film (refs leak-25…30): faint light reads deep red, stronger orange and yellow, the core burns out to white. Edge burn comes in from the side the angle points to (sometimes from both), Band is a stripe of light, Blobs are soft clouds.'}));
+
+  d=sec('col','Color',{dice:randColors,tag:GRADES[P.grade]});
+  cSel(d,{v:''},'v',[['','— palette —'],...PALETTES.map((p,i)=>[i,p[0]])],'Palette',()=>{});
+  d.lastChild.querySelector('select').onchange=e=>{const i=e.target.value;if(i==='')return;setPalette(PALETTES[+i]);changed();buildUI()};
+  cSel(d,P,'grade',GRADES.map((m,j)=>[j,m]),'Grade',buildUI);
+  const ik=el('div',{className:'inks'});P.pal.forEach((c,i)=>{const x=el('input',{type:'color',value:c});if(i>=P.nCol)x.classList.add('dim');x.oninput=()=>{P.pal[i]=x.value;changed()};ik.append(x)});rowEl(d,'Ramp',ik);
+  cRange(d,P,'nCol',2,6,1,'Count',()=>{[...ik.children].forEach((x,i)=>x.classList.toggle('dim',i>=P.nCol))});
+  cRange(d,P,'gmix',0,1,.01,'Grade mix');
+  cRange(d,P,'con',.5,2,.01,'Contrast');cRange(d,P,'sat',0,2,.01,'Saturation');cRange(d,P,'expo',-1.5,1.5,.01,'Exposure');
+  cRange(d,P,'grain',0,1,.01,'Grain');
+  cColor(d,P,'paper','Paper');cColor(d,P,'txt','Text');cColor(d,P,'acc','Accent');
+  d.append(el('div',{className:'hint',textContent:'The ramp runs dark → light; Duotone uses its ends, Gradient map all of it, Posterize steps through it. Palettes are named after the reference images.'}));
+
+  d=sec('exp','Export');
+  cSel(d,P,'fmt',Object.keys(FORMATS),'Format',updLabels);
+  cRange(d,P,'loop',2,20,1,'Loop, s',updLabels);
+  cSel(d,P,'q',[[.5,'Fast (½)'],[.75,'Normal (¾)'],[1,'Full']],'Preview');
+  cChk(d,P,'aa','Smooth edges');
+  cSel(d,P,'pngScale',[[1,'×1'],[2,'×2'],[3,'×3']],'PNG scale',updLabels);
+  cSel(d,P,'mp4Scale',[[1,'×1'],[2,'×2']],'MP4 scale',updLabels);
+  cSel(d,P,'fps',[[24,'24'],[25,'25'],[30,'30'],[60,'60']],'MP4 fps');
+  cSel(d,P,'mq',[[.08,'Light'],[.15,'Normal'],[.3,'High']],'MP4 quality');
+  cRange(d,P,'seed',1,99999,1,'Seed');
+  d.append(el('div',{className:'hint',id:'sizeHint'}));
+  updLabels();
+  panel.scrollTop=sc;
+}
+function updLabels(){
+  const [bw,bh]=baseSize();$('#bPng').textContent=`PNG ×${P.pngScale}`;
+  const h=$('#sizeHint');if(h)h.textContent=`PNG ${bw*P.pngScale}×${bh*P.pngScale} · MP4 ${bw*P.mp4Scale}×${bh*P.mp4Scale}, ${P.loop}s loop`;
+}
+
+/* ================= font upload ================= */
+/* ================= font upload ================= */
+/* fvar reader (axes of a variable font): TTF/OTF/WOFF; WOFF2 is brotli-compressed and can't be read here */
+async function readFvar(buf){
+  const dv=new DataView(buf);
+  const tag=o=>String.fromCharCode(dv.getUint8(o),dv.getUint8(o+1),dv.getUint8(o+2),dv.getUint8(o+3));
+  const sig=tag(0);
+  const inflate=async u8=>{const ds=new DecompressionStream('deflate');const w=ds.writable.getWriter();w.write(u8);w.close();return new Uint8Array(await new Response(ds.readable).arrayBuffer())};
+  const grab=async name=>{
+    if(sig==='wOFF'){const n=dv.getUint16(12);
+      for(let i=0;i<n;i++){const o=44+i*20;if(tag(o)===name){const off=dv.getUint32(o+4),cl=dv.getUint32(o+8),ol=dv.getUint32(o+12);
+        const raw=new Uint8Array(buf,off,cl);const u8=cl<ol?await inflate(raw):raw.slice();return new DataView(u8.buffer,u8.byteOffset,u8.byteLength)}}
+      return null}
+    if(sig==='wOF2')throw new Error('woff2');
+    const base=sig==='ttcf'?dv.getUint32(12):0,n=dv.getUint16(base+4);
+    for(let i=0;i<n;i++){const o=base+12+i*16;if(tag(o)===name)return new DataView(buf,dv.getUint32(o+8),dv.getUint32(o+12))}
+    return null};
+  const tbl=await grab('fvar');if(!tbl)return [];
+  const names={};
+  try{const nt=await grab('name');if(nt){const cnt=nt.getUint16(2),so=nt.getUint16(4);
+    for(let i=0;i<cnt;i++){const o=6+i*12,pid=nt.getUint16(o),id=nt.getUint16(o+6),len=nt.getUint16(o+8),off=nt.getUint16(o+10);
+      if(names[id]&&pid!==3)continue;let t='';
+      if(pid===3||pid===0){for(let j=0;j<len;j+=2)t+=String.fromCharCode(nt.getUint16(so+off+j))}
+      else if(pid===1){for(let j=0;j<len;j++)t+=String.fromCharCode(nt.getUint8(so+off+j))}
+      if(t)names[id]=t}}}catch(e){}
+  const ao=tbl.getUint16(4),cnt=tbl.getUint16(8),sz=tbl.getUint16(10),axes=[];
+  const t4=o=>String.fromCharCode(tbl.getUint8(o),tbl.getUint8(o+1),tbl.getUint8(o+2),tbl.getUint8(o+3)),fx=o=>tbl.getInt32(o)/65536;
+  for(let i=0;i<cnt;i++){const o=ao+i*sz,tg=t4(o);axes.push({tag:tg,min:fx(o+4),def:fx(o+8),max:fx(o+12),name:names[tbl.getUint16(o+18)]||AXNAMES[tg]||tg})}
+  return axes;
+}
+const AXNAMES={wght:'Weight',wdth:'Width',slnt:'Slant',ital:'Italic',opsz:'Optical size'};
+let fontCount=0;
+$('#fFont').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;e.target.value='';
+  try{
+    const buf=await f.arrayBuffer();let axes=[],note='';
+    try{axes=await readFvar(buf.slice(0))}
+    catch(err){if(err&&err.message==='woff2'){axes=[{tag:'wght',min:100,def:400,max:900,name:'Weight'},{tag:'wdth',min:50,def:100,max:200,name:'Width'}];
+      note='WOFF2: axes can\'t be read, showing typical wght/wdth. Load TTF/OTF for the exact axes.'}}
+    const fam='LLUser'+(++fontCount),wa=axes.find(a=>a.tag==='wght'),wd=axes.find(a=>a.tag==='wdth');
+    let ff=null,lastErr=null;
+    for(const desc of [()=>{const d={};if(wa&&wa.min>=1&&wa.max<=1000)d.weight=`${wa.min} ${wa.max}`;if(wd)d.stretch=`${wd.min}% ${wd.max}%`;return d},()=>({}),()=>({weight:'100 900'})]){
+      try{ff=new FontFace(fam,buf.slice(0),desc());await ff.load();break}catch(err){lastErr=err;ff=null}}
+    if(!ff)throw lastErr||new Error('browser rejected the font');
+    document.fonts.add(ff);
+    let name=f.name.replace(/\.[^.]+$/,'');while(READ_FONTS[name]&&!USERF[name])name+=' *';
+    USERF[name]={axes};READ_FONTS[name]=`"${fam}"`;
+    const vals={};axes.forEach(a=>vals[a.tag]=a.def);
+    P.rfont=name;P.rax=vals;
+    lastVar='';changed();buildUI();toast('Font loaded: '+name+(axes.length?` · ${axes.length} axes`:''));
+    if(note)setTimeout(()=>alert(note),50);
+  }catch(err){alert('Could not load this font: '+(err&&err.message||err))}
+};
+/* ================= export ================= */
+function dl(blob,name){const a=el('a',{href:URL.createObjectURL(blob),download:name});a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+const tick=()=>new Promise(r=>setTimeout(r,0));
+const needsWarm=()=>false;
+async function warm(phEnd,fps,btn,label){
+  const N=Math.max(1,Math.round(P.loop*fps));
+  for(let i=0;i<N;i++){render(((phEnd-1+i/N)%1+1)%1,1/fps);if(i%6===0){btn.textContent=`${label} warm ${Math.round(i/N*100)}%`;await tick()}}
+}
+/* ================= wall preview ================= */
+const wcv=$('#wall'),wctx=wcv.getContext('2d');
+let wallNoise=null,wallSet=null;
+function wallTexture(){
+  if(wallNoise)return wallNoise;wallNoise=el('canvas');wallNoise.width=wallNoise.height=256;const c=wallNoise.getContext('2d');
+  for(let i=0;i<9000;i++){c.fillStyle=R()<.5?'rgba(0,0,0,.12)':'rgba(255,255,255,.035)';c.fillRect(R()*256,R()*256,1+R()*2,1+R()*2)}return wallNoise}
+/* settings that every banner on the wall shares (format, timing, export, wall itself) */
+const WALL_KEEP=['key','fmt','q','aa','loop','pngScale','mp4Scale','fps','mq','wall','wallN','wallMode','wallPeople','tshow','preset','title','desc','custom','ojRestored','wallTex'];
+/* a fixed set of random designs, so the wall doesn't change on every redraw; the dice reshuffles it */
+/* ---------- dark concrete wall: panels, joints, tie holes, cracks, stains, poster scraps ---------- */
+let wallSeed=1,wallBG=null;
+function buildWallBG(W,H){
+  const key=W+'x'+H+':'+wallSeed+':'+(P.wallTex?1:0);if(wallBG&&wallBG.key===key)return wallBG.cv;
+  const cvs=el('canvas');cvs.width=W;cvs.height=H;const c=cvs.getContext('2d'),r=mulberry(wallSeed*9973+7),rr=(a,b)=>a+r()*(b-a),s=W/2000;
+  let g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2b2926');g.addColorStop(1,'#1c1b19');c.fillStyle=g;c.fillRect(0,0,W,H);
+  if(P.wallTex){
+    /* mottling: big soft patches, lighter and darker */
+    for(let i=0;i<70;i++){const x=rr(0,W),y=rr(0,H),R=rr(60,320)*s,l=r()<.5;g=c.createRadialGradient(x,y,0,x,y,R);
+      g.addColorStop(0,l?'rgba(255,245,230,.045)':'rgba(0,0,0,.12)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x-R,y-R,2*R,2*R)}
+    /* concrete panels: joints with a dark groove and a lit lower/right lip, formwork tie holes */
+    const pw=W/rr(2.6,3.6),ph=H/rr(1.6,2.2),ox=-rr(0,pw),oy=-rr(0,ph);
+    const groove=(x0,y0,x1,y1,vert)=>{c.strokeStyle='rgba(0,0,0,.55)';c.lineWidth=4*s;c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke();
+      c.strokeStyle='rgba(255,240,220,.07)';c.lineWidth=1.5*s;const d=2.6*s;c.beginPath();c.moveTo(x0+(vert?d:0),y0+(vert?0:d));c.lineTo(x1+(vert?d:0),y1+(vert?0:d));c.stroke()};
+    for(let x=ox;x<W;x+=pw)groove(x,0,x,H,true);for(let y=oy;y<H;y+=ph)groove(0,y,W,y,false);
+    for(let x=ox;x<W;x+=pw)for(let y=oy;y<H;y+=ph)for(let i=1;i<=2;i++)for(let j=1;j<=2;j++){const hx=x+pw*i/3,hy=y+ph*j/3,R=rr(5,8)*s;
+      g=c.createRadialGradient(hx-R*.3,hy-R*.3,0,hx,hy,R);g.addColorStop(0,'rgba(0,0,0,.75)');g.addColorStop(.7,'rgba(0,0,0,.45)');g.addColorStop(1,'rgba(255,240,220,.06)');
+      c.fillStyle=g;c.beginPath();c.arc(hx,hy,R,0,TAU);c.fill()}
+    /* water stains: streaks running down from the joints */
+    for(let i=0;i<14;i++){const x=rr(0,W),y=oy+ph*Math.floor(rr(0,H/ph+1)),w=rr(10,60)*s,L=rr(.15,.6)*H;
+      g=c.createLinearGradient(0,y,0,y+L);g.addColorStop(0,'rgba(0,0,0,.22)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x,y,w,L);
+      if(r()<.3){g=c.createLinearGradient(0,y,0,y+L*.6);g.addColorStop(0,'rgba(120,60,25,.14)');g.addColorStop(1,'rgba(120,60,25,0)');c.fillStyle=g;c.fillRect(x+w*.3,y,w*.4,L*.6)}}
+    /* cracks: jagged random walks with small branches */
+    const crack=(x,y,a,len,w,depth)=>{c.strokeStyle='rgba(0,0,0,.7)';c.lineWidth=w;c.beginPath();c.moveTo(x,y);
+      const pts=[[x,y]];for(let k=0;k<len;k++){a+=rr(-.55,.55);x+=Math.cos(a)*rr(6,16)*s;y+=Math.sin(a)*rr(6,16)*s;c.lineTo(x,y);pts.push([x,y]);
+        if(depth<2&&r()<.06)crack(x,y,a+rr(-1.2,1.2),Math.floor(len*.4),w*.6,depth+1)}c.stroke();
+      c.strokeStyle='rgba(255,240,220,.06)';c.lineWidth=w*.6;c.beginPath();pts.forEach(([px,py],k)=>k?c.lineTo(px+w,py+w):c.moveTo(px+w,py+w));c.stroke()};
+    for(let i=0;i<rr(4,8);i++)crack(rr(0,W),r()<.5?rr(0,H*.3):rr(H*.6,H),r()<.5?rr(-.6,.6)+Math.PI*.5:rr(-.4,.4)+(r()<.5?0:Math.PI),Math.floor(rr(12,40)),rr(1,2.2)*s,0);
+    /* spalls: chipped lighter patches */
+    for(let i=0;i<10;i++){const x=rr(0,W),y=rr(0,H),R=rr(6,22)*s;c.fillStyle='rgba(255,245,230,.05)';c.beginPath();
+      for(let k=0;k<7;k++){const a=k/7*TAU,q=R*rr(.5,1.1);k?c.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q):c.moveTo(x+Math.cos(a)*q,y+Math.sin(a)*q)}c.fill()}
+    /* scraps of old posters and tape left on the wall */
+    const papers=['#8a8479','#77716a','#6e675d','#7d6a42','#6a3a33','#4f5d66','#807a70']; /* dirty, faded paper: close to the wall tone */
+    for(let i=0;i<rr(3,7);i++){const x=rr(0,W),y=rr(0,H),w=rr(15,70)*s,h=rr(10,55)*s,rot=rr(-.25,.25);c.save();c.translate(x,y);c.rotate(rot);
+      c.fillStyle=papers[Math.floor(r()*papers.length)];c.globalAlpha=rr(.12,.28);c.beginPath();c.moveTo(0,0);
+      for(let k=1;k<=8;k++)c.lineTo(w*k/8,rr(-4,4)*s);for(let k=1;k<=6;k++)c.lineTo(w+rr(-5,5)*s,h*k/6);for(let k=7;k>=0;k--)c.lineTo(w*k/8,h+rr(-8,8)*s);c.closePath();c.fill();
+      if(r()<.4){c.globalAlpha=.1;c.fillStyle='#bdb7ab';c.fillRect(-6*s,-4*s,rr(20,40)*s,9*s)} /* tape */
+      c.restore()}
+  }
+  c.globalAlpha=1;c.fillStyle=c.createPattern(wallTexture(),'repeat');c.fillRect(0,0,W,H); /* fine grain */
+  wallBG={key,cv:cvs};return cvs;
+}
+function makeWallSet(){
+  /* work on a throw-away copy: the panel's controls stay bound to the real P */
+  const orig=P;wallSet=[null];
+  /* each random banner gets its own built-in font, different from the current poster's; a loaded font stays on the current poster only */
+  const fonts=Object.keys(READ_FONTS).filter(n=>!USERF[n]&&n!==orig.rfont).sort(()=>R()-.5);
+  for(let i=1;i<8;i++){P=JSON.parse(JSON.stringify(orig));randAll();P.rfont=fonts[(i-1)%fonts.length];P.rax={};
+    /* on a wall the text has to read: avoid the subtle modes when the letters have no fill */
+    if(P.tfill==='none'&&!['invert','knock','window','mono'].includes(P.tmode))P.tmode=pick(['invert','invert','knock','window','mono']);
+    if(LIB.length>1&&R()<.7)P.photo=pick(['demo',...LIB.map(q=>q.id)].filter(x=>x!==orig.photo)); /* other photos from the library on the neighbours */
+    if(P.rmo==='reveal')P.rmo='none'; /* a static banner must show its text: Line reveal is empty at the start of the loop */
+    WALL_KEEP.forEach(k=>delete P[k]);wallSet.push(P)}
+  P=orig;makeCrowd();wallSeed=ri(1,1e6);dirty=true; /* new wall surface too */
+}
+/* one passer-by in side view, walking (not running), opaque. L = look from makeCrowd(); 8 head-units tall */
+function drawWalker(c,x,foot,h,L,dir){
+  const u=h/8,wd=L.wd;c.save();c.translate(x,foot);c.scale(dir,1);c.lineCap='round';c.lineJoin='round';
+  /* no flat colours: every part is filled with a gradient from the lit upper-left to the shadowed lower-right */
+  const lx=-dir,GC={};
+  const G=col=>{if(GC[col])return GC[col];const g=c.createLinearGradient(lx*u*1.8,-u*8.2,-lx*u*1.8,0);
+    g.addColorStop(0,shade(col,1.35));g.addColorStop(.38,col);g.addColorStop(1,shade(col,.5));return GC[col]=g};
+  const hipY=-u*3.9,shY=-u*6.45,st=L.stride;
+  /* height differs by body length, not by scale: the body is stretched vertically, the head keeps its size and sits on top */
+  const hv=L.hv||1,HT=shY*(hv-1);
+  const leg=(a,col)=>{const kx=Math.sin(a)*u*1.95,ky=hipY+Math.cos(a)*u*1.95,fx=kx+Math.sin(a*.55)*u*1.6,fy=-u*.62; /* ankle sits inside the shoe */
+    c.strokeStyle=G(col);c.lineWidth=u*.78*L.legW;c.beginPath();c.moveTo(0,hipY);c.lineTo(kx,ky);c.lineTo(fx,fy);c.stroke();
+    if(L.cuffs){c.strokeStyle=G(shade(col,1.25));c.lineWidth=u*.8*L.legW;c.beginPath();c.moveTo(fx-(fx-kx)*.08,fy-(fy-ky)*.08);c.lineTo(fx,fy);c.stroke()}
+    /* shoe with a sole */
+    c.fillStyle=G(L.shoe);c.beginPath();c.roundRect(fx-u*.35,-u*.5,u*1.1,u*.44,[u*.12,u*.3,u*.08,u*.08]);c.fill();
+    c.fillStyle=G(L.sole);c.beginPath();c.roundRect(fx-u*.35,-u*.12,u*1.12,u*.12,u*.04);c.fill()};
+  let hand=null;
+  const arm=(a,col,front)=>{const ex=Math.sin(a)*u*1.35,ey=shY+u*.25+Math.cos(a)*u*1.35,hx=ex+Math.sin(a+.35)*u*1.15,hy=ey+Math.cos(a+.35)*u*1.15;
+    c.strokeStyle=G(col);c.lineWidth=u*.6*wd;c.beginPath();c.moveTo(u*.05,shY+u*.25);c.lineTo(ex,ey);c.lineTo(hx,hy);c.stroke();
+    c.strokeStyle=G(shade(col,.72));c.lineWidth=u*.62*wd;c.beginPath();c.moveTo(ex+(hx-ex)*.82,ey+(hy-ey)*.82);c.lineTo(hx,hy);c.stroke(); /* cuff */
+    c.fillStyle=G(L.skin);c.beginPath();c.ellipse(hx+Math.sin(a)*u*.05,hy+u*.2,u*.2,u*.27,0,0,TAU);c.fill();if(front)hand=[hx,hy+u*.2]};
+  /* behind the body */
+  if(L.hair===1){c.save();c.translate(0,HT);c.fillStyle=G(L.hairC);c.beginPath();c.roundRect(-u*.5,-u*7.75,u*.95,u*1.95,u*.4);c.fill();c.restore()}
+  c.save();c.scale(1,hv); /* body */
+  if(L.bag==='backpack'){c.fillStyle=G(L.bagC);c.beginPath();c.roundRect(-u*1.6*wd,shY+u*.05,u*.9,u*2.3,u*.3);c.fill();
+    c.fillStyle=G(shade(L.bagC,.75));c.beginPath();c.roundRect(-u*1.75*wd,shY+u*1.2,u*.35,u*.9,u*.12);c.fill()}
+  leg(-st,L.legs2);arm(st*1.1,L.coat2);
+  leg(st,L.legs);
+  /* coat or jacket: rounded shoulders, A-line down to coatLen */
+  const bot=-u*L.coatLen,bw=u*(.95+(3.9-L.coatLen)*.08)*wd;
+  c.fillStyle=G(L.coat);c.beginPath();c.moveTo(-u*.72*wd,shY+u*.15);c.quadraticCurveTo(-u*.75*wd,shY-u*.15,-u*.35,shY-u*.2);c.lineTo(u*.45,shY-u*.2);
+  c.quadraticCurveTo(u*.82*wd,shY-u*.1,u*.8*wd,shY+u*.3);c.lineTo(bw,bot);c.quadraticCurveTo(0,bot+u*.2,-bw,bot);c.closePath();c.fill();
+  {const g=c.createLinearGradient(lx*bw,0,-lx*bw,0);g.addColorStop(0,'rgba(255,240,220,.18)');g.addColorStop(.45,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.38)');c.fillStyle=g;c.fill()}
+  /* coat details: front edge, collar, pocket, belt, hem */
+  const dk=shade(L.coat,.72);c.strokeStyle=dk;c.lineWidth=u*.07;
+  c.beginPath();c.moveTo(u*.62*wd,shY+u*.35);c.lineTo(bw*.86,bot+u*.05);c.stroke();
+  if(L.buttons)for(let k=0;k<3;k++){c.fillStyle=dk;c.beginPath();c.arc(u*.45*wd+(bw*.8-u*.45*wd)*(k/3),shY+u*.8+k*(bot-shY-u*.8)/3.2,u*.07,0,TAU);c.fill()}
+  c.fillStyle=dk;c.beginPath();c.moveTo(-u*.1,shY-u*.18);c.lineTo(u*.55,shY-u*.12);c.lineTo(u*.2,shY+u*.55);c.closePath();c.fill();
+  c.strokeStyle=dk;c.lineWidth=u*.06;c.beginPath();c.moveTo(-u*.1,hipY+u*.35);c.lineTo(u*.55,hipY+u*.3);c.stroke();
+  if(L.belt){c.fillStyle=dk;c.fillRect(-u*.85*wd,hipY-u*.15,u*1.75*wd,u*.18)}
+  c.fillStyle=G(shade(L.coat,.85));c.beginPath();c.moveTo(-bw,bot);c.quadraticCurveTo(0,bot+u*.2,bw,bot);c.lineTo(bw*.99,bot-u*.15);c.quadraticCurveTo(0,bot+u*.05,-bw*.99,bot-u*.15);c.fill();
+  if(L.bag==='shoulder'){c.strokeStyle=G(L.bagC);c.lineWidth=u*.12;c.beginPath();c.moveTo(u*.4,shY-u*.1);c.lineTo(-u*.6,hipY+u*.2);c.stroke();
+    c.fillStyle=G(L.bagC);c.beginPath();c.roundRect(-u*1.25,hipY-u*.1,u*1.1,u*.9,u*.15);c.fill();c.fillStyle=G(shade(L.bagC,.75));c.fillRect(-u*1.25,hipY-u*.1,u*1.1,u*.25)}
+  /* neck, scarf, head */
+  c.fillStyle=G(shade(L.skin,.9));c.fillRect(-u*.02,shY-u*.62,u*.4,u*.5);
+  if(L.scarf){c.fillStyle=G(L.scarf);c.beginPath();c.roundRect(-u*.28,shY-u*.48,u*.9,u*.52,u*.2);c.fill();c.fillRect(u*.08,shY,u*.3,u*1.25);
+    c.fillStyle=G(shade(L.scarf,.8));c.fillRect(u*.08,shY+u*1.05,u*.3,u*.12)}
+  c.restore();c.save();c.translate(0,HT); /* head */
+  if(L.hair===5){c.fillStyle=G(L.coat2);c.beginPath();c.ellipse(-u*.05,-u*7.3,u*.72,u*.78,0,0,TAU);c.fill()} /* hood behind the head */
+  {const g=c.createRadialGradient(u*.18+lx*u*.25,-u*7.6,u*.05,u*.18,-u*7.35,u*.7);g.addColorStop(0,shade(L.skin,1.18));g.addColorStop(.6,L.skin);g.addColorStop(1,shade(L.skin,.62));
+  c.fillStyle=g;c.beginPath();c.ellipse(u*.18,-u*7.35,u*.5,u*.6,0,0,TAU);c.fill()}
+  c.beginPath();c.moveTo(u*.64,-u*7.45);c.lineTo(u*.82,-u*7.18);c.lineTo(u*.6,-u*7.12);c.fill(); /* nose */
+  c.fillStyle=G(shade(L.skin,.85));c.beginPath();c.ellipse(-u*.05,-u*7.3,u*.12,u*.17,0,0,TAU);c.fill(); /* ear */
+  c.fillStyle='#1a1512';c.beginPath();c.arc(u*.45,-u*7.42,u*.05,0,TAU);c.fill(); /* eye */
+  c.strokeStyle=G(shade(L.skin,.7));c.lineWidth=u*.04;c.beginPath();c.moveTo(u*.5,-u*6.98);c.lineTo(u*.62,-u*6.98);c.stroke(); /* mouth */
+  if(L.beard){c.fillStyle=G(L.hairC);c.beginPath();c.ellipse(u*.32,-u*6.95,u*.36,u*.26,.2,0,Math.PI);c.fill()}
+  if(L.glasses){c.strokeStyle='#151515';c.lineWidth=u*.05;c.strokeRect(u*.36,-u*7.52,u*.26,u*.18);c.beginPath();c.moveTo(u*.36,-u*7.45);c.lineTo(-u*.02,-u*7.4);c.stroke()}
+  /* hair / hats */
+  c.fillStyle=G(L.hairC);
+  if(L.hair<=2){c.beginPath();c.ellipse(u*.05,-u*7.55,u*.55,u*.48,-.25,Math.PI*.85,Math.PI*2.1);c.fill();c.fillRect(-u*.3,-u*7.6,u*.2,u*.55)}
+  if(L.hair===2){c.beginPath();c.arc(-u*.42,-u*7.78,u*.3,0,TAU);c.fill()}
+  if(L.hair===3||L.hair===4){c.fillStyle=G(L.hatC);c.beginPath();c.ellipse(u*.12,-u*7.62,u*.6,u*.56,0,Math.PI,TAU);c.fill();c.fillRect(-u*.48,-u*7.64,u*1.2,u*.22);
+    c.fillStyle=G(shade(L.hatC,.8));c.fillRect(-u*.48,-u*7.48,u*1.2,u*.08);if(L.hair===4){c.fillStyle=G(L.hatC);c.fillRect(u*.3,-u*7.52,u*.78,u*.13)}}
+  if(L.hair===5){c.strokeStyle=G(shade(L.coat2,.8));c.lineWidth=u*.14;c.beginPath();c.ellipse(u*.15,-u*7.32,u*.6,u*.7,0,-Math.PI*.9,Math.PI*.45);c.stroke()}
+  if(L.phones){c.strokeStyle='#161616';c.lineWidth=u*.1;c.beginPath();c.ellipse(-u*.02,-u*7.45,u*.55,u*.55,0,Math.PI*1.05,Math.PI*1.95);c.stroke();c.fillStyle='#161616';c.beginPath();c.ellipse(-u*.05,-u*7.3,u*.17,u*.22,0,0,TAU);c.fill()}
+  c.restore();c.save();c.scale(1,hv); /* front arm and what it holds */
+  arm(-st*1.1,L.coat,true);
+  if(hand&&L.cup){c.fillStyle='#f2efe9';c.fillRect(hand[0]-u*.18,hand[1]-u*.62,u*.36,u*.6);c.fillStyle='#3a2a20';c.fillRect(hand[0]-u*.2,hand[1]-u*.66,u*.4,u*.1);c.fillStyle='#b08a5a';c.fillRect(hand[0]-u*.18,hand[1]-u*.4,u*.36,u*.18)}
+  if(hand&&L.bag==='tote'){c.strokeStyle=G(shade(L.bagC,.7));c.lineWidth=u*.06;c.beginPath();c.moveTo(hand[0]-u*.3,hand[1]+u*.3);c.lineTo(hand[0],hand[1]);c.lineTo(hand[0]+u*.3,hand[1]+u*.3);c.stroke();
+    c.fillStyle=G(L.bagC);c.beginPath();c.roundRect(hand[0]-u*.55,hand[1]+u*.28,u*1.1,u*1.25,u*.08);c.fill()}
+  if(hand&&L.phone&&!L.cup&&L.bag!=='tote'){c.fillStyle='#111';c.beginPath();c.roundRect(hand[0]-u*.1,hand[1]-u*.45,u*.22,u*.45,u*.05);c.fill()}
+  c.restore();
+  c.restore();
+}
+/* horizontal motion blur: average of shifted copies, so the body stays solid and only the edges smear */
+function drawPasserBy(c,x,foot,h,blur,L,dir){
+  const pad=h*.6,w=Math.ceil(h*.8+pad*2),hh=Math.ceil(h*1.1);
+  const a=el('canvas');a.width=w;a.height=hh;const ac=a.getContext('2d');drawWalker(ac,w/2,hh-2,h,L,dir);
+
+  /* smooth box motion blur by doubling: each pass averages the image with itself shifted (2 taps, alpha .5 each),
+     6 passes = 64 evenly spaced taps over the blur length — no ghost copies and no 8-bit banding */
+  let cur=a,sh=blur/63;const BW=w+Math.ceil(blur)+2;
+  for(let k=0;k<6;k++){const t=el('canvas');t.width=BW;t.height=hh;const tc=t.getContext('2d');tc.globalCompositeOperation='lighter';tc.globalAlpha=.5;
+    tc.drawImage(cur,0,0);tc.drawImage(cur,sh,0);cur=t;sh*=2}
+  c.save();c.filter=`blur(${Math.max(.5,h*.004).toFixed(1)}px)`; /* a touch of defocus, like the street photos */
+  c.drawImage(cur,x-w/2-blur/2,foot-hh+2);c.restore();
+}
+/* mid and light tones, so the silhouettes read against the dark wall */
+const COATS=['#b9a083','#5f7358','#7d838b','#9a4a3f','#4a6290','#8a8f96','#c4b9a8','#7a5a44','#3f6f86','#a8935a','#d0cbc2','#b06a3a','#6c5a8a','#e0dbd2'];
+const SKINS=['#f0cdb0','#e0b799','#c99b7f','#a97a5c','#8f6449','#5e3f2c'];
+const HAIRS=['#151010','#2a1d16','#4a3020','#a07a50','#c9a46c','#6b6b6b'];
+const DARKS=['#4a4f57','#3b4a63','#5a5550','#6b6f76','#3f3a34','#2f3a4c','#7a7468'];
+/* darken/lighten any #rgb or #rrggbb colour (hex2rgb expands the short form) */
+const shade=(col,k)=>{const v=col.startsWith('rgb')?col.match(/[\d.]+/g).slice(0,3).map(Number):hex2rgb(col).map(x=>x*255);
+  return 'rgb('+v.map(x=>Math.min(255,Math.round(x*k))).join(',')+')'}; /* accepts #rgb, #rrggbb and rgb() */
+/* a cached crowd: count, depth, looks and directions vary; the Wall dice reshuffles it */
+let wallCrowd=null;
+function makeCrowd(){
+  const mx=clamp(P.wallPeople|0,0,8) /* at most 8 people in the scene */,n=mx?ri(Math.ceil(mx/3),mx):0,ppl=[];
+  for(let i=0;i<n;i++){
+    const coat=pick(COATS),legs=pick(DARKS),d=R(),hv=rf(.88,1.1); /* d: 0 far … 1 close to the camera */
+    ppl.push({d,x:R(),dir:R()<.5?1:-1,hv:rf(.84,1.12),knee:rf(.2,.3),blur:rf(.1,.2), /* higher minimum: nobody stands still */
+      L:{hv,coat,coat2:shade(coat,.82),legs,legs2:shade(legs,.8),skin:pick(SKINS),hairC:pick(HAIRS),shoe:pick(['#5a4636','#e8e4dc','#4a4a52','#7a2a22','#b8a27a','#2f3a4c']),
+        hair:pick([0,0,1,1,2,3,4,5]),sole:pick(['#e8e4dc','#2a2a2a','#8a6a4a']),cuffs:R()<.3,buttons:R()<.5,belt:R()<.25,beard:R()<.2,glasses:R()<.25,phones:R()<.15,phone:R()<.2,hatC:pick(['#111','#7a2a22','#d8d2c6','#2c3b57','#3d4a3a']),
+        coatLen:pick([3.35,3.35,3.1,2.6,2.3]),wd:rf(.85,1.18),legW:rf(.85,1.1),stride:rf(.2,.32),
+        bag:pick([null,null,'backpack','shoulder','tote']),bagC:pick(['#6b4a2e','#2a3550','#111','#c9b48a','#7a2a22']),
+        scarf:R()<.3?pick(['#b23a2e','#d9c27a','#e8e4dc','#2f5d50']):null,cup:R()<.2}});
+  }
+  ppl.sort((a,b)=>a.d-b.d);wallCrowd={mx,ppl};
+}
+function renderWall(ph,scale=1){
+  wallRects=[];
+  const W=2000*scale,H=1125*scale;if(wcv.width!==W){wcv.width=W;wcv.height=H}
+  const c=wctx,n=clamp(P.wallN|0,1,8),[b0w,b0h]=baseSize(),a=b0w/b0h,gapF=.035;
+  /* close-up of the wall, no floor: banners tight in a row, as if pasted next to each other */
+  const bH=Math.min(H*.62,W*.92/(a*(n+(n-1)*gapF))),bW=bH*a,gap=bW*gapF;
+  const cy=H*.43,x0=(W-(n*bW+(n-1)*gap))/2;
+  c.drawImage(buildWallBG(W,H),0,0); /* cached concrete wall */
+  if(P.wallMode==='mix'&&!wallSet)makeWallSet();
+  if(!wallCrowd||wallCrowd.mx!==clamp(P.wallPeople|0,0,8))makeCrowd();
+  const orig=P,wasExp=exporting;
+  exporting=true;renderK=clamp(bH/b0h,.15,2.5);ensureSize();
+  try{
+    for(let i=0;i<n;i++){
+      P=JSON.parse(JSON.stringify(orig)); /* each banner renders from a copy */
+      if(P.wallMode==='mix'){ /* the current poster (own design and text) hangs in the middle, random designs with neighbouring presets around it */
+        const m=Math.floor(n/2);
+        if(i!==m){Object.assign(P,JSON.parse(JSON.stringify(wallSet[(i<m?i+1:i)%wallSet.length])));
+          const L=PRESETS.length,pr=PRESETS[(((P.preset|0)+i-m)%L+L)%L];P.title=pr.title;P.desc=pr.desc}}
+      else if(P.wallMode==='series'){const L=PRESETS.length,pr=PRESETS[(((P.preset|0)+i)%L+L)%L];P.title=pr.title;P.desc=pr.desc}
+      render(P.wallMode==='phases'?(ph+i/n)%1:ph); /* phases: n moments spread over the loop */
+      P=orig;
+      const x=x0+i*(bW+gap),y=cy-bH/2;wallRects[i]=[x,y,bW,bH];
+      c.save();c.shadowColor='rgba(0,0,0,.6)';c.shadowBlur=16*scale;c.shadowOffsetY=6*scale;c.fillStyle='#000';c.fillRect(x,y,bW,bH);c.restore();
+      c.drawImage(cv,x,y,bW,bH);
+      c.fillStyle='rgba(255,255,255,.22)';c.fillRect(x,y,bW,Math.max(1,scale));
+    }
+  }finally{P=orig;renderK=null;exporting=wasExp;ensureSize()}
+  /* passers-by: farther ones smaller and less blurred, closer ones big with feet below the frame */
+  /* cut at the knee by the bottom edge; height differs by body length (hv), not by scale */
+  /* everyone at the same distance (same scale); d only orders who walks in front */
+  wallCrowd.ppl.forEach(p=>{const h=H*.7,hv=p.L.hv||1;
+    let foot=H+h*hv*(p.knee||.25);
+    /* nobody taller than 2/3 of the frame: if the head would rise above H/3, the person sits lower (cut above the knee) */
+    const top=foot-h*(1+.81*(hv-1));if(top<H/3)foot+=H/3-top;
+    drawPasserBy(c,W*(-.05+p.x*1.1),foot,h,h*p.blur,p.L,p.dir)});
+}
+/* ---------- click a neighbouring banner on the wall: it becomes the current poster, with the user's text ---------- */
+let wallRects=[];
+function adoptBanner(i){
+  const n=wallRects.length,m=Math.floor(n/2);
+  if(P.wallMode!=='mix'||!wallSet||i===m)return;
+  const k=(i<m?i+1:i)%wallSet.length,v=wallSet[k];if(!v)return;
+  /* the poster being replaced takes the clicked slot, so nothing is lost; a loaded font never moves to a neighbour */
+  const old=JSON.parse(JSON.stringify(P));WALL_KEEP.forEach(x=>delete old[x]);
+  const FL=typeof WALL_FONTS==='function'?WALL_FONTS():[['rfont',READ_FONTS,'rax']];
+  FL.forEach(([fk,map,ax])=>{if(typeof USERF!=='undefined'&&USERF[old[fk]]){const alt=Object.keys(map).filter(q=>!USERF[q]&&q!==v[fk]);if(alt.length){old[fk]=alt[Math.floor(R()*alt.length)];if(ax)old[ax]={}}}});
+  wallSet[k]=old;
+  Object.assign(P,JSON.parse(JSON.stringify(v))); /* design keys only: text, format and timing stay as they are */
+  if(typeof fixText==='function')try{fixText()}catch(e){}
+  setWall(false);changed();buildUI();toast('Now editing this poster · Wall shows the previous one in its place');
+}
+function wallHit(e){const r=wcv.getBoundingClientRect(),x=(e.clientX-r.left)*wcv.width/r.width,y=(e.clientY-r.top)*wcv.height/r.height;
+  return wallRects.findIndex(b=>x>=b[0]&&x<=b[0]+b[2]&&y>=b[1]&&y<=b[1]+b[3])}
+wcv.onmousemove=e=>{const i=wallHit(e);wcv.style.cursor=(P.wallMode==='mix'&&i>=0&&i!==Math.floor(wallRects.length/2))?'pointer':'default'};
+wcv.onclick=e=>{const i=wallHit(e);if(i<0)return;if(P.wallMode!=='mix'){toast('Clicking a banner works in Random designs mode');return}adoptBanner(i)};
+function setWall(v){P.wall=v;$('#app').classList.toggle('wallon',v);$('#bWall').classList.toggle('on',v);$('#cWall').checked=v;$('#bMp4').disabled=v;if(v)openS.add('wall');dirty=true}
+async function exportPNG(){
+  if(exporting)return;
+  if(P.wall){exporting=true;try{renderWall(phase(),2);const b=await new Promise(r=>wcv.toBlob(r,'image/png'));dl(b,`photo-lab-wall-${P.seed}-${wcv.width}x${wcv.height}.png`)}
+    catch(e){alert('PNG error: '+(e&&e.message||e))}finally{exporting=false;renderWall(phase());dirty=true}return}exporting=true;const btn=$('#bPng'),ph=phase();
+  try{renderK=P.pngScale;ensureSize();if(needsWarm())await warm(ph,30,btn,'PNG');render(ph,1/30);
+    const b=await new Promise(r=>cv.toBlob(r,'image/png'));dl(b,`photo-lab-${P.seed}-${RW}x${RH}.png`)}
+  catch(e){alert('PNG error: '+(e&&e.message||e))}
+  finally{renderK=null;exporting=false;ensureSize();dirty=true;updLabels()}
+}
+async function exportMP4(){
+  if(exporting||P.wall)return;
+  if(!window.VideoEncoder||!window.VideoFrame||!window.Mp4Muxer){alert('MP4 export needs WebCodecs (Chrome / Edge / Safari 16.4+) and internet to load the muxer.');return}
+  const btn=$('#bMp4'),fps=P.fps,N=Math.round(P.loop*fps);exporting=true;
+  try{
+    renderK=P.mp4Scale;ensureSize();render(0,1/fps);
+    const w=RW,h=RH,bitrate=Math.round(w*h*fps*P.mq);
+    let codec=null;
+    for(const c of ['avc1.640034','avc1.640033','avc1.640028','avc1.4d0028','avc1.42001f']){
+      try{const s=await VideoEncoder.isConfigSupported({codec:c,width:w,height:h,bitrate,framerate:fps});if(s.supported){codec=c;break}}catch(e){}}
+    if(!codec)throw new Error(`H.264 is not supported at ${w}×${h} — try MP4 scale ×1`);
+    if(needsWarm())await warm(0,fps,btn,'MP4');
+    const muxer=new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),video:{codec:'avc',width:w,height:h},fastStart:'in-memory'});
+    let err=null;const enc=new VideoEncoder({output:(ch,meta)=>muxer.addVideoChunk(ch,meta),error:e=>{err=e}});
+    enc.configure({codec,width:w,height:h,bitrate,framerate:fps});
+    for(let i=0;i<N;i++){
+      if(err)throw err;render(i/N,1/fps);
+      const vf=new VideoFrame(cv,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});
+      enc.encode(vf,{keyFrame:i%fps===0});vf.close();
+      while(enc.encodeQueueSize>6)await new Promise(r=>setTimeout(r,2));
+      if(i%4===0){btn.textContent=`MP4 ${Math.round(i/N*100)}%`;await tick()}
+    }
+    await enc.flush();if(err)throw err;muxer.finalize();
+    dl(new Blob([muxer.target.buffer],{type:'video/mp4'}),`photo-lab-${P.seed}-${w}x${h}.mp4`);
+  }catch(e){alert('MP4 error: '+(e&&e.message||e))}
+  finally{renderK=null;exporting=false;ensureSize();dirty=true;btn.textContent='MP4'}
+}
+/* ================= wiring ================= */
+const act=f=>()=>{f();changed();buildUI()};
+const doAll=act(()=>{randAll();if(P.wall)makeWallSet()}),doFx=act(randEffects),doOpt=act(randOptics),doTxt=act(randText),doLay=act(randLayout),doCol=act(randColors);
+$('#bAll').onclick=doAll;$('#bFx').onclick=doFx;$('#bOpt').onclick=doOpt;$('#bTxt').onclick=doTxt;$('#bLay').onclick=doLay;$('#bCol').onclick=doCol;
+$('#bPhoto').onclick=()=>$('#fPhoto').click();
+$('#fPhoto').onchange=e=>{const fs=[...e.target.files];e.target.value='';addPhotos(fs)};
+/* drop photos anywhere on the page, or paste one */
+window.addEventListener('dragover',e=>{e.preventDefault()});
+window.addEventListener('drop',e=>{e.preventDefault();const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])];
+  const fonts=fs.filter(f=>/\.(ttf|otf|woff2?)$/i.test(f.name));if(fonts.length&&!fs.some(f=>/^image\//.test(f.type)))return;addPhotos(fs)});
+window.addEventListener('paste',e=>{if(/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;const fs=[...(e.clipboardData&&e.clipboardData.files||[])].filter(f=>/^image\//.test(f.type));if(fs.length){e.preventDefault();addPhotos(fs)}});
+$('#bPng').onclick=exportPNG;$('#bMp4').onclick=exportMP4;
+$('#bWall').onclick=()=>{setWall(!P.wall);changed();buildUI()};
+
+/* presets popover: changes Title + Description only */
+/* i = -1 restores the user's own text (Custom); 0…n-1 are the samples. Leaving Custom keeps it safe in P.custom */
+function applyPreset(i){const n=PRESETS.length;
+  if(P.preset===-1||P.preset==null)P.custom={title:P.title,desc:P.desc};
+  if(i===-1){if(!P.custom)return;P.preset=-1;P.title=P.custom.title;P.desc=P.custom.desc;changed();buildUI();toast('Custom');return}
+  P.preset=((i%n)+n)%n;const pr=PRESETS[P.preset];P.title=pr.title;P.desc=pr.desc;changed();buildUI();toast(pr.n)}
+/* [ and ] step through Custom (if there is one) and the samples */
+function stepPreset(k){const ids=[...(P.custom?[-1]:[]),...PRESETS.map((_,i)=>i)];const j=Math.max(0,ids.indexOf(P.preset??-1));applyPreset(ids[(j+k+ids.length)%ids.length])}
+const setPlay=v=>{playing=v;$('#bPlay').textContent=v?'❚❚':'▶'};
+$('#bPlay').onclick=()=>setPlay(!playing);
+$('#scrub').oninput=e=>{setPlay(false);clock=e.target.value/1000*P.loop;dirty=true};
+window.addEventListener('keydown',e=>{
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key.toLowerCase();
+  if(k==='r')doAll();else if(k==='e')doFx();else if(k==='o')doOpt();else if(k==='t')doTxt();else if(k==='l')doLay();else if(k==='c')doCol();
+  else if(k==='n')stepPhoto(e.shiftKey?-1:1);
+  else if(k===' '){e.preventDefault();setPlay(!playing)}
+  else if(k===']')stepPreset(1);else if(k==='[')stepPreset(-1);
+  else if(k==='v'){setWall(!P.wall);changed();buildUI()}
+});
+setWall(!!P.wall);buildUI();loadLib();
+const preload=Object.values(READ_FONTS).flatMap(f=>[300,400,500,700,900].map(w=>`${w} 30px ${f}`));
+Promise.all(preload.map(f=>document.fonts.load(f).catch(()=>{}))).then(()=>{dirty=true});
+document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',()=>{dirty=true});
+requestAnimationFrame(frame);
+
+</script>
+</body>
+</html>

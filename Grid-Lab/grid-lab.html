@@ -1,0 +1,1532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grid Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;700&family=Archivo:wght@400;500;700;900&family=Archivo+Black&family=Anton&family=Unbounded:wght@800&family=Rubik+Mono+One&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Instrument+Serif&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
+<style>
+/* minimal UI: white, hairlines, one neutral sans, grey labels, no ornaments — the poster is the only colour */
+:root{--bg:#f4f4f4;--panel:#fff;--line:#d4d4d4;--tx:#111;--mut:#555;--hov:#ececec;--trk:#bdbdbd}
+@media (prefers-color-scheme: dark){:root{--bg:#0d0d0d;--panel:#161616;--line:#3a3a3a;--tx:#f2f2f2;--mut:#b0b0b0;--hov:#242424;--trk:#555}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:13px/1.4 "Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+#app{display:grid;grid-template-columns:1fr 300px;height:100vh}
+#stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+#top{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding:14px 20px}
+#top .logo{font-weight:700;margin-right:14px}
+#top .sp{flex:1}
+button,select,input,textarea{font:inherit;color:var(--tx)}
+button{background:none;border:0;padding:6px 10px;color:var(--tx);font-weight:500;cursor:pointer;white-space:nowrap;border-radius:6px;transition:color .12s,background .12s}
+button:hover{color:var(--tx);background:var(--hov)}
+button kbd{font:inherit;font-weight:400;color:var(--mut);margin-left:4px}
+#view{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px 32px 24px}
+canvas#cv{max-width:100%;max-height:100%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 30px rgba(0,0,0,.06)}
+#bar{display:flex;gap:12px;align-items:center;padding:12px 20px 16px}
+#bar button{width:32px;padding:6px 0;text-align:center}
+#bar input[type=range]{flex:1}
+#tlab{color:var(--mut);font-variant-numeric:tabular-nums;min-width:40px;text-align:right}
+#panel{overflow:auto;background:var(--panel);border-left:1px solid var(--line);padding:8px 0 40px}
+details{border-bottom:1px solid var(--line);padding:0 20px}
+details:last-of-type{border-bottom:0}
+summary{cursor:pointer;padding:12px 0;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;font-weight:600}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"";order:-1;width:5px;height:5px;border-right:1.5px solid var(--tx);border-bottom:1.5px solid var(--tx);transform:rotate(-45deg);margin:0 6px 0 1px;transition:transform .15s}
+details[open]>summary::after{transform:rotate(45deg)}
+details[open]{padding-bottom:12px}
+summary .tag{font-weight:400;color:var(--mut)}
+summary button.dice{order:5}summary input.hdr{order:6}
+summary button.dice{margin-left:auto;padding:3px;line-height:0;color:var(--mut)}
+summary button.dice:hover{color:var(--tx)}
+summary button.dice svg{width:17px;height:17px}
+summary input.hdr{margin:0 0 0 6px;cursor:pointer}
+summary:not(:has(.dice))>input.hdr{margin-left:auto}
+details.off>summary{color:var(--mut)}
+details.off>*:not(summary){opacity:.5}
+.row{display:grid;grid-template-columns:88px 1fr 34px;gap:10px;align-items:center;margin:7px 0}
+.row.wide{grid-template-columns:88px 1fr}
+.row label{color:var(--mut);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .v{color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
+.row select,.row input[type=text],textarea{width:100%;background:var(--panel);border:1px solid var(--trk);border-radius:6px;padding:5px 7px;outline:none}
+.row select:focus,.row input[type=text]:focus,textarea:focus{border-color:var(--mut)}
+textarea{resize:vertical;min-height:30px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--trk)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;margin-top:-5.5px;border-radius:50%;background:var(--tx);border:0}
+input[type=range]::-moz-range-track{height:2px;background:var(--trk)}
+input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--tx);border:0}
+.row input[type=color]{width:100%;height:24px;border:1px solid var(--trk);border-radius:6px;background:transparent;padding:2px;cursor:pointer}
+input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+input[type=color]::-webkit-color-swatch{border:0;border-radius:4px}
+input[type=checkbox]{accent-color:var(--tx);width:15px;height:15px}
+.row input[type=checkbox]{justify-self:start;margin:0}
+.inks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.inks input{width:100%;height:24px;border:1px solid var(--trk);border-radius:6px;background:transparent;padding:2px;cursor:pointer}
+.inks input.dim{opacity:.25}
+.hint{color:var(--mut);margin:6px 0 8px;line-height:1.45}
+#top button.on{background:var(--hov)}
+#bWall{display:inline-flex;align-items:center;gap:6px}
+#cWall{margin:0;pointer-events:none} /* the button toggles; the box only shows the state */
+button:disabled{opacity:.35;cursor:default}
+canvas#wall{max-width:100%;max-height:100%;display:none}
+#app.wallon canvas#cv{display:none}
+#app.wallon canvas#wall{display:block}
+#toast{position:fixed;left:50%;bottom:60px;transform:translateX(-50%);background:var(--tx);color:var(--panel);padding:7px 12px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+@media (max-width:820px){#app{grid-template-columns:1fr;grid-template-rows:60vh auto;height:auto}#panel{border-left:0;border-top:1px solid var(--line)}}
+.inks{grid-template-columns:repeat(4,1fr)}
+.subh{color:var(--mut);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 4px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 10px}
+.chips button{padding:3px 7px;border:1px solid var(--trk);border-radius:5px;font-weight:400;font-size:12px;color:var(--mut)}
+.chips button.on{background:var(--tx);color:var(--panel);border-color:var(--tx)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="top">
+      <div class="logo">Grid Lab</div>
+      <button id="bAll" title="Randomize everything except text and format">Random <kbd>R</kbd></button>
+      <button id="bTil" title="Randomize the tile layers (recipes after the references)">Tiles <kbd>G</kbd></button>
+      <button id="bWarp" title="Randomize the space warps">Space <kbd>W</kbd></button>
+      <button id="bTxt" title="Randomize the text × tiles interaction">Text <kbd>T</kbd></button>
+      <button id="bLay" title="Randomize the readable layout">Layout <kbd>L</kbd></button>
+      <button id="bCol" title="Random palette">Colors <kbd>C</kbd></button>
+      <button id="bWall" title="Preview a row of static banners on a wall"><input type="checkbox" id="cWall" tabindex="-1"> Wall <kbd>V</kbd></button>
+      <span class="sp"></span>
+      <button id="bPng">PNG ×2</button>
+      <button id="bMp4">MP4</button>
+    </div>
+    <div id="view"><canvas id="cv"></canvas><canvas id="wall"></canvas></div>
+    <div id="bar">
+      <button id="bPlay" title="Play / pause (space)">❚❚</button>
+      <input type="range" id="scrub" min="0" max="1000" value="0">
+      <span id="tlab">0.0s</span>
+    </div>
+  </div>
+  <div id="panel"></div>
+</div>
+<div id="toast"></div>
+<input type="file" id="fFont" accept=".ttf,.otf,.woff,.woff2" hidden>
+<script>
+'use strict';
+/* Grid Lab — two layers: a readable Swiss text layer and an animated GPU layer of shape instances on a grid.
+   Each tile layer places one shape per cell (26 shapes, glyphs from the title font), splits cells into a quadtree,
+   turns them in quarter steps, picks shapes and inks by zones / columns / maps, and reacts to the letters per tile. */
+/* ================= basics ================= */
+const $=s=>document.querySelector(s);
+const TAU=Math.PI*2, CAP=.72;
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const R=Math.random, ri=(a,b)=>a+Math.floor(R()*(b-a+1)), rf=(a,b)=>a+R()*(b-a), pick=a=>a[Math.floor(R()*a.length)];
+function hsh(n){const x=Math.sin(n*127.1+P.seed*.0137)*43758.5453;return x-Math.floor(x)}
+function fmt(v){return Math.abs(v)>=100?Math.round(v):(Math.round(v*100)/100)}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('on'),1600)}
+
+
+/* ================= data ================= */
+const FORMATS={'3:4':[3,4],'4:5':[4,5],'2:3':[2,3],'A-series 1:√2':[1,Math.SQRT2],'F4 895×1280':[895,1280],'1:1':[1,1],'9:16':[9,16],'16:9':[16,9]};
+const READ_FONTS={'Inter':'"Inter"','Helvetica':'"Helvetica Neue",Helvetica,Arial,sans-serif','Space Grotesk':'"Space Grotesk"','IBM Plex Sans':'"IBM Plex Sans"','Archivo':'"Archivo"','IBM Plex Mono':'"IBM Plex Mono"','Instrument Serif':'"Instrument Serif"'};
+/* former broken-layer faces now live in the shared title list */
+Object.assign(READ_FONTS,{'Archivo Black':'"Archivo Black"','Anton':'"Anton"','Unbounded':'"Unbounded"','Rubik Mono One':'"Rubik Mono One"','Bricolage':'"Bricolage Grotesque"'});
+const TEMPLATES={giant:'Giant title',cells:'Letter cells',scatter:'Scattered words',columns:'Columns',bigdate:'Big date',corners:'Corners',stagger:'Staggered list',mirror:'Mirrored',vertical:'Vertical title',repeat:'Header + footer',axis:'Axis',bands:'Bands'};
+const RMOTION={none:'None',reveal:'Line reveal',slide:'Column slide',jump:'Grid jumps',rise:'Row drift',track:'Tracking',marquee:'Marquee title',step:'Step templates',drift:'Grid breathe'};
+const BLAYOUT={fill:'Fill page',stack:'Stack',repeat:'Repeat rows',letters:'Letter grid'};
+const BMOTION={none:'None',scroll:'Scroll',hscroll:'Line marquee',lines:'Line shift',pulse:'Pulse',breathe:'Tracking',wobble:'Wobble'};
+const CASES={none:'As typed',upper:'UPPER',lower:'lower'};
+const BLENDS={'source-over':'Normal','multiply':'Multiply','screen':'Screen','difference':'Difference','exclusion':'Exclusion'};
+/* space warps (shared with Line Lab) */
+/* space warps: ps = [label,min,max,step,default,[random lo,hi]] (Geo Lab set + noise) */
+const WARPS={
+ shear:{n:'Shear cells',ops:['Checker','Columns','Random'],ps:[['Amount',-3,3,.01,1.5,[-2,2]],['Cell',.03,.6,.005,.18,[.08,.4]],['Rows',.2,4,.01,1,[.4,2.5]]]},
+ steps:{n:'Column steps',ops:['Stairs','Random','Wave','Rows stairs','Rows random'],ps:[['Amount',-.3,.3,.001,.05,[-.1,.1]],['Width',.02,.5,.005,.1,[.05,.25]],['Wave freq',.1,4,.01,1]]},
+ fold:{n:'Fold',ops:['Fold X','Fold Y'],ps:[['Amount',0,.4,.001,.1,[.03,.15]],['Frequency',1,40,.1,8,[3,16]],['Envelope',0,1,.01,.5]]},
+ uturn:{n:'U-turn',ops:['Bottom','Top','Left','Right'],ps:[['Amount',0,1,.01,1,[.8,1]],['Center X',-.5,.5,.01,0,[-.25,.25]],['Center Y',-.5,.5,.01,0,[-.3,.3]]]},
+ polar:{n:'Polar',ops:['Polar','Log spiral','Tunnel'],ps:[['Amount',0,1,.01,1,[.7,1]],['Segments',1,24,1,6,[2,12]],['Twist',-3,3,.01,0,[-1,1]]]},
+ perspective:{n:'Perspective',ops:['Floor + ceiling','Floor','Wall'],ps:[['Amount',0,1,.01,1,[.8,1]],['Depth',.05,1,.01,.3,[.1,.6]],['Horizon',-.45,.45,.01,0,[-.25,.25]]]},
+ swirl:{n:'Swirl',ops:['Swirl','Ring twist','Ring steps'],ps:[['Amount',-6,6,.01,2,[-4,4]],['Size',.5,20,.01,3,[1,8]],['Center',-.4,.4,.01,0,[-.2,.2]]]},
+ kaleido:{n:'Kaleido',ops:['Radial','Mirror X','Mirror Y','Mirror XY'],ps:[['Amount',0,1,.01,1,[.8,1]],['Segments',2,16,1,6,[3,10]],['Offset',-.5,.5,.01,0,[-.2,.2]]]},
+ tile:{n:'Tile mirror',ops:['Mirror','Repeat','Brick'],ps:[['Amount',0,1,.01,1,[.8,1]],['Tile',.05,1,.005,.3,[.15,.5]],['Shift',0,1,.01,0]]},
+ ripple:{n:'Ripple',ops:['Round','Square','Diamond'],ps:[['Amount',0,.15,.001,.02,[.005,.03]],['Frequency',1,80,.1,20,[8,40]],['Center',-.4,.4,.01,0,[-.2,.2]]]},
+ wave:{n:'Wave',ops:['X by Y','Y by X','Both'],ps:[['Amount',0,.3,.001,.04,[.01,.08]],['Frequency',.5,40,.1,6,[2,16]],['Phase step',0,4,.01,0,[0,1.5]]]},
+ lens:{n:'Lens',ops:['Bulge','Pinch','Orbiting bulge'],ps:[['Amount',0,3,.01,1,[.5,2.5]],['Radius',.05,1,.01,.35,[.2,.6]],['Center',-.4,.4,.01,0,[-.2,.2]]]},
+ pixel:{n:'Quantize',ops:['Squares','Rows','Columns','Steps'],ps:[['Amount',0,1,.01,1,[.8,1]],['Cell',.004,.2,.001,.03,[.02,.08]],['Jitter',0,1,.01,0,[0,.6]]]},
+ noise:{n:'Noise',ops:['Smooth','Ridged','Curl'],ps:[['Amount',0,.4,.001,.06,[.02,.12]],['Scale',.3,12,.01,3,[1,6]],['Detail',0,1,.01,.5]]},
+};
+const WKEYS=Object.keys(WARPS);
+
+/* text × tiles: cell-level modes test the letter mask at each tile's centre, so letters become tile mosaics */
+const TMODES={none:'None',pixel:'Tiles in letters',pixout:'Tiles outside letters',swap:'Tiles 2 in letters',finer:'Finer inside',coarser:'Bigger tiles inside',grow:'Bigger shapes inside',turn:'Turn inside',ink:'Accent inside',invert:'Invert inside',knock:'Knockout',window:'Window',push:'Push apart',glass:'Glass letters',lglass:'Liquid glass'};
+const GLASS_K=['glass','lglass']; /* text-glass modes: handled by glassCol(), the layer's own uTMode gets 0 */
+const TMK=Object.keys(TMODES);
+const CELLMODES=['pixel','pixout','swap','finer','coarser','grow','turn','ink'];
+/* shape library — order = shader ids */
+const SHAPES=['Square','Circle','Ring','Quarter','Quarter arc','Dome','Triangle','Stripes','Diagonal','Target','Nested squares','Nested diamonds','Rainbow','Plus','Cross','Dots','Bead','Truchet','Diamond','Corner L','Half bar','Chevron','Checker','Pill','Cube','Glyph'];
+const BANDED=new Set([7,8,9,10,11,12,15,21,22]);
+const PICKS=['Random','Zones','Columns','Rows','Level','Checker','Diagonal','Map'];
+const ROTS=['None','Random 90°','Random 180°','Zones','Checker','Columns','Noise field','Radial'];
+const STYLES=['Fill','Outline','Gradient','Glow','Fill + line'];
+const BANDMODES=['Cut (gaps)','Ink sequence','Two-tone'];
+const CMODES=['Single ink','Random','Zones','By shape','Columns','Rows','Level','Gradient Y','Map'];
+const TILEBG=['None','Next ink','Random ink','Zone ink','Line color'];
+const BORDERS=['None','Filled tiles','All tiles'];
+const MAPSRC=['None','Noise','Gradient X','Gradient Y','Radial','Random','Text','Rings','Zones'];
+const MOTIONS=['None','Flip 90°','Spin','Pulse','Shuffle shapes','Wave','Split breathe','Color steps'];
+const BLENDS2=['Normal','Multiply','Screen','Difference'];
+
+
+/* [name, colours (1st = ground, rest = inks, up to 7), text, accent, line] — the first fourteen are the references */
+const PALETTES=[
+ ['Glyph night',['#1d2027','#f1eee6'],'#f1eee6','#ff5a36','#f1eee6'],
+ ['Confetti',['#fbfaf7','#e8322b','#f6c21c','#1d1d1f','#7cc7e8','#f29ab8','#f08a2c','#9b9b9b'],'#111111','#e8322b','#111111'],
+ ['Letterpress',['#f1efe9','#ea4523','#1e2b4d','#9c6a45','#ead9ad','#cfe1e4'],'#1e2b4d','#ea4523','#1e2b4d'],
+ ['Pop tiles',['#fdf8e8','#2e66b5','#e8492a','#f6cf2f','#1f9a63','#f39021','#f38fb0','#67b7e3'],'#151515','#e8492a','#151515'],
+ ['Marbling',['#eef4f0','#ff2a6a','#ffe600','#2ac8b8','#7a3cff','#ff4a1c','#6bd84a','#2a9bff'],'#111111','#ff2a6a','#2a9bff'],
+ ['Gouache',['#f6f2ea','#b9f23a','#111111','#2f56d6','#7fb6ff','#ff4c1e','#c8a6ff','#ff4fa3'],'#111111','#ff4c1e','#111111'],
+ ['Wendy',['#39d36b','#ff7ae6','#000000','#eeeeee','#1a6e2f','#148a8a','#e85aa5'],'#000000','#ff7ae6','#000000'],
+ ['Pixel map',['#f3f1ee','#2b2b2b','#a9cce8','#1f6fbf','#ffc20e','#ffd3b0','#e81e0e','#a3180c'],'#2b2b2b','#e81e0e','#ffc49a'],
+ ['Glitch',['#f2f2f2','#ff1a1a','#0a0a0a','#1f5bff','#ffd83a','#14702e','#f6c6c0','#c3832c'],'#0a0a0a','#ff1a1a','#0a0a0a'],
+ ['Ellipse',['#9d8f84','#2f5a1f','#ff2d6b','#c88a0b','#4b4a8c','#0c0c18','#e57390','#ff1414'],'#0c0c18','#ff2d6b','#2f5a1f'],
+ ['Sleepwalker',['#fbf7ea','#ff2a2a','#f7a6d7','#1e1e22','#24386e','#1d8a3a','#f5e62a'],'#1e1e22','#ff2a2a','#1e1e22'],
+ ['Bokeh',['#050505','#ff6a1a','#ffd23a','#ff2a4a','#2aff8a','#3aa0ff','#fff2c0'],'#f4f4f4','#ffd23a','#f4f4f4'],
+ ['Digressing',['#ffffff','#ff1f8e','#12a58a','#d4e830'],'#111111','#ff1f8e','#111111'],
+ ['Mosaic',['#000000','#f3f0e8','#ff6fae','#1f6fc7','#1f7a3a','#ffc21a','#ff6a1a','#e8261a'],'#f3f0e8','#ffc21a','#1f6fc7'],
+ ['Swiss',['#f2f2f2','#111111','#ff2a1a'],'#111111','#ff2a1a','#111111'],
+ ['Blueprint',['#0f2350','#e8eef8','#7fb2ff'],'#e8eef8','#7fb2ff','#7fb2ff'],
+ ['Riso',['#f4efe6','#ff4f8b','#2a5bd7','#ffd400'],'#111111','#ff4f8b','#111111'],
+ ['Acid',['#e9ff3b','#111111','#7a5cff'],'#111111','#7a5cff','#111111'],
+ ['Kraft',['#e6d9c3','#1b1814','#b0472c','#3f6b8a'],'#1b1814','#b0472c','#1b1814'],
+];
+
+function mkWarp(type,on,o={}){return Object.assign({on,type,op:0,p:WARPS[type].ps.map(q=>q[4]),sp:0,pu:0},o)}
+function mkSlot(o={}){return Object.assign({on:true,shp:[0,1,2,3,4,7],pick:0,lay:0,D:8,asp:1,lv:2,split:.5,sx:0,sy:0,ang:0,cx:0,cy:0,
+  size:1,w:.5,n:4,rd:0,gap:0,rot:1,sty:0,lw:.3,soft:0,op:1,blend:0,band:0,cmode:0,ink:0,tbg:0,border:0,
+  msrc:0,msc:2,mS:0,mQ:0,mD:0,drop:0,nz:5,zsc:1.5,zdr:false,mo:0,cyc:1,mv:0},o)}
+const DEF={tfrost:0,tdisp:.7,wall:false,wallN:5,wallMode:'mix',wallPeople:2,wallTex:true,
+ fmt:'3:4',q:.75,aa:true,loop:8,seed:1234,
+ title:'Open Jam #30',desc:'Noise Kitchen\n2.12.2026 / 18:00\nKino, Petrohradská\n@noise.kitchen',
+ tpl:'giant',rfont:'Inter',tw:900,tspan:1,body:14,mid:2.4,lead:1.15,cols:8,rows:12,margin:38,gutter:12,stairs:0,rcase:'upper',rcol:'text',band:false,rblend:'source-over',grid:false,
+ rax:{},
+ rmo:'none',rmoAmt:.5,rmoSpd:1,
+ tshow:true,tmode:'ink',tamt:.7,tblur:1,tfill:'none',tsrc:'big',
+ glyphs:'SYØ+&',
+ slots:[mkSlot({shp:[1,2,3,4,5,8,10,15,19,20,25],D:6,lv:3,split:.62,n:4,size:.94}),mkSlot({on:false,shp:[1],D:24,lv:0,ink:1})],
+ warps:[mkWarp('noise',false),mkWarp('wave',false),mkWarp('swirl',false)],
+ pal:['#1d2027','#f1eee6','#f1eee6','#f1eee6','#f1eee6','#f1eee6','#f1eee6','#f1eee6'],nCol:2,cyc:0,grain:0,txt:'#f1eee6',acc:'#ff5a36',lc:'#f1eee6',
+ pngScale:2,mp4Scale:1,fps:30,mq:.15,
+};
+const LSKEY='gridlab.v1';
+/* fictional events with very different amounts of text, to test the layout quickly */
+const PRESETS=[
+ {n:'One word',title:'Open',desc:''},
+ {n:'Club night',title:'Open Jam #30',desc:'Noise Kitchen\nFri 02.12 / 23:00\nKino, Petrohradská'},
+ {n:'Exhibition',title:'Pattern\nLanguage',desc:'Geometry, rhythm & optical noise\n14.01–28.02.2027\nHall 3, Kunsthalle\n@geo.lab'},
+ {n:'Concert',title:'Orchestra of Broken Clocks',desc:'Live in concert\n22.03.2027, 20:00\nRoxy, Dlouhá 33\nTickets at roxy.example'},
+ {n:'Lecture',title:'Type & Time',desc:'Lecture by Mira Holan\nWed 05.05 / 18:30\nRoom 204, Academy of Arts\nFree entry'},
+ {n:'Film night',title:'Kino Nocturne',desc:'Three short films about cities at night\nEvery Thursday in March\nAtrium cinema, 21:00\nOriginal version with subtitles\natrium.example'},
+ {n:'Festival line-up',title:'Basel Noise Festival',desc:'Three days of loud music\n12–14.06.2027\nKaserne, Basel\nVera Stone\nThe Long Hum\nNoor & Kit\nPale Static\nOdd Machines\nMarta Velez\nDJ Lumen\nbaselnoise.example'},
+ {n:'Symposium',title:'International Symposium on Generative Graphic Design',desc:'Two days of talks and workshops\n03–04.10.2027\nUniversity of Applied Arts\nRegistration open'},
+ {n:'Announcement',title:'Closed for Renovation',desc:'Back in spring'},
+];
+/* text fields that presets write and Custom keeps */
+const TXT_KEYS=['title','desc'],setTxt=pr=>{P.title=pr.title;P.desc=pr.desc};
+const txtSnap=()=>Object.fromEntries(TXT_KEYS.map(k=>[k,P[k]]));
+const WALL_FONTS=()=>(typeof READ_FONTS!=='undefined'&&'rfont' in P)?[['rfont',READ_FONTS,'rax']]:[];
+
+let P=JSON.parse(JSON.stringify(DEF));
+const okShp=a=>Array.isArray(a)&&a.length>0&&a.every(v=>Number.isInteger(v)&&v>=0&&v<SHAPES.length);
+try{const s=JSON.parse(localStorage.getItem(LSKEY)||'null');if(s&&typeof s==='object'){Object.assign(P,s);
+  if(!Array.isArray(P.slots)||P.slots.length!==2||P.slots.some(x=>!x||typeof x!=='object'))P.slots=JSON.parse(JSON.stringify(DEF.slots));
+  P.slots.forEach((x,i)=>{Object.keys(DEF.slots[0]).forEach(k=>{if(x[k]==null)x[k]=JSON.parse(JSON.stringify(DEF.slots[i][k]))});if(!okShp(x.shp))x.shp=DEF.slots[i].shp.slice()});
+  if(!Array.isArray(P.warps)||P.warps.length!==3||P.warps.some(x=>!x||!WARPS[x.type]))P.warps=JSON.parse(JSON.stringify(DEF.warps));
+  P.warps.forEach(x=>{const d=WARPS[x.type];if(!Array.isArray(x.p)||x.p.length!==d.ps.length)x.p=d.ps.map(q=>q[4])});
+  if(!Array.isArray(P.pal)||P.pal.length!==8)P.pal=DEF.pal.slice();
+  if(!FORMATS[P.fmt])P.fmt=DEF.fmt;if(!TEMPLATES[P.tpl])P.tpl=DEF.tpl;if(!TMODES[P.tmode])P.tmode=DEF.tmode;
+  if(!READ_FONTS[P.rfont])P.rfont=DEF.rfont;
+  /* old saves had four copy fields: fold them into Description */
+  if(typeof s.desc!=='string')P.desc=['sub','date','place','credit'].map(k=>s[k]).filter(x=>x&&String(x).trim()).join('\n')||DEF.desc;
+  ['sub','date','place','credit'].forEach(k=>delete P[k]);
+  if(typeof P.rax!=='object'||!P.rax)P.rax={};
+  if(typeof P.glyphs!=='string')P.glyphs=DEF.glyphs;if(typeof P.lc!=='string')P.lc=P.txt;
+}}catch(e){}
+
+/* the text the user had before presets existed becomes their Custom */
+if(P.preset==null||(P.preset===-1&&!P.custom)){P.preset=-1;P.custom=txtSnap()}
+let saveH=0;function saveSoon(){clearTimeout(saveH);saveH=setTimeout(()=>{try{localStorage.setItem(LSKEY,JSON.stringify(P))}catch(e){}},300)}
+/* ================= WebGL pattern engine ================= */
+const glc=document.createElement('canvas');
+const gl=glc.getContext('webgl2',{premultipliedAlpha:false,preserveDrawingBuffer:true,antialias:false,alpha:false});
+if(!gl)alert('WebGL2 is not available in this browser — the pattern layer needs it.');
+const VS=`#version 300 es
+in vec2 aP;out vec2 vUv;void main(){vUv=aP*.5+.5;gl_Position=vec4(aP,0.,1.);}`;
+const FSRC=`#version 300 es
+precision highp float;
+in vec2 vUv;out vec4 o;
+uniform vec2 uRes;uniform float uT,uSeed,uMS,uAA;
+uniform vec4 uWA[3],uWB[3];
+uniform vec4 uSA[2],uSB[2],uSC[2],uSD[2],uSE[2],uSF[2],uSG[2],uSH[2],uSI[2],uSJ[2],uSK[2];
+uniform float uSh[64];
+uniform int uN,uCyc,uTMode,uNG;
+uniform float uGrain,uTAmt,uTBlur;
+uniform vec3 uPal[8];
+uniform vec3 uLine,uAcc;
+uniform sampler2D uTxt,uGly;
+#define TAU 6.2831853
+#define PI 3.14159265
+float h21(vec2 p){p=fract(p*vec2(123.34,456.21)+uSeed*.001);p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float h11(float n){return fract(sin(n*12.9898+uSeed*.37)*43758.5453);}
+mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,s,-s,c);}
+float tri(float x){return abs(fract(x)-.5)*2.;}
+float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
+float cr2(vec2 a,vec2 b){return a.x*b.y-a.y*b.x;}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+ float a=h21(i),b=h21(i+vec2(1.,0.)),c=h21(i+vec2(0.,1.)),d=h21(i+vec2(1.,1.));return mix(mix(a,b,f.x),mix(c,d,f.x),f.y)*2.-1.;}
+float fbm(vec2 p,int oc){float s=0.,a=.5;for(int i=0;i<5;i++){if(i>=oc)break;s+=a*vn(p);p=rot(.7)*p*2.03+17.;a*=.5;}return s;}
+
+/* ---------- space warps (world units: poster height = 1, centre = 0) ---------- */
+vec2 warp(vec2 p,int i){
+ vec4 A=uWA[i],B=uWB[i];int ty=int(B.z+.5),op=int(A.w+.5);
+ float ph=uT*B.x,an=B.x>0.?cos(TAU*ph):1.;
+ float amt=A.x*(1.-B.y*(.5-.5*cos(TAU*uT*max(1.,B.x))));
+
+ if(ty==0){ /* shear cells */
+  vec2 cs=vec2(A.y,A.y*A.z);vec2 c=floor(p/cs);float ly=fract(p.y/cs.y)-.5;
+  float s=op==0?mod(c.x+c.y,2.):op==1?mod(c.x,2.)*2.-1.:floor(h21(c)*3.)-1.;
+  p.x+=ly*cs.y*amt*s*an;
+ }else if(ty==1){ /* column / row steps */
+  bool rows=op>=3;int m=rows?op-3:op;float x=rows?p.y:p.x;float c=floor(x/A.y);float off;
+  if(m==0)off=c;else if(m==1)off=(h21(vec2(c,7.))-.5)*4.;else off=sin(c*A.z)*2.;
+  off*=amt;if(B.x>0.)off+=amt*2.*sin(TAU*(ph+h21(vec2(c,3.))));
+  if(rows)p.x+=off;else p.y+=off;
+ }else if(ty==2){ /* zigzag fold */
+  vec2 q=op==0?p:p.yx;float cx=B.x>0.?.35*sin(TAU*ph):0.;
+  float env=mix(1.,exp(-pow((q.x-cx)/.22,2.)),A.z);
+  q.x+=amt*(tri(q.y*A.y)-.5)*2.*env;p=op==0?q:q.yx;
+ }else if(ty==3){ /* U-turn: straight lines bend around a half circle */
+  vec2 c=vec2(A.y,A.z);if(B.x>0.)c.y+=.15*sin(TAU*ph);
+  vec2 q=p-c;if(op==1)q=-q;else if(op==2)q=vec2(q.y,-q.x);else if(op==3)q=vec2(-q.y,q.x);
+  vec2 r;if(q.y>=0.)r=vec2(abs(q.x),q.y);else{float rr=length(q),a=atan(abs(q.x),-q.y);r=vec2(rr,-rr*(PI*.5-a));}
+  p=mix(p,r,amt);
+ }else if(ty==4){ /* polar */
+  vec2 q=p;if(B.x>0.)q=rot(TAU*ph)*q;float a=atan(q.y,q.x)/TAU,r=length(q),k=.15;vec2 w;
+  if(op==0)w=vec2(a*A.y*k,r);else if(op==1)w=vec2(a,log(r+1e-4)/TAU)*A.y*k;else w=vec2(a*A.y*k,.08/(r+.005));
+  w.x+=A.z*w.y;p=mix(p,w,amt);
+ }else if(ty==5){ /* perspective plane */
+  float hz=A.z+(B.x>0.?.05*sin(TAU*ph):0.);
+  vec2 q=op==2?vec2(p.y,p.x-hz):vec2(p.x,p.y-hz);float k=A.y*.3;
+  vec2 w=vec2(q.x*k/(abs(q.y)+.004),k/(abs(q.y)+.004));
+  if(op==1&&q.y>0.)w=p;if(op==2)w=w.yx;p=mix(p,w,amt);
+ }else if(ty==6){ /* swirl */
+  vec2 c=vec2(A.z,0.);if(B.x>0.)c+=.08*vec2(cos(TAU*ph),sin(TAU*ph));
+  vec2 q=p-c;float r=length(q),a;
+  if(op==0)a=amt*exp(-r*A.y)*an;else if(op==1)a=(mod(floor(r*A.y*4.),2.)*2.-1.)*amt*.2*an;else a=floor(r*A.y*4.)*amt*.08*an;
+  p=rot(a)*q+c;
+ }else if(ty==7){ /* kaleido */
+  vec2 q=p-vec2(A.z,0.);
+  if(op==0){float n=max(2.,A.y),sg=TAU/n;q=rot(sg*ph)*q;float a=mod(atan(q.y,q.x),sg);a=abs(a-sg*.5);q=vec2(cos(a),sin(a))*length(q);}
+  else{q.x+=B.x>0.?.08*sin(TAU*ph):0.;if(op==1)q.x=abs(q.x);else if(op==2)q.y=abs(q.y);else q=abs(q);}
+  p=mix(p,q,amt);
+ }else if(ty==8){ /* tile mirror / repeat */
+  vec2 q=p/A.y;if(op==2)q.x+=mod(floor(q.y),2.)*.5;q+=vec2(A.z,ph);
+  vec2 f=fract(q)-.5;if(op==0)f=abs(f);p=mix(p,f*A.y,amt);
+ }else if(ty==9){ /* ripple */
+  vec2 q=p-vec2(A.z,0.);float d=op==0?length(q):op==1?max(abs(q.x),abs(q.y)):abs(q.x)+abs(q.y);
+  p+=q/(d+1e-4)*sin(d*A.y-TAU*ph)*amt;
+ }else if(ty==10){ /* wave */
+  if(op!=1)p.x+=sin(p.y*A.y+TAU*ph+A.z*floor(p.x*A.y*.2))*amt;
+  if(op!=0)p.y+=sin(p.x*A.y+TAU*ph+A.z*floor(p.y*A.y*.2))*amt;
+ }else if(ty==11){ /* lens */
+  vec2 c=vec2(A.z,0.);if(op==2||B.x>0.)c+=vec2(cos(TAU*ph),sin(TAU*ph))*(op==2?.25:.1);
+  vec2 q=p-c;float r=length(q)/A.y;
+  if(r<1.&&r>1e-4){float e=op==1?1./(1.+amt):1.+amt;p=c+q*pow(r,e-1.);}
+ }else if(ty==12){ /* quantize */
+  float s=A.y*(B.x>0.?1.+.5*sin(TAU*ph):1.);vec2 c=floor(p/s);
+  vec2 q=(c+.5)*s+(vec2(h21(c),h21(c+3.))-.5)*s*A.z;
+  if(op==1)q.x=p.x;else if(op==2)q.y=p.y;else if(op==3){q=(c+.5)*s;q.y+=c.x*s*.5*A.z;q.y=(floor(q.y/s)+.5)*s;}
+  p=mix(p,q,amt);
+ }else if(ty==13){ /* noise displacement, loops by moving the noise along a circle */
+  vec2 lo=B.x>0.?.7*vec2(cos(TAU*ph),sin(TAU*ph)):vec2(0.);
+  vec2 q=p*A.y+lo;int oc=1+int(A.z*4.);
+  vec2 d=vec2(fbm(q,oc),fbm(q+vec2(31.7,-12.3),oc));
+  if(op==1)d=(1.-abs(d)*2.)*.6;
+  else if(op==2){float n=fbm(q,oc)*2.;d=vec2(cos(n*TAU),sin(n*TAU))*.5;}
+  p+=d*amt;
+ }
+ return p;
+}
+/* ---------- text: blurred alpha + its gradient (for push, follow-letters, letter-contour field) ---------- */
+vec3 txGrad(vec2 uv){float lv=3.+uTBlur*.7;vec2 e=vec2(exp2(lv))/uRes;
+ return vec3(textureLod(uTxt,uv,lv).a,
+  textureLod(uTxt,uv+vec2(e.x,0.),lv).a-textureLod(uTxt,uv-vec2(e.x,0.),lv).a,
+  textureLod(uTxt,uv+vec2(0.,e.y),lv).a-textureLod(uTxt,uv-vec2(0.,e.y),lv).a);}
+vec4 maskAt(vec2 uv){float ins=step(.5,textureLod(uTxt,uv,uTBlur).a);if(uTMode!=12)return vec4(ins,0.,0.,0.);return vec4(ins,txGrad(uv));}
+/* ---------- shapes: p in the unit cell [-.5,.5]², returns (cut distance, solid distance, band index) ----------
+   cut = bands with gaps (stripes, rings…), solid = the whole silhouette (bands are coloured instead) */
+float gGly=0.;
+float sdBox(vec2 p,vec2 b,float r){vec2 d=abs(p)-b+r;return length(max(d,0.))+min(max(d.x,d.y),0.)-r;}
+vec3 bands(float f,float w,float k,float bx,float full){
+ float dc=(abs(fract(f)-.5)-w*.5)/k;float fl=max(bx,full);return vec3(max(dc,fl),fl,floor(f));}
+vec3 shape(int id,vec2 p,float w,float n,float rd){
+ float bx=sdBox(p,vec2(.5),0.);n=max(1.,floor(n+.5));
+ if(id==0){float d=sdBox(p,vec2(.5),rd*.5);return vec3(d,d,0.);}
+ if(id==1){float d=length(p)-.5;return vec3(d,d,0.);}
+ if(id==2){float t=.06+w*.3;float d=abs(length(p)-.5+t*.5)-t*.5;return vec3(d,d,0.);}
+ if(id==3){float d=max(length(p+.5)-1.,bx);return vec3(d,d,0.);}
+ if(id==4){float t=.1+w*.4;float d=max(abs(length(p+.5)-1.+t*.5)-t*.5,bx);return vec3(d,d,0.);}
+ if(id==5){float d=max(length(vec2(p.x,(p.y+.5)*.5))-.5,bx);return vec3(d,d,0.);}
+ if(id==6){float d=max(bx,(p.x+p.y)*.7071);return vec3(d,d,0.);}
+ if(id==7)return bands((p.y+.5)*n,w,n,bx,-1.);
+ if(id==8)return bands((p.x+p.y+1.)*n*.5,w,n*.7071,bx,-1.);
+ if(id==9){float r=length(p);return bands(r*n*2.+.5,w,n*2.,bx,r-.5);}
+ if(id==10){float r=max(abs(p.x),abs(p.y));vec3 b=bands(r*n*2.+.5,w,n*2.,bx,-1.);float rr=sdBox(p,vec2(.5),rd*.5);b.x=max(b.x,rr);b.y=max(b.y,rr);return b;}
+ if(id==11){float r=abs(p.x)+abs(p.y);return bands(r*n+.5,w,n*1.4142,bx,-1.);}
+ if(id==12){float r=length(p+.5);return bands(r*n,w,n,bx,-1.);}
+ if(id==13){float t=.06+w*.2;float d=min(sdBox(p,vec2(.5,t),0.),sdBox(p,vec2(t,.5),0.));return vec3(d,d,0.);}
+ if(id==14){float t=.06+w*.2;vec2 q=rot(.785398)*p;float d=max(min(sdBox(q,vec2(.75,t),0.),sdBox(q,vec2(t,.75),0.)),bx);return vec3(d,d,0.);}
+ if(id==15){vec2 q=(p+.5)*n,c=floor(q),l=fract(q)-.5;float d=max((length(l)-.5*(.35+.65*w))/n,bx);return vec3(d,d,c.x+c.y*n);}
+ if(id==16){float d=min(abs(length(p)-.36)-(.04+w*.08),length(p)-.13);return vec3(d,d,0.);}
+ if(id==17){float t=.04+w*.16;float d=max(min(abs(length(p+.5)-.5)-t,abs(length(p-.5)-.5)-t),bx);return vec3(d,d,0.);}
+ if(id==18){float d=(abs(p.x)+abs(p.y)-.5)*.7071;return vec3(d,d,0.);}
+ if(id==19){float t=.12+w*.3;float d=min(sdBox(p-vec2(-.5+t*.5,0.),vec2(t*.5,.5),0.),sdBox(p-vec2(0.,-.5+t*.5),vec2(.5,t*.5),0.));return vec3(d,d,0.);}
+ if(id==20){float d=sdBox(p-vec2(0.,-.25),vec2(.5,.25),0.);return vec3(d,d,0.);}
+ if(id==21)return bands((p.y+abs(p.x)+1.)*n*.5,w,n*.7071,bx,-1.);
+ if(id==22){float k=max(2.,n);vec2 q=(p+.5)*k,c=floor(q),l=fract(q)-.5;float on=mod(c.x+c.y,2.);float sb=sdBox(l,vec2(.5),0.)/k;float d=on>.5?sb:-sb;return vec3(max(d,bx),bx,on);}
+ if(id==23){float r=.15+w*.35;float d=length(vec2(max(abs(p.x)-(.5-r),0.),p.y))-r;return vec3(d,d,0.);}
+ if(id==24){vec2 a=abs(p);float d=max(a.x,dot(a,vec2(.5,.866)))-.433;float an=atan(p.y,p.x);
+  float f=(an>.5236&&an<2.618)?0.:((an>=2.618||an<-1.5708)?1.:2.);return vec3(d,d,f);}
+ if(id==25){vec2 t=vec2(mod(gGly,4.),floor(gGly/4.)),c=clamp(p,-.5,.5);
+  float a=textureLod(uGly,vec2((t.x+c.x+.5)*.25,1.-(t.y+.5-c.y)*.25),0.).a;float d=max((.5-a)/96.,bx);return vec3(d,d,0.);}
+ return vec3(bx,bx,0.);
+}
+/* ---------- slot grid coordinates (in base cells): text push → space warps → slot centre / angle → stretch ---------- */
+vec2 gOf(int s,vec2 fc,vec4 mk){vec2 w=(fc-uRes*.5)/uRes.y;if(uTMode==12)w-=mk.zw*uTAmt*.5;
+ for(int i=0;i<3;i++)if(uWB[i].w>.5)w=warp(w,i);
+ vec2 q=rot(-uSB[s].z)*(w-uSI[s].zw);q*=1.+uSI[s].xy*4.*q*q;
+ return q*uSA[s].x/vec2(uSA[s].y,1.);}
+vec2 drift(int s){return uSJ[s].w>.5?.5*vec2(cos(TAU*uT),sin(TAU*uT)):vec2(0.);}
+float zoneOf(int s,vec2 mc){return floor(clamp(.5+fbm(mc*uSG[s].w+drift(s)+7.3,3)*.9,0.,.999)*max(1.,uSH[s].x));}
+/* modulation map 0..1 at a cell centre */
+float mapVal(int s,vec2 mc,float hr,float z,vec2 uvc){
+ int src=int(uSF[s].y+.5);float sc=uSF[s].z;
+ if(src==0)return .5;
+ if(src==1)return clamp(.5+fbm(mc*sc+drift(s)+19.,3)*.9,0.,1.);
+ if(src==2)return clamp(.5+mc.x*sc*.6,0.,1.);
+ if(src==3)return clamp(.5+mc.y*sc*.6,0.,1.);
+ if(src==4)return clamp(length(mc)*sc*.7,0.,1.);
+ if(src==5)return hr;
+ if(src==6)return textureLod(uTxt,uvc,uTBlur+1.).a;
+ if(src==7)return .5+.5*sin(length(mc)*sc*TAU*1.5-TAU*uT*uSJ[s].w);
+ return z/max(1.,uSH[s].x-1.);
+}
+float gCy=0.;
+vec3 inkc(float i){int k=1+int(mod(floor(i+.5),float(uN)));return uPal[k];}
+vec2 uvAt(vec2 uv,mat2 Mi,vec2 dg){return uv+(Mi*dg)/uRes;}
+float txIn(vec2 uv){return step(.5,textureLod(uTxt,uv,uTBlur).a);}
+/* one tile layer at this pixel → shape coverage + ink K, tile fill coverage bc + colour BG, line coverage lc */
+float slotEval(int s,vec2 fc,vec4 mk,out vec3 K,out float bc,out vec3 BG,out float lc){
+ K=uPal[1];BG=uPal[0];bc=0.;lc=0.;
+ vec4 A=uSA[s],B=uSB[s],C=uSC[s],Dv=uSD[s],E=uSE[s],F=uSF[s],G=uSG[s],H=uSH[s],J=uSJ[s];
+ if(J.x<.5)return 0.;
+ vec2 g0=gOf(s,fc,mk),jx=(gOf(s,fc+vec2(.5,0.),mk)-g0)*2.,jy=(gOf(s,fc+vec2(0.,.5),mk)-g0)*2.;
+ float pxg=max(.5*(length(jx)+length(jy)),1e-6);
+ mat2 M=mat2(jx,jy);mat2 Mi=abs(determinant(M))>1e-14?inverse(M):mat2(0.);
+ vec2 uv=fc/uRes;
+ float Mc=uMS,sh=H.y*Mc*uT;int lay=int(J.z+.5),tm=uTMode,mo=int(H.z+.5);float cy=max(1.,H.w);
+ vec2 g=g0;g.x+=sh;float bo=0.;if(lay==1){bo=mod(floor(g.y),2.)*.5;g.x+=bo;}
+ /* quadtree: a cell splits into 4 while its hash is under the split probability */
+ int L=int(A.z+.5);if(tm==4)L=max(L,1+int(uTAmt*2.+.5));
+ float sc=1.,lv=0.;vec2 id=floor(g);
+ for(int i=0;i<5;i++){
+  if(i>=L)break;
+  vec2 cg=(id+.5)/sc,mc=(cg-vec2(sh+bo,0.))*vec2(A.y,1.)/A.x,pid=vec2(mod(id.x,Mc*sc),id.y);
+  float hs=h21(pid+vec2(lv*31.7+.11,lv*17.3)),pr=A.w;
+  if(F.y>.5&&G.x!=0.)pr+=G.x*(mapVal(s,mc,h21(pid+vec2(lv*7.1+2.3,0.)),zoneOf(s,mc),uvAt(uv,Mi,cg-g))-.5)*2.;
+  if(mo==6)pr+=.3*sin(TAU*(uT*cy+h21(pid+vec2(lv*5.3+9.1,1.))));
+  if((tm==4||tm==5)&&txIn(uvAt(uv,Mi,cg-g))>.5)pr=tm==4?2.:-1.;
+  if(hs>=pr)break;
+  sc*=2.;lv+=1.;id=floor(g*sc);
+ }
+ vec2 cg=(id+.5)/sc,mc=(cg-vec2(sh+bo,0.))*vec2(A.y,1.)/A.x,pid=vec2(mod(id.x,Mc*sc),id.y);
+ vec2 hid=pid+vec2(lv*31.7,lv*17.3);
+ vec2 p=fract(g*sc)-.5;float pxl=pxg*sc;
+ float h1=h21(hid+.17),h2=h21(hid+3.7),h3=h21(hid+9.1),h4=h21(hid+21.3),h5=h21(hid+33.3),h6=h21(hid+44.4);
+ vec2 uvc=uvAt(uv,Mi,cg-g);
+ float insC=0.;if(tm==1||tm==2||tm==3||tm==6||tm==7||tm==8)insC=txIn(uvc);
+ float z=zoneOf(s,mc),m=mapVal(s,mc,h5,z,uvc);
+ float gap=C.w,cellH=.5-gap*.5,lw=Dv.y>0.?max(Dv.y*.1*sc,pxl*.9):0.;
+ float dCell=sdBox(p,vec2(cellH),C.z*cellH);
+ bool drop=h4<G.z+G.y*(m-.5)*2.;
+ if(tm==1&&insC<.5)drop=true;if(tm==2&&insC>.5)drop=true;if(tm==3&&((s==0)==(insC>.5)))drop=true;
+ int bord=int(F.x+.5);
+ if(bord==2||(bord==1&&!drop))lc=clamp(.5-(abs(dCell)-lw*.5)/pxl,0.,1.);
+ if(drop)return 0.;
+ /* which shape */
+ float N=float(uN),nS=max(1.,J.y),k;int pk=int(B.x+.5),cm=int(E.y+.5);
+ float colH=h21(vec2(mod(floor(cg.x),Mc),5.3)),rowH=h21(vec2(floor(cg.y),8.9));
+ if(pk==0)k=floor(h1*nS);else if(pk==1)k=z;else if(pk==2)k=floor(colH*nS);else if(pk==3)k=floor(rowH*nS);
+ else if(pk==4)k=lv;else if(pk==5)k=mod(pid.x+id.y,2.);else if(pk==6)k=mod(pid.x+id.y,nS);else k=floor(clamp(m,0.,.999)*nS);
+ if(mo==4)k+=floor(uT*nS*cy+h6);
+ k=mod(k,nS);int sid=int(uSh[s*32+int(k)]+.5);
+ gGly=floor(h2*float(uNG));
+ /* rotation */
+ int ro=int(B.y+.5);float a=0.;
+ if(ro==1)a=floor(h3*4.)*PI*.5;else if(ro==2)a=floor(h3*2.)*PI;else if(ro==3)a=mod(z,4.)*PI*.5;
+ else if(ro==4)a=mod(pid.x+id.y,2.)*PI*.5;else if(ro==5)a=floor(colH*4.)*PI*.5;
+ else if(ro==6)a=fbm(mc*1.5+drift(s)+31.,3)*TAU;else if(ro==7)a=atan(mc.y,mc.x);
+ if(tm==7)a+=insC*PI*(uTAmt>.5?1.:.5);
+ if(mo==1){float x=uT*4.*cy+h6;a+=(floor(x)+smoothstep(.7,1.,fract(x)))*PI*.5;}
+ else if(mo==2)a+=TAU*uT*cy*(h6<.5?1.:-1.);
+ /* size */
+ float sz=B.w*max(0.,1.+F.w*(m*2.-1.));
+ if(tm==6)sz*=insC>.5?1.+uTAmt*.6:1.-uTAmt*.6;
+ if(mo==3)sz*=.7+.3*sin(TAU*(uT*cy+h6));else if(mo==5)sz*=.65+.35*sin(TAU*uT*cy-length(mc)*7.);
+ /* colour */
+ float ci=E.z+gCy;
+ if(cm==1)ci+=floor(h2*N);else if(cm==2)ci+=z;else if(cm==3)ci+=k;else if(cm==4)ci+=floor(colH*N);
+ else if(cm==5)ci+=floor(rowH*N);else if(cm==6)ci+=lv;else if(cm==7)ci+=floor(clamp(.5+mc.y*.9,0.,.999)*N);else if(cm==8)ci+=floor(clamp(m,0.,.999)*N);
+ if(mo==7)ci+=floor(uT*N*cy+h6);
+ int tb=int(E.w+.5);
+ if(tb>0){BG=tb==4?uLine:inkc(tb==1?ci+1.:tb==2?E.z+gCy+floor(h5*N):E.z+gCy+z+1.);bc=clamp(.5-dCell/pxl,0.,1.)*Dv.w;}
+ if(sz<1e-3)return 0.;
+ float s2=sz*(1.-gap);vec2 ps=rot(-a)*p/s2;
+ vec3 r=shape(sid,ps,C.x,C.y,C.z);
+ int bm=uN<2?0:int(E.x+.5);float d=max((bm==0?r.x:r.y)*s2,dCell),dl=max(r.x*s2,dCell);
+ K=inkc(ci+(bm==1?r.z:bm==2?mod(r.z,2.):0.));
+ if(sid==24&&bm==0)K=r.z<.5?K:(r.z<1.5?K*.62:mix(K,vec3(1.),.5));
+ if(tm==8&&insC>.5)K=uAcc;
+ int sty=int(Dv.x+.5);float sf=Dv.z*.25*s2,cov;
+ if(sty==1)cov=clamp(.5-(abs(dl)-lw*.5)/(pxl+sf),0.,1.);
+ else if(sty==3)cov=clamp(-d/(s2*(.12+Dv.z*.5))+.08,0.,1.)*clamp(.5-d/pxl,0.,1.);
+ else cov=clamp(.5-d/(pxl+sf),0.,1.);
+ if(sty==2)K=mix(K,tb>0?BG:uPal[0],clamp(ps.y+.5,0.,1.));
+ if(sty==4)lc=max(lc,clamp(.5-(abs(dl)-lw*.5)/pxl,0.,1.));
+ return cov*Dv.w;
+}
+vec3 blendC(vec3 b,vec3 k,float c,int m){
+ if(m==1)return b*mix(vec3(1.),k,c);
+ if(m==2)return 1.-(1.-b)*(1.-k*c);
+ if(m==3)return mix(b,abs(b-k),c);
+ return mix(b,k,c);}
+vec3 shadeCol(vec2 fc){
+ vec2 uv=fc/uRes;vec4 mk=uTMode>0?maskAt(uv):vec4(0.);float ins=mk.x;
+ vec3 col=uPal[0];
+ for(int s=0;s<2;s++){vec3 K,BG;float bc,lc;float c=slotEval(s,fc,mk,K,bc,BG,lc);
+  if(uTMode==10){c*=1.-ins;bc*=1.-ins;lc*=1.-ins;}
+  if(uTMode==11){c*=ins;bc*=ins;lc*=ins;}
+  col=mix(col,BG,bc);col=blendC(col,K,c,int(uSK[s].x+.5));col=mix(col,uLine,lc);}
+ if(uTMode==9&&ins>.5)col=clamp(uPal[0]+uPal[1]-col,0.,1.);
+ col+=(h21(floor(fc)*.731+3.1)-.5)*uGrain*.35;
+ return col;
+}
+/* ---- text glass (shared across labs): the whole layer seen through glass letters ----
+   1 Glass letters: the poster bends around the letters (strong floor, so it stays a big lens-like warp)
+   2 Liquid glass: each letter a glass slab — refracting rim + RGB dispersion + slight magnification
+   Frosty: inside the letters the layer goes soft and a little milky (both modes) */
+uniform int uGMode,uGN;uniform float uGAmt,uGLod,uGDisp,uGFrost;
+vec3 glassCol(vec2 fc,int si){
+ /* ONE call site of shadeCol, inside a loop whose bound is a uniform (uGN = 3): the compiler can't unroll it, so the
+    layer is compiled once per AA sample, as before. Several literal shadeCol calls here blew up compile time and
+    lost the WebGL context in the heavier labs. */
+ vec2 q=fc,n=vec2(0.);float dd=0.,fz=0.;
+ if(uGMode>0){
+  vec2 uv=fc/uRes;float L=uGLod,H=uRes.y;vec2 e=vec2(exp2(L))/uRes,c=uRes*.5;
+  float mb=textureLod(uTxt,uv,L).a,ins=step(.5,textureLod(uTxt,uv,0.).a),rim=0.;
+  vec2 gr=vec2(textureLod(uTxt,uv+vec2(e.x,0.),L).a-textureLod(uTxt,uv-vec2(e.x,0.),L).a,textureLod(uTxt,uv+vec2(0.,e.y),L).a-textureLod(uTxt,uv-vec2(0.,e.y),L).a);
+  if(uGMode==1){float A=.45+.55*uGAmt;q=c+(fc-c)*(1.-mb*(.08+A*.3))+gr*(.02+A*.1)*H;}
+  else if(ins>.5){float grl=length(gr);if(grl>.002){n=gr/grl;rim=1.-smoothstep(.5,.97,mb);rim=rim*rim*(3.-2.*rim);}
+   float gdm=pow(rim,1.2)*(.016+.07*uGAmt);q=c+(fc-c)*(1.-(.05+.08*uGAmt))+n*gdm*H;dd=(gdm*uGDisp*.35+rim*uGDisp*.0012)*H;}
+  /* frost: each AA sub-sample (si 0…3) reads its own point of the blur disc; the 2×2 average blends them */
+  if(uGFrost>0.&&ins>.5){float j=fract(sin(dot(floor(fc),vec2(12.9898,78.233)))*43758.5453),k=si>=0?float(si):floor(j*4.);
+   float a=k*1.5708+.4+j*1.2,r=uGFrost*.012*H*sqrt(.35+.65*fract(j*7.3));q+=vec2(cos(a),sin(a))*r;fz=uGFrost*.12;dd=0.;}
+ }
+ int N=dd>.05?3:1;vec3 acc=vec3(0.);
+ for(int k=0;k<uGN;k++){if(k>=N)break;vec3 cc=shadeCol(q+n*dd*(k==1?1.:k==2?-1.:0.));   /* k1 red, k2 blue: dispersion on the rim */
+  if(N==1)acc=cc;else if(k==0)acc.g=cc.g;else if(k==1)acc.r=cc.r;else acc.b=cc.b;}
+ return mix(acc,vec3(1.),fz);
+}
+void main(){
+ gCy=float(uCyc)*floor(uT*float(uN));
+ vec3 c=vec3(0.);
+ if(uAA>1.5){for(int i=0;i<4;i++){vec2 off=vec2(float(i&1),float(i>>1))*.5-.25;c+=glassCol(gl_FragCoord.xy+off,i);}c*=.25;}
+ else c=glassCol(gl_FragCoord.xy,-1);
+ o=vec4(clamp(c,0.,1.),1.);
+}
+`;
+
+let PROG=null,txTex=null;const UL={};
+const U=n=>{if(!(n in UL))UL[n]=gl.getUniformLocation(PROG,n);return UL[n]};
+if(gl){
+  const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS)){console.error(gl.getShaderInfoLog(x));throw new Error('shader: '+gl.getShaderInfoLog(x))}return x};
+  PROG=gl.createProgram();gl.attachShader(PROG,sh(gl.VERTEX_SHADER,VS));gl.attachShader(PROG,sh(gl.FRAGMENT_SHADER,FSRC));
+  gl.bindAttribLocation(PROG,0,'aP');gl.linkProgram(PROG);if(!gl.getProgramParameter(PROG,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(PROG));
+  const vao=gl.createVertexArray();gl.bindVertexArray(vao);
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  txTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,txTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+}
+function hex2rgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return [(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]}
+/* periods: grid cells scroll by uMS cells per loop (hash repeats with that period); stream segments by 2·uMS */
+const nInk=()=>Math.max(1,clamp(P.nCol|0,2,8)-1);
+const colPeriod=()=>{const n=nInk(),l=n%2?n*2:n;return l*Math.ceil(8/l)}; /* even multiple of the ink count, ≥ 8 */
+
+/* glyph atlas: up to 16 characters of P.glyphs in a 4×4 grid of 128px tiles, set in the title font */
+const gcv=document.createElement('canvas');gcv.width=gcv.height=512;const gctx=gcv.getContext('2d');
+let glyKey='',glyN=1,fontsTick=0,gTex=null;
+if(gl){gTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,gTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE)}
+function buildGlyphs(){
+  const ch=[...(P.glyphs||'').replace(/\s+/g,'')].slice(0,16),key=ch.join('')+'|'+DFAM()+'|'+P.tw+'|'+fontsTick;
+  if(key===glyKey)return;glyKey=key;glyN=Math.max(1,ch.length);
+  gctx.clearRect(0,0,512,512);gctx.fillStyle='#fff';gctx.textAlign='left';gctx.textBaseline='alphabetic';
+  ch.forEach((c,i)=>{const x=(i%4)*128+64,y=Math.floor(i/4)*128+64;gctx.font=`${P.tw} 100px ${DFAM()}`;const m=gctx.measureText(c);
+    const l=m.actualBoundingBoxLeft,r=m.actualBoundingBoxRight,a=m.actualBoundingBoxAscent,d=m.actualBoundingBoxDescent,k=112/Math.max(l+r,a+d,1);
+    gctx.save();gctx.translate(x,y);gctx.scale(k,k);gctx.fillText(c,(l-r)/2,(a-d)/2);gctx.restore()});
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,gTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,gcv);
+}
+function renderTiles(ph){
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,RW,RH);gl.useProgram(PROG);
+  buildGlyphs();
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,gTex);gl.uniform1i(U('uGly'),1);gl.uniform1i(U('uNG'),glyN);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,txTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,dcv);gl.generateMipmap(gl.TEXTURE_2D);
+  gl.uniform1i(U('uTxt'),0);
+  gl.uniform2f(U('uRes'),RW,RH);gl.uniform1f(U('uT'),ph);gl.uniform1f(U('uSeed'),P.seed%1000);gl.uniform1f(U('uMS'),colPeriod()*2);
+  gl.uniform1f(U('uAA'),(exporting||P.aa)?2:1);
+  const wa=[],wb=[];P.warps.forEach(w=>{wa.push(w.p[0],w.p[1],w.p[2],w.op);wb.push(w.sp,w.pu,WKEYS.indexOf(w.type),w.on?1:0)});
+  gl.uniform4fv(U('uWA'),wa);gl.uniform4fv(U('uWB'),wb);
+  const V={A:[],B:[],C:[],D:[],E:[],F:[],G:[],H:[],I:[],J:[],K:[]},sh=new Float32Array(64);
+  P.slots.forEach((s,i)=>{
+    V.A.push(s.D,s.asp,s.lv,s.split);V.B.push(s.pick,s.rot,s.ang*Math.PI/180,s.size);V.C.push(s.w,s.n,s.rd,s.gap);
+    V.D.push(s.sty,s.lw,s.soft,s.op);V.E.push(s.band,s.cmode,s.ink,s.tbg);V.F.push(s.border,s.msrc,s.msc,s.mS);
+    V.G.push(s.mQ,s.mD,s.drop,s.zsc);V.H.push(s.nz,s.mv,s.mo,s.cyc);V.I.push(s.sx,s.sy,s.cx,s.cy);
+    V.J.push(s.on?1:0,Math.min(32,s.shp.length),s.lay,s.zdr?1:0);V.K.push(s.blend,0,0,0);
+    s.shp.slice(0,32).forEach((v,j)=>sh[i*32+j]=v)});
+  Object.keys(V).forEach(k=>gl.uniform4fv(U('uS'+k),V[k]));gl.uniform1fv(U('uSh'),sh);
+  const pal=[];for(let i=0;i<8;i++)pal.push(...hex2rgb(P.pal[i]||'#000'));gl.uniform3fv(U('uPal'),pal);
+  gl.uniform3fv(U('uLine'),hex2rgb(P.lc||P.txt));gl.uniform3fv(U('uAcc'),hex2rgb(P.acc));
+  gl.uniform1i(U('uN'),nInk());gl.uniform1i(U('uCyc'),P.cyc);gl.uniform1f(U('uGrain'),P.grain);
+  gl.uniform1i(U('uTMode'),P.tshow?(GLASS_K.includes(P.tmode)?0:TMK.indexOf(P.tmode)):0);gl.uniform1f(U('uTAmt'),P.tamt);
+  gl.uniform1f(U('uTBlur'),P.tblur>0?Math.max(0,P.tblur+Math.log2(RH/1200)):0);
+  gl.uniform1i(U('uGN'),3);gl.uniform1i(U('uGMode'),P.tshow===false?0:P.tmode===GLASS_K[0]?1:P.tmode==='lglass'?2:0);gl.uniform1f(U('uGAmt'),P.tamt);
+  gl.uniform1f(U('uGLod'),Math.max(0,(P.tmode==='lglass'?3:3.5)+(P.tblur||0)*.5+Math.log2(RH/1200)));gl.uniform1f(U('uGDisp'),P.tdisp??.7);gl.uniform1f(U('uGFrost'),P.tfrost??0);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+/* ================= canvases & sizes ================= */
+const cv=$('#cv'),ctx=cv.getContext('2d');
+const mctx=document.createElement('canvas').getContext('2d');
+const dcv=document.createElement('canvas'),dctx=dcv.getContext('2d');      /* large text = the mask the pattern reacts to */
+const mDcv=document.createElement('canvas'),mDctx=mDcv.getContext('2d');   /* measuring with display axes */
+/* canvas text takes font-variation-settings from the canvas element's own style, so these live (hidden) in the DOM */
+const hiddenHost=el('div');hiddenHost.style.cssText='position:fixed;left:-99999px;top:0;width:1px;height:1px;overflow:hidden;visibility:hidden;pointer-events:none';
+document.body.append(hiddenHost);[dcv,mDcv].forEach(x=>hiddenHost.append(x));
+const USERF={};
+const axesOf=name=>(USERF[name]&&USERF[name].axes)||[];
+const varStr=(name,vals)=>{const a=axesOf(name);return a.length?a.map(x=>`"${x.tag}" ${vals[x.tag]??x.def}`).join(', '):'normal'};
+function axWeight(name,vals,fb){const w=axesOf(name).find(x=>x.tag==='wght');return w&&w.min>=1&&w.max<=1000?Math.round(vals.wght??w.def):fb}
+let lastVar='';
+function applyVariations(){const r=varStr(P.rfont,P.rax);if(r===lastVar)return;lastVar=r;dcv.style.fontVariationSettings=r;mDcv.style.fontVariationSettings=r}
+let RW=0,RH=0,renderK=null,exporting=false;
+function baseSize(){const [a,b]=FORMATS[P.fmt];if(a<=b)return [Math.round(1600*a/b/2)*2,1600];return [1600,Math.round(1600*b/a/2)*2]}
+function ensureSize(){
+  const [bw,bh]=baseSize(),k=renderK??P.q,w=Math.round(bw*k/2)*2,h=Math.round(bh*k/2)*2;
+  if(w!==RW||h!==RH){RW=w;RH=h;cv.width=glc.width=dcv.width=w;cv.height=glc.height=dcv.height=h}
+}
+const applyCase=(s,c)=>c==='upper'?s.toUpperCase():c==='lower'?s.toLowerCase():s;
+const HAS_LS='letterSpacing' in ctx;
+
+
+/* ================= readable layer ================= */
+function grid(W,H,ph){
+  const u=H/1000;let m=P.margin*u,g=P.gutter*u;
+  if(P.rmo==='drift'){const s=Math.sin(TAU*ph*P.rmoSpd);m*=1+P.rmoAmt*.6*s;g*=1+P.rmoAmt*1.2*Math.sin(TAU*ph*P.rmoSpd+1.3)}
+  const cols=P.cols,rows=P.rows,cw=(W-2*m-(cols-1)*g)/cols,rh=(H-2*m-(rows-1)*g)/rows;
+  return {u,m,g,cols,rows,cw,rh,W,H,x:i=>m+i*(cw+g),y:j=>m+j*(rh+g),span:n=>n*cw+(n-1)*g,right:W-m,bottom:H-m}
+}
+const BODY_FAM='"Inter"';
+const DFAM=()=>READ_FONTS[P.rfont]||READ_FONTS.Inter;
+let STEP=0; /* staircase offset per line break, px */
+function fit(text,wt,w,big=true){
+  if(!String(text).trim())return Infinity; /* empty line: no size, callers take min() */
+  const ls=text.split('\n'),m=big?mDctx:mctx;m.font=`${wt} 100px ${big?DFAM():BODY_FAM}`;if(HAS_LS)m.letterSpacing='0px';
+  let s=1e9;ls.forEach((l,i)=>{const lw=Math.max(1,m.measureText(l).width);s=Math.min(s,Math.max(w*.25,w-i*STEP)*100/lw)});return s}
+/* word-wrap small text to a width (long description lines fold instead of running off the sheet) */
+function wrapTo(text,wt,sz,w){
+  const m=mctx;m.font=`${wt} ${sz}px ${BODY_FAM}`;if(HAS_LS)m.letterSpacing='0px';
+  return String(text).split('\n').map(line=>{const ws=line.split(/ +/),out=[];let cur='';
+    ws.forEach(word=>{const t=cur?cur+' '+word:word;if(cur&&m.measureText(t).width>w){out.push(cur);cur=word}else cur=t});
+    out.push(cur);return out.join('\n')}).join('\n')}
+function blockH(it){const n=it.s.split('\n').length;return (n-1)*it.sz*it.lh+it.sz*CAP}
+function nextRow(G,yEnd){return Math.max(0,Math.ceil((yEnd-G.m+G.g*.5)/(G.rh+G.g)-1e-3))}
+function tplItems(name,G,T){
+  const S=P.body*G.u,M=S*P.mid,c=G.cols,Rw=G.rows,it=[];
+  const add=o=>{o=Object.assign({wt:400,al:'left',rot:0,lh:P.lead,ls:0},o);const empty=!String(o.s||'').trim();if(empty){o.s='';o.sz=0}
+    o.big=o.k==='title'||o.sz>=S*1.8;
+    if(!empty&&!o.big&&!o.rot){const aw=o.mw??(o.al==='right'?o.x-G.m:o.al==='center'?2*Math.min(o.x-G.m,G.right-o.x):G.right-o.x);if(aw>o.sz*2){o.s=wrapTo(o.s,o.wt,o.sz,aw);
+      /* a single word longer than the space can't fold: shrink it to fit */
+      mctx.font=`${o.wt} ${o.sz}px ${BODY_FAM}`;const mw=Math.max(...o.s.split('\n').map(l=>mctx.measureText(l).width));if(mw>aw)o.sz*=aw/mw}}
+    if(o.vb!=null)o.y=o.vb-blockH(o);if(!empty)it.push(o);return o};
+  const D=T.D||[];
+  /* every description line its own element, spread over up to 4 columns, bottom-aligned */
+  const footPer=()=>D.length?Math.ceil(D.length/Math.min(4,D.length)):0;
+  /* columns of the footer: a long line shrinks a little (to 80%), then folds inside its column */
+  const footPlan=()=>{const per=footPer();if(!per)return [];const nc=Math.ceil(D.length/per),cw=c/nc,out=[];
+    for(let j=0;j<nc;j++){const ch=D.slice(j*per,(j+1)*per),right=nc>1&&j===nc-1;
+      const c0=Math.round(j*cw),c1=j===nc-1?c:Math.round((j+1)*cw),w=G.span(Math.max(1,c1-c0))-(j===nc-1?0:G.g);
+      const fs=Math.min(S,Math.max(S*.8,Math.min(...ch.map(t=>fit(t,400,w,false)))));
+      out.push({lines:ch.map(t=>wrapTo(t,400,fs,w)),fs,w,x:right?G.right:G.x(c0),al:right?'right':'left'})}
+    return out};
+  const footH=()=>{const pl=footPlan();return pl.length?Math.max(...pl.map(p=>p.lines.reduce((a,l)=>a+l.split('\n').length,0)*p.fs*P.lead))+S*1.6:S};
+  const footer=()=>footPlan().forEach(p=>{let vb=G.bottom;
+    for(let r=p.lines.length-1;r>=0;r--){const o=add({k:'sub',s:p.lines[r],x:p.x,vb,sz:p.fs,al:p.al,mw:p.w});vb=o.y-p.fs*(P.lead-CAP)}});
+  const span=n=>G.span(Math.max(1,Math.min(c,Math.round(n))));
+  const end=o=>o.y+blockH(o);
+  const half=Math.floor(c/2),tw=P.tw;
+  const DP=T.date+'\n'+T.place;
+  switch(name){
+  case 'columns':{
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:fit(T.title,tw,span(c*P.tspan)),wt:tw,lh:1});
+    const sb=add({k:'sub',s:T.sub,x:G.x(0),y:G.y(nextRow(G,end(t))),sz:S});
+    add({k:'date',s:DP,x:G.x(half),y:G.y(Math.max(Math.floor(Rw*.45),nextRow(G,end(sb))+1)),sz:Math.min(M,fit(DP,500,span(c-half))),wt:500,lh:1.05});
+    add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:S*.85});
+    break}
+  case 'bigdate':{
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:fit(T.title,tw,span(c*P.tspan)),wt:tw,lh:1});
+    const r=nextRow(G,end(t));
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(r),sz:S});
+    add({k:'place',s:T.place,x:G.x(half),y:G.y(r),sz:S*1.4,wt:500});
+    const ds=fit(T.date,500,G.span(c));const d=add({k:'date',s:T.date,x:G.x(0),vb:G.bottom,sz:ds,wt:500,lh:1});
+    add({k:'credit',s:T.credit,x:G.right,vb:d.y-d.sz*.18,sz:S*.85,al:'right'});
+    break}
+  case 'corners':{
+    const ts=Math.min(fit(T.title,tw,span(c/2)),M*1.7);
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:ts,wt:tw,lh:1});
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(nextRow(G,end(t))),sz:S});
+    add({k:'date',s:T.date,x:G.right,y:G.y(0),sz:Math.min(ts*.8,fit(T.date,500,span(c-half))),al:'right',wt:500,lh:1});
+    add({k:'place',s:T.place,x:G.x(0),vb:G.bottom,sz:Math.min(ts*.8,fit(T.place,500,span(half))),wt:500,lh:1});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S*.85,al:'right'});
+    break}
+  case 'stagger':{ /* every element one step further right and down */
+    const st=Math.max(1,Math.floor((c-2)/4));
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:Math.min(M*1.6,fit(T.title,tw,span(c*.6))),wt:tw,lh:1});
+    const s=add({k:'sub',s:T.sub,x:G.x(st),y:G.y(nextRow(G,end(t))),sz:S});
+    const d=add({k:'date',s:T.date,x:G.x(st*2),y:G.y(nextRow(G,end(s))+1),sz:Math.min(M,fit(T.date,500,span(c-st*2))),wt:500,lh:1.05});
+    add({k:'place',s:T.place,x:G.x(Math.min(c-1,st*3)),y:G.y(nextRow(G,end(d))),sz:S*1.4,wt:500});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S*.85,al:'right'});
+    break}
+  case 'mirror':{
+    const top=[],third=span(c/3)-G.g,pl=T.place.split('\n')[0];
+    const ts=Math.min(S*1.5,...[T.date,T.credit,pl].map(s=>fit(s,500,third,false)));
+    top.push(add({k:'date',s:T.date,x:G.x(0),y:G.y(0),sz:ts,wt:500}));
+    top.push(add({k:'credit',s:T.credit,x:G.W/2,y:G.y(0),sz:ts,al:'center',wt:500}));
+    top.push(add({k:'place',s:pl,x:G.right,y:G.y(0),sz:ts,al:'right',wt:500}));
+    top.push(add({k:'title',s:T.title,x:G.x(0),y:G.y(0)+ts*1.9,sz:fit(T.title,tw,G.span(c)),wt:tw,lh:1}));
+    top.forEach(o=>it.push(Object.assign({},o,{x:G.W-o.x,y:G.H-o.y,rot:Math.PI,k:o.k+'M'})));
+    break}
+  case 'vertical':{
+    const tl=T.title.split('\n').length;
+    const ts=Math.min(fit(T.title,tw,G.H-2*G.m),span(c*.4)/tl);
+    add({k:'title',s:T.title,x:G.m,y:G.bottom,sz:ts,wt:tw,lh:1,rot:-Math.PI/2});
+    const cx=G.x(Math.ceil(c*.45));
+    const s=add({k:'sub',s:T.sub,x:cx,y:G.y(0),sz:S});
+    add({k:'date',s:DP,x:cx,y:G.y(nextRow(G,end(s))+1),sz:Math.min(M,fit(DP,500,G.right-cx)),wt:500,lh:1.05});
+    add({k:'credit',s:T.credit,x:G.right,vb:G.bottom,sz:S*.85,al:'right'});
+    break}
+  case 'repeat':{
+    const t1=T.title.replace(/\n/g,' ');
+    const t=add({k:'title',s:t1,x:G.x(0),y:G.y(0),sz:fit(t1,tw,G.span(c)),wt:tw,lh:1});
+    const r=nextRow(G,end(t));
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(r),sz:S});
+    add({k:'place',s:T.place,x:G.right,y:G.y(r),sz:S,al:'right'});
+    const cr=add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:S*.85});
+    add({k:'date',s:T.date,x:G.x(0),vb:cr.y-S*1.2,sz:fit(T.date,500,G.span(c)),wt:500,lh:1});
+    break}
+  case 'axis':{
+    const ax=G.x(half),words=T.title.replace(/\n/g,' ').split(' ').join('\n');
+    const t=add({k:'title',s:words,x:ax,y:G.y(0),sz:fit(words,tw,G.right-ax),wt:tw,lh:1});
+    const s=add({k:'sub',s:T.sub,x:ax,y:G.y(nextRow(G,end(t))),sz:S});
+    add({k:'date',s:DP,x:ax,y:G.y(nextRow(G,end(s))+1),sz:Math.min(M,fit(DP,500,G.right-ax)),wt:500,lh:1.05});
+    add({k:'credit',s:T.credit,x:G.x(0),vb:G.bottom,sz:S*.85});
+    break}
+  case 'bands':{
+    const t=add({k:'title',s:T.title,x:G.x(0),y:G.y(0),sz:Math.min(M*1.3,fit(T.title,tw,span(c*.6))),wt:tw,lh:1.15,box:1});
+    add({k:'sub',s:T.sub,x:G.x(0),y:G.y(nextRow(G,end(t))+1),sz:S});
+    add({k:'date',s:T.date,x:G.x(half),y:G.y(Math.floor(Rw*.3)),sz:Math.min(M,fit(T.date,500,span(c-half))),wt:500,box:1});
+    const pl=T.place.split('\n')[0],ps=fit(pl,700,span(c*.7));
+    const big=add({k:'place',s:pl,x:G.W/2,vb:G.bottom-(pl.trim()?ps*.1:0),sz:ps,wt:700,al:'center',lh:1,box:1});
+    add({k:'credit',s:T.credit,x:G.right,vb:big.y-big.sz*.35,sz:S*.85,al:'right'});
+    break}
+  case 'giant':{ /* title lines stretched to fill the page, small text in one footer row */
+    const T0=T.title.trim(),lines=(T0.includes('\n')?T0.split('\n'):T0.split(/\s+/)).map(s=>s.trim()).filter(Boolean);
+    if(lines.length){
+      const foot=footH(),avail=G.H-2*G.m-foot,szs=lines.map(l=>fit(l,tw,G.span(c)));
+      const tot=szs.reduce((a,s)=>a+s*CAP,0),sy=clamp((avail-G.g*(lines.length-1))/Math.max(1,tot),.3,6);
+      let y=G.m;lines.forEach((l,i)=>{add({k:'title',s:l,x:G.x(0),y,sz:szs[i],wt:tw,lh:1,sy});y+=szs[i]*CAP*sy+G.g});
+    }
+    footer();
+    break}
+  case 'cells':{ /* every letter of the title in its own grid cell */
+    const ch=[...T.title.replace(/\s+/g,'')];const n=ch.length;
+    if(n){
+      const foot=footH(),avail=G.H-2*G.m-foot,aw=G.W-2*G.m;
+      const cc=Math.max(1,Math.min(n,Math.round(Math.sqrt(n*aw/avail*1.6)))),rr=Math.ceil(n/cc);
+      const cw=(aw-(cc-1)*G.g)/cc,chh=(avail-(rr-1)*G.g)/rr;
+      ch.forEach((t,i)=>{const q=i%cc,r=Math.floor(i/cc),sz=fit(t,tw,cw*.98);
+        add({k:'title',s:t,x:G.m+q*(cw+G.g)+cw/2,y:G.m+r*(chh+G.g),sz,wt:tw,lh:1,al:'center',sy:clamp(chh/(sz*CAP),.3,8)})});
+    }
+    footer();
+    break}
+  case 'scatter':{ /* one word per column, stepping down the page */
+    const words=[...T.title.split(/\s+/).map(w=>({w,k:'title'})),...D.join(' ').split(/\s+/).map(w=>({w,k:'sub'}))].filter(o=>o.w);
+    const n=words.length;
+    words.forEach((o,i)=>{const col=i%c,row=Math.round(i*(Rw-1)/Math.max(1,n-1));
+      add({k:o.k,s:o.w,x:G.x(col),y:G.y(row),sz:o.k==='title'?S*1.6:S,wt:o.k==='title'?tw:400})});
+    break}
+  }
+  return it;
+}
+function animItems(items,G,ph){
+  const m=P.rmo,a=P.rmoAmt,k=P.rmoSpd,n=items.length,step=G.cw+G.g;
+  items.forEach((it,i)=>{
+    if(m==='slide')it.x+=Math.round(a*3*Math.sin(TAU*ph*k+i*.9))*step;
+    else if(m==='jump'){const st=Math.floor(ph*k*4);it.x+=Math.round((hsh(i*7.1+st*3.3)-.5)*a*5)*step}
+    else if(m==='rise')it.y+=a*(G.rh+G.g)*1.5*Math.sin(TAU*ph*k+i*.7);
+    else if(m==='track')it.ls=a*.3*(.5+.5*Math.sin(TAU*ph*k+i*.6));
+    else if(m==='reveal'){const t0=.04+.5*i/Math.max(1,n);it.vis=ph>.94?0:clamp((ph-t0)/(.12+a*.2))}
+    else if(m==='marquee'&&it.k==='title')it.mq=ph*k;
+  });
+}
+function drawItem(c,it){
+  c.save();c.translate(it.x,it.y);if(it.rot)c.rotate(it.rot);if(it.sy)c.scale(1,it.sy);
+  const wt=it.big?axWeight(P.rfont,P.rax,it.wt):it.wt;
+  c.font=`${wt} ${it.sz}px ${it.big?DFAM():BODY_FAM}`;c.textAlign=it.al;c.textBaseline='alphabetic';
+  if(HAS_LS)c.letterSpacing=(it.ls*it.sz)+'px';
+  const lines=it.s.split('\n'),lh=it.sz*it.lh,fg=colorOf(P.rcol),dir=it.al==='right'?-1:1;
+  let budget=it.vis==null?1e9:Math.floor(it.vis*it.s.replace(/\n/g,'').length);
+  lines.forEach((ln,i)=>{
+    if(budget<=0)return;const shown=ln.slice(0,budget);budget-=ln.length;
+    const y=i*lh+it.sz*CAP,sx=it.mq!=null?0:i*STEP*dir;
+    if(it.box||P.band){const w=c.measureText(ln).width,pd=it.sz*.18;const x0=sx+(it.al==='right'?-w:it.al==='center'?-w/2:0);
+      c.fillStyle=P.acc;c.fillRect(x0-pd,y-it.sz*CAP-pd,w+2*pd,it.sz*CAP+2*pd+it.sz*.2)}
+    c.fillStyle=(it.box||P.band)?P.pal[0]:fg;
+    if(it.mq!=null){const w=c.measureText(ln+'   ').width;const off=(it.mq*w)%w;c.textAlign='left';
+      for(let x=-off-w*Math.ceil(it.x/w);x<RW-it.x+w;x+=w)c.fillText(ln,x,y)}
+    else c.fillText(shown,sx,y);
+  });
+  c.restore();
+}
+function colorOf(k){return k==='ink1'?P.pal[1]:k==='bg'?P.pal[0]:k==='acc'?P.acc:P.txt}
+const inMask=it=>it.big||P.tsrc==='all';
+/* lays out the readable layer and paints the mask text (large text, or all of it) into dcv */
+function layoutText(W,H,ph){
+  const G=grid(W,H,ph);STEP=P.stairs*(G.cw+G.g);
+  /* Title + Description; description lines map onto the template roles, extra lines stack in the last slot */
+  const D=applyCase(P.desc||'',P.rcase).split('\n').map(x=>x.trim()).filter(Boolean);
+  const T={title:applyCase(P.title||'',P.rcase),D,sub:D[0]||'',date:D[1]||'',place:D[2]||'',credit:D.slice(3).join('\n')};
+  let name=P.tpl;
+  if(P.rmo==='step'){const keys=Object.keys(TEMPLATES),st=Math.floor(ph*Math.max(2,P.rmoSpd*3));name=keys[(keys.indexOf(P.tpl)+st)%keys.length]}
+  const items=tplItems(name,G,T);animItems(items,G,ph);
+  dctx.setTransform(1,0,0,1,0,0);dctx.clearRect(0,0,W,H);
+  if(!P.tshow)return {G,items:[]}; /* copy layer hidden: no text and no mask */
+  items.forEach(it=>{if(inMask(it))drawItem(dctx,it)});
+  return {G,items};
+}
+function drawTextTop(c,L,W,H){
+  c.save();c.globalCompositeOperation=P.rblend;
+  L.items.forEach(it=>{if(!inMask(it))drawItem(c,it)});
+  if(P.tfill==='solid'||(P.tmode==='none'&&!P.slots.some(s=>s.on&&s.msrc===6)))c.drawImage(dcv,0,0);
+  c.restore();
+  const G=L.G;
+  if(P.grid&&!exporting){c.save();c.globalAlpha=.5;c.strokeStyle='#ff2bd6';c.lineWidth=Math.max(1,G.u*.8);
+    for(let i=0;i<G.cols;i++)c.strokeRect(G.x(i),G.m,G.cw,H-2*G.m);
+    for(let j=0;j<G.rows;j++){c.beginPath();c.moveTo(G.m,G.y(j));c.lineTo(W-G.m,G.y(j));c.stroke()}c.restore()}
+}
+
+/* ================= main render ================= */
+function render(ph){
+  ensureSize();applyVariations();
+  const L=layoutText(RW,RH,ph);
+  ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+  if(gl){renderTiles(ph);ctx.drawImage(glc,0,0)}else{ctx.fillStyle=P.pal[0];ctx.fillRect(0,0,RW,RH)}
+  drawTextTop(ctx,L,RW,RH);
+}
+let clock=0,playing=true,last=performance.now(),dirty=true;
+const phase=()=>{const L=P.loop;return (((clock%L)+L)%L)/L};
+function frame(now){
+  const dt=Math.min(.1,(now-last)/1000);last=now;
+  if(!exporting&&P.wall){if(dirty){dirty=false;try{renderWall(phase())}catch(e){console.error(e)}}}
+  else if(!exporting){
+    if(playing){clock+=dt;dirty=true}
+    if(dirty){dirty=false;const ph=phase();try{render(ph)}catch(e){console.error(e)}
+      $('#scrub').value=Math.round(ph*1000);$('#tlab').textContent=(ph*P.loop).toFixed(1)+'s'}
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ================= randomizers ================= */
+function rq(q){let v=q[5]?rf(q[5][0],q[5][1]):rf(q[1],q[2]);if(q[3]>=1)v=Math.round(v);else v=Math.round(v/q[3])*q[3];return +clamp(v,q[1],q[2]).toFixed(4)}
+function pickW(o){const e=Object.entries(o),t=e.reduce((a,x)=>a+x[1],0);let r=R()*t;for(const [k,w] of e){if((r-=w)<0)return k}return e[0][0]}
+const lightGround=()=>{const [r,g,b]=hex2rgb(P.pal[0]);return .3*r+.59*g+.11*b>.5};
+
+const f2=v=>+v.toFixed(2);
+
+/* recipes: one per reference, each returns [Tiles 1, Tiles 2 | null] overrides and a matching palette / text mode */
+const palIx=n=>PALETTES.findIndex(p=>p[0]===n);
+const RECIPES={
+ glyphs:{pal:'Glyph night',f:()=>[{shp:[0,1,2,3,4,5,8,10,15,19,20,25],D:ri(4,8),lv:3,split:f2(rf(.5,.68)),rot:1,n:ri(3,5),w:f2(rf(.4,.7))},null]},
+ bubbles:{pal:'Confetti',f:()=>{const a={shp:pick([[1],[1],[1,2],[1,16]]),D:ri(3,7),lv:4,split:f2(rf(.55,.75)),rot:0,size:f2(rf(.85,1)),cmode:1,msrc:1,mQ:f2(rf(0,.3))};
+   return [a,R()<.6?{shp:[1],D:ri(10,24),lv:pick([0,1,2]),split:.4,rot:0,size:f2(rf(.5,.9)),cmode:1,op:f2(rf(.55,.85)),blend:pick([0,1]),drop:f2(rf(.2,.6))}:null]}},
+ letterpress:{pal:'Letterpress',f:()=>[{shp:[1,0,7,15,20,9],n:pick([2,3,4]),D:ri(16,28),lv:1,split:f2(rf(.2,.45)),gap:f2(rf(.04,.1)),rot:1,cmode:1,w:.5,pick:R()<.3?2:0,band:pick([0,0,2])},null],grain:true},
+ pop:{pal:'Pop tiles',f:()=>[{shp:[12,11,10,24,17,8,3,6,22,7,21,9],D:ri(4,7),lv:3,split:f2(rf(.5,.65)),band:1,n:ri(3,5),w:f2(rf(.45,.6)),sty:4,lw:f2(rf(.15,.3)),border:1,gap:f2(rf(.05,.1)),rot:1,cmode:1,tbg:R()<.5?1:0},null]},
+ marble:{pal:'Marbling',f:()=>[{shp:pick([[10],[9],[10,9]]),D:ri(7,13),lv:0,band:1,n:ri(3,5),w:.5,rd:f2(rf(.4,.8)),gap:f2(rf(.06,.12)),rot:0,cmode:1},null],warp:'noise'},
+ patchwork:{pal:'Gouache',f:()=>[{shp:[22,21,8,13,15,17,6,20],pick:1,cmode:2,tbg:3,nz:ri(5,8),zsc:f2(rf(.8,1.6)),D:ri(24,44),lv:0,n:ri(2,3),w:f2(rf(.45,.6)),rot:pick([0,4,3]),size:f2(rf(.7,.95))},null]},
+ stripes:{pal:'Wendy',f:()=>[{shp:[7,7,8,6],D:ri(5,9),asp:f2(rf(1.6,2.8)),lv:R()<.5?0:1,split:.4,n:ri(3,6),w:.5,rot:pick([2,3,0]),pick:1,cmode:1,tbg:R()<.5?1:0,band:pick([0,2])},null],text:'invert'},
+ pixelmap:{pal:'Pixel map',f:()=>{const D=ri(45,70);return [{shp:[0],D,lv:0,cmode:2,nz:ri(5,8),zsc:f2(rf(1,2)),msrc:1,msc:f2(rf(1.5,3)),mD:f2(rf(.6,1)),border:2,lw:.12},
+   {shp:[13,19,20,14],D,lv:0,w:.1,cmode:1,rot:1,drop:f2(rf(.4,.7)),size:f2(rf(.7,1))}]}},
+ glitch:{pal:'Glitch',f:()=>[{shp:[15,22,0],D:ri(50,80),pick:1,cmode:2,nz:ri(4,7),zsc:f2(rf(1,2)),n:pick([2,3]),w:.6,lv:0},
+   R()<.6?{shp:[0,7],D:ri(8,14),lv:1,split:.4,cmode:1,n:ri(3,6),msrc:1,mD:f2(rf(.6,1)),drop:f2(rf(.2,.5)),rot:2}:null],warp:'pixel'},
+ ellipse:{pal:'Ellipse',f:()=>[{shp:[1],D:ri(7,12),asp:f2(rf(1.6,2.6)),sx:f2(rf(1,3)),sy:f2(rf(0,1.2)),lv:0,cmode:1,tbg:4,gap:f2(rf(0,.05)),size:f2(rf(.92,1)),rot:0},null]},
+ pills:{pal:'Sleepwalker',f:()=>[{shp:[23,1,23],D:ri(28,46),asp:f2(rf(1.4,2.4)),lv:0,cmode:1,soft:f2(rf(.2,.6)),drop:f2(rf(.35,.6)),msrc:pick([1,3]),mD:f2(rf(.5,1)),msc:f2(rf(1.5,3)),blend:1,rot:0},null],grain:true},
+ bokeh:{pal:'Bokeh',f:()=>[{shp:[1],D:ri(30,55),lv:1,split:.3,cmode:1,soft:f2(rf(.15,.5)),sty:pick([0,3]),blend:2,op:f2(rf(.6,.9)),msrc:5,mS:f2(rf(.2,.5)),rot:0},
+   R()<.5?{shp:[1],D:ri(14,22),lv:0,cmode:1,soft:.6,sty:3,blend:2,op:.35,drop:.5,rot:0}:null],text:'pixel'},
+ digressing:{pal:'Digressing',f:()=>{const D=ri(36,56);return [{shp:[6,15,5,0,18],D,lv:1,split:.3,sty:2,cmode:1,n:ri(2,4),rot:1,size:f2(rf(.8,1)),drop:.1},
+   {shp:[0,1,6,15,3],D,lv:0,sty:4,lw:.15,border:1,tbg:1,cmode:1,rot:1,size:f2(rf(.55,.8)),n:2}]},text:'swap'},
+ mosaic:{pal:'Mosaic',f:()=>[{shp:[1,13,16,7,15,0],pick:1,cmode:2,nz:ri(6,9),zsc:f2(rf(1,2)),D:ri(30,48),lv:0,n:pick([3,4]),w:f2(rf(.4,.6)),size:f2(rf(.8,.95)),msrc:1,mD:f2(rf(.3,.7)),msc:f2(rf(1.5,2.5))},null]},
+};
+/* free mix: a random subset of the library */
+function freeSlot(i){
+  const k=ri(1,5),all=[...SHAPES.keys()].filter(v=>v!==25||R()<.3),shp=[];while(shp.length<k){const v=pick(all);if(!shp.includes(v))shp.push(v)}
+  return {shp,D:ri(4,40),asp:R()<.8?1:f2(rf(.5,2.5)),lv:pick([0,1,2,3,3]),split:f2(rf(.35,.7)),rot:pick([0,1,1,1,2,3,4,5]),
+    n:ri(2,6),w:f2(rf(.3,.7)),size:R()<.6?1:f2(rf(.6,.95)),gap:R()<.7?0:f2(rf(.04,.15)),rd:R()<.8?0:f2(rf(.2,.8)),
+    sty:+pickW({0:7,1:1,2:1,3:1,4:2}),lw:f2(rf(.1,.4)),band:+pickW({0:3,1:2,2:1}),cmode:nInk()>1?pick([0,1,1,2,3,4,6]):0,
+    pick:+pickW({0:5,1:2,2:1,3:1,4:1,7:1}),tbg:R()<.75?0:pick([1,2,3]),border:R()<.8?0:pick([1,2]),
+    msrc:+pickW({0:3,1:3,2:1,3:1,4:1,5:1,6:1,7:1}),msc:f2(rf(1,3)),mS:R()<.6?0:f2(rf(-.6,.6)),mQ:R()<.6?0:f2(rf(-.4,.4)),
+    drop:R()<.7?0:f2(rf(.1,.5)),mD:R()<.7?0:f2(rf(.3,1)),nz:ri(3,8),zsc:f2(rf(.8,2))};
+}
+function randSlotMotion(s){s.mo=+pickW({0:5,1:2,2:1,3:1,4:1,5:1,6:1,7:1});s.cyc=ri(1,2);s.mv=pick([0,0,0,0,1,-1]);s.zdr=R()<.3}
+function randSlot(i){
+  const s=mkSlot(Object.assign(freeSlot(i),{on:true,ink:i}));randSlotMotion(s);P.slots[i]=s;
+}
+let lastRecipe='free';
+function randTiles(){
+  const keys=Object.keys(RECIPES),name=R()<.2?'free':pick(keys);lastRecipe=name;
+  if(name==='free'){randSlot(0);if(R()<.35)randSlot(1);else P.slots[1].on=false}
+  else{const rc=RECIPES[name],[a,b]=rc.f();
+    P.slots[0]=mkSlot(Object.assign({ink:0},a));randSlotMotion(P.slots[0]);
+    if(b){P.slots[1]=mkSlot(Object.assign({ink:1},b));randSlotMotion(P.slots[1]);P.slots[1].mv=P.slots[0].mv}else P.slots[1].on=false;
+    if(R()<.7){setPalette(PALETTES[palIx(rc.pal)]);P.grain=rc.grain?f2(rf(.15,.35)):0}
+    if(rc.warp&&R()<.7){P.warps[0]=mkWarp(rc.warp,true);P.warps[0].p=WARPS[rc.warp].ps.map(rq);P.warps[0].sp=pick([0,1])}
+    if(rc.text){P.tmode=rc.text;P.tfill=rc.text==='invert'?'solid':'none'}
+  }
+  P.seed=ri(1,99999);fixText();fixBlend();
+}
+function randText(){
+  P.tmode=pickW({none:2,pixel:3,pixout:1,swap:2,finer:3,coarser:2,grow:2,turn:2,ink:2,invert:2,knock:1,window:1,push:1,glass:2,lglass:2});P.tdisp=+(.4+Math.random()*.7).toFixed(2);P.tfrost=GLASS_K.includes(P.tmode)&&Math.random()<.4?+(.2+Math.random()*.5).toFixed(2):0;
+  P.tamt=f2(rf(.35,1));P.tblur=R()<.3?ri(1,3):pick([0,1]);
+  P.tfill=P.tmode==='none'&&!P.slots.some(s=>s.on&&s.msrc===6)?'solid':(R()<.85?'none':'solid');P.tsrc=R()<.15?'all':'big';
+  fixText();
+}
+function fixText(){
+  if(P.tmode==='swap'&&!P.slots[1].on){P.slots[1]=mkSlot(Object.assign(freeSlot(1),{on:true,ink:1,D:P.slots[0].D}));randSlotMotion(P.slots[1])}
+  if(P.tmode==='coarser')P.slots.forEach(s=>{if(s.lv<1)s.lv=2});
+  fitTextTiles();
+  /* folding warps scramble which tile sits over which letter: keep only gentle ones with tile-level text modes */
+  if(CELLMODES.includes(P.tmode))P.warps.forEach(w=>{if(w.on&&!['noise','wave','ripple','lens','swirl','perspective'].includes(w.type))w.on=false});
+}
+/* cell-level text modes need tiles small enough to draw the letters */
+function fitTextTiles(){if(CELLMODES.includes(P.tmode)&&!['finer','coarser'].includes(P.tmode))P.slots.forEach(s=>{if(s.D<22&&s.lv<2)s.D=ri(26,48)})}
+
+function randWarp(i){
+  const type=pick(WKEYS),d=WARPS[type],w=mkWarp(type,R()<[.3,.12,.04][i]);
+  w.op=ri(0,d.ops.length-1);w.p=d.ps.map(rq);w.sp=pick([0,0,1,1,2]);w.pu=R()<.3?+rf(.3,1).toFixed(2):0;P.warps[i]=w;
+}
+function randWarps(){for(let i=0;i<3;i++)randWarp(i)}
+function randLayout(){
+  P.tpl=pick([...Object.keys(TEMPLATES),'giant','giant','cells']);P.stairs=pick([0,0,0,1,2]);
+  if(!USERF[P.rfont]){P.rfont=pick(Object.keys(READ_FONTS).filter(n=>!USERF[n]));P.rax={}}P.tw=pick([500,700,900,900]);
+  P.tspan=+rf(.45,1).toFixed(2);P.body=ri(11,20);P.mid=+rf(1.7,3.2).toFixed(2);P.lead=+rf(1.05,1.3).toFixed(2);
+  P.cols=pick([4,6,6,8,8,12]);P.rows=pick([6,8,12,12,16]);P.margin=ri(22,60);P.gutter=ri(6,22);
+  P.rcase=pick(['none','upper','upper','lower']);P.band=R()<.1;P.rblend='source-over';
+}
+function randRMotion(){P.rmo=R()<.35?'none':pick(Object.keys(RMOTION));P.rmoAmt=+rf(.25,1).toFixed(2);P.rmoSpd=ri(1,3)}
+function hsl(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return '#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('')}
+
+/* ================= UI ================= */
+const panel=$('#panel');
+const openS=new Set(); /* every group starts collapsed; open state is kept only while the page is open */
+const DICE_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="8.5" r=".9" fill="currentColor"/><circle cx="12" cy="12" r=".9" fill="currentColor"/><circle cx="8.5" cy="15.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="15.5" r=".9" fill="currentColor"/></svg>';
+function changed(){dirty=true;saveSoon()}
+function el(t,props={}){return Object.assign(document.createElement(t),props)}
+function sec(id,title,{dice,on,tag}={}){
+  const d=el('details');d.open=openS.has(id);
+  d.addEventListener('toggle',()=>{d.open?openS.add(id):openS.delete(id)});
+  const s=el('summary');s.append(title);if(tag)s.append(el('span',{className:'tag',textContent:tag}));
+  if(on){const [o,k]=on;const hc=el('input',{type:'checkbox',className:'hdr',checked:!!o[k],title:'On / off'});
+    hc.addEventListener('click',e=>e.stopPropagation());
+    hc.addEventListener('input',()=>{o[k]=hc.checked;d.classList.toggle('off',!hc.checked);changed()});
+    s.append(hc);d.classList.toggle('off',!o[k])}
+  if(dice){const b=el('button',{type:'button',className:'dice',title:'Randomize this group',innerHTML:DICE_SVG});
+    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();dice();changed();buildUI()});s.append(b)}
+  d.append(s);panel.append(d);return d;
+}
+function rowEl(d,label,ctl,v){const r=el('div',{className:'row'+(v?'':' wide')});r.append(el('label',{textContent:label}),ctl);if(v)r.append(v);d.append(r);return r}
+function cRange(d,o,k,mn,mx,st,label,cb){
+  const i=el('input',{type:'range',min:mn,max:mx,step:st,value:o[k]}),v=el('span',{className:'v',textContent:fmt(o[k])});
+  i.oninput=()=>{o[k]=+i.value;v.textContent=fmt(o[k]);changed();cb&&cb()};rowEl(d,label,i,v)}
+function cSel(d,o,k,opts,label,cb){
+  const s=el('select');const list=Array.isArray(opts)?opts:Object.entries(opts);
+  list.forEach(op=>{const [val,t]=Array.isArray(op)?op:[op,op];s.append(el('option',{value:val,textContent:t}))});
+  s.value=String(o[k]);s.onchange=()=>{o[k]=typeof o[k]==='number'?+s.value:s.value;changed();cb&&cb()};rowEl(d,label,s)}
+function cChk(d,o,k,label){const i=el('input',{type:'checkbox',checked:!!o[k]});i.onchange=()=>{o[k]=i.checked;changed()};rowEl(d,label,i)}
+function cText(d,o,k,label,area){const i=el(area?'textarea':'input',area?{rows:area}:{type:'text'});i.value=o[k];i.oninput=()=>{o[k]=i.value;changed()};rowEl(d,label,i)}
+function cColor(d,o,k,label){const i=el('input',{type:'color',value:o[k]});i.oninput=()=>{o[k]=i.value;changed()};rowEl(d,label,i)}
+let fontTarget='read';
+/* font dropdown with "Load font file…" inside it, plus axis sliders when the chosen font is variable */
+function cFont(d,key,map,target,vals){
+  const s=el('select'),cur=P[key];
+  Object.keys(map).forEach(n=>s.append(el('option',{value:n,textContent:(USERF[n]?'★ ':'')+n+(axesOf(n).length?' (variable)':'')})));
+  if(target)s.append(el('option',{value:'__load',textContent:'Load font file…'}));
+  s.value=cur;
+  s.onchange=()=>{if(s.value==='__load'){s.value=P[key];fontTarget=target;$('#fFont').click();return}P[key]=s.value;changed();buildUI()};
+  rowEl(d,'Font',s);
+  const ax=axesOf(P[key]);
+  ax.forEach(a=>{if(vals[a.tag]==null)vals[a.tag]=a.def;cRange(d,vals,a.tag,a.min,a.max,(a.max-a.min)>20?1:.01,a.name)});
+  if(ax.length){const b=el('button',{textContent:'Reset axes'});b.onclick=()=>{ax.forEach(a=>vals[a.tag]=a.def);changed();buildUI()};rowEl(d,'',b)}
+}
+
+function setPalette(pl){const c=pl[1];P.pal=[0,1,2,3,4,5,6,7].map(i=>c[i%c.length]);P.nCol=Math.max(2,c.length);P.txt=pl[2];P.acc=pl[3];P.lc=pl[4]||pl[2]}
+function randColors(){
+  if(R()<.75)setPalette(pick(PALETTES));
+  else{const h=ri(0,359),dark=R()<.35,n=ri(2,6);
+    const c=[dark?hsl(h,ri(10,50),ri(5,12)):hsl(h,ri(10,40),ri(90,96))];
+    for(let i=1;i<n;i++)c.push(hsl((h+ri(60,300)+i*ri(30,100))%360,ri(60,100),dark?ri(55,70):ri(30,52)));
+    P.pal=[0,1,2,3,4,5,6,7].map(i=>c[i%n]);P.nCol=n;P.txt=dark?'#f4f4f4':'#111111';P.acc=c[1];P.lc=P.txt}
+  P.cyc=R()<.1?pick([-1,1]):0;P.grain=R()<.2?f2(rf(.1,.4)):0;
+  fixBlend();P.slots.forEach(s=>{if(nInk()<2&&[1,2,3,4,5,6,7,8].includes(s.cmode))s.cmode=0;else if(nInk()>1&&s.cmode===0&&R()<.5)s.cmode=pick([1,1,2,3])});
+}
+function fixBlend(){const lg=lightGround();P.slots.forEach(s=>{if(s.blend===2&&lg)s.blend=0;if(s.blend===1&&!lg)s.blend=0})}
+function randAll(){randLayout();randRMotion();randColors();randWarps();randText();randTiles();fixBlend();
+  if(P.tmode!=='none'&&P.tfill==='none'&&(CELLMODES.includes(P.tmode)||['window','knock','invert'].includes(P.tmode)||R()<.75))P.tpl=pick(['giant','giant','giant','cells','vertical','axis'])}
+
+/* the shape set: toggle chips, order = order of clicks (Pick by uses this order) */
+function cShapes(d,s){
+  const w=el('div',{className:'chips'});
+  SHAPES.forEach((n,i)=>{const b=el('button',{type:'button',textContent:n,className:s.shp.includes(i)?'on':''});
+    b.onclick=()=>{const j=s.shp.indexOf(i);if(j>=0){if(s.shp.length>1)s.shp.splice(j,1)}else s.shp.push(i);changed();buildUI()};w.append(b)});
+  d.append(w);
+}
+const subh=(d,t)=>d.append(el('div',{className:'subh',textContent:t}));
+function slotTag(s){const n=s.shp.length;return (n===1?SHAPES[s.shp[0]]:n+' shapes')+(s.lv>0?' · quadtree':'')}
+
+function buildUI(){
+  const sc=panel.scrollTop;panel.innerHTML='';
+  let d;
+  if(P.wall){d=sec('wall','Wall',{tag:'static preview',dice:makeWallSet});
+    cRange(d,P,'wallN',2,8,1,'Banners');
+    cSel(d,P,'wallMode',[['mix','Random designs + presets'],['series','Series — presets'],['repeat','Repeat'],['phases','Loop phases']],'Show');
+    cRange(d,P,'wallPeople',0,8,1,'People, max');
+    cChk(d,P,'wallTex','Concrete texture');
+    d.append(el('div',{className:'hint',textContent:'Random designs: the current poster hangs in the middle, the others are random designs with neighbouring text presets. Random and the dice reshuffle designs, people and the wall. Scrub the timeline to pick the frame. Click a neighbouring poster to make it the current one (with your text). PNG exports the wall.'}))}
+  d=sec('text','Copy',{on:[P,'tshow']});
+  /* text presets; Custom = your own text, saved on every edit and never overwritten by a sample */
+  const sl=el('select');sl.append(el('option',{value:-1,textContent:P.custom?'Custom — your text':'Custom — type your own'}));
+  PRESETS.forEach((pr,i)=>{const n=pr.desc?pr.desc.split('\n').length:0;sl.append(el('option',{value:i,textContent:pr.n+' · '+(n?n+' line'+(n>1?'s':''):'title only')}))});
+  sl.value=String(P.preset??-1);sl.onchange=()=>applyPreset(+sl.value);rowEl(d,'Preset',sl);
+  const toCustom=()=>{P.preset=-1;P.custom=txtSnap();sl.value='-1';sl.options[0].textContent='Custom — your text'};
+  cText(d,P,'title','Title',3);d.lastChild.querySelector('textarea,input').addEventListener('input',toCustom);
+  d.append(el('div',{className:'hint',textContent:'The large text (title) is what the tiles react to. Line breaks make lines in Giant title.'}));
+  cText(d,P,'desc','Description',9);d.lastChild.querySelector('textarea,input').addEventListener('input',toCustom);
+  d.append(el('div',{className:'hint',textContent:'Each line is a separate element: the first lines take the template’s main slots (subtitle, date, place), the rest stack at the end.'}));
+
+  d=sec('lay','Layout',{dice:randLayout,tag:'Swiss grid'});
+  cSel(d,P,'tpl',TEMPLATES,'Template');
+  cFont(d,'rfont',READ_FONTS,'read',P.rax);
+  if(!axesOf(P.rfont).some(a=>a.tag==='wght'))cSel(d,P,'tw',[[300,'Light'],[400,'Regular'],[500,'Medium'],[700,'Bold'],[900,'Black']],'Title weight');
+  cRange(d,P,'tspan',.3,1,.01,'Title span');
+  cRange(d,P,'body',8,30,1,'Body size');
+  cRange(d,P,'mid',1.2,4,.01,'Date scale');
+  cRange(d,P,'lead',.9,1.6,.01,'Leading');
+  cRange(d,P,'stairs',0,4,.25,'Stairs');
+  cRange(d,P,'cols',2,16,1,'Columns');cRange(d,P,'rows',2,24,1,'Rows');
+  cRange(d,P,'margin',0,120,1,'Margin');cRange(d,P,'gutter',0,60,1,'Gutter');
+  cSel(d,P,'rcase',CASES,'Case');
+  cSel(d,P,'rcol',[['text','Text color'],['acc','Accent'],['ink1','Ink 1'],['bg','Ground']],'Color');
+  cSel(d,P,'rblend',BLENDS,'Blend');
+  cChk(d,P,'band','Bands');cChk(d,P,'grid','Show grid');
+
+  d=sec('rmo','Layout motion',{dice:randRMotion});
+  cSel(d,P,'rmo',RMOTION,'Motion');cRange(d,P,'rmoAmt',0,1,.01,'Amount');cRange(d,P,'rmoSpd',1,6,1,'Cycles');
+
+  d=sec('tx','Text × tiles',{dice:randText,tag:TMODES[P.tmode]});
+  cSel(d,P,'tmode',TMODES,'Interaction',buildUI);
+  if(GLASS_K.includes(P.tmode)){cRange(d,P,'tfrost',0,1,.01,'Frosty');if(P.tmode==='lglass')cRange(d,P,'tdisp',0,1.5,.01,'Dispersion')}
+  cRange(d,P,'tamt',0,1,.01,'Amount');
+  cRange(d,P,'tblur',0,5,.5,'Soften');
+  cSel(d,P,'tfill',[['none','None — tiles only'],['solid','Solid color']],'Text fill');
+  cSel(d,P,'tsrc',[['big','Large text'],['all','All text']],'Mask');
+  d.append(el('div',{className:'hint',textContent:P.tmode==='swap'&&!P.slots[1].on?'Turn on Tiles 2: it fills the letters.':'Tile-level modes test each tile at its centre, so the letters are built from whole tiles (Tiles in letters, Finer inside…). Knockout and Window cut per pixel.'}));
+
+  P.slots.forEach((s,i)=>{
+    d=sec('sl'+i,'Tiles '+(i+1),{dice:()=>{randSlot(i);P.slots[i].on=true},on:[s,'on'],tag:slotTag(s)});
+    subh(d,'Shapes');
+    cShapes(d,s);
+    cSel(d,s,'pick',PICKS.map((m,j)=>[j,m]),'Pick by');
+    if(s.shp.includes(25))cText(d,P,'glyphs','Glyphs');
+    cRange(d,s,'size',0,1,.01,'Size');
+    cRange(d,s,'w',0,1,.01,'Weight');
+    if(s.shp.some(v=>BANDED.has(v)))cRange(d,s,'n',1,10,1,'Bands');
+    cRange(d,s,'rd',0,1,.01,'Round');
+    cSel(d,s,'rot',ROTS.map((m,j)=>[j,m]),'Rotation');
+    subh(d,'Grid');
+    cSel(d,s,'lay',[[0,'Grid'],[1,'Brick']],'Layout');
+    cRange(d,s,'D',1,120,1,'Density');
+    cRange(d,s,'asp',.25,4,.01,'Cell aspect');
+    cRange(d,s,'lv',0,4,1,'Levels');
+    cRange(d,s,'split',0,1,.01,'Split');
+    cRange(d,s,'gap',0,.5,.01,'Gap');
+    cRange(d,s,'sx',0,3,.01,'Stretch X');cRange(d,s,'sy',0,3,.01,'Stretch Y');
+    cRange(d,s,'ang',-90,90,1,'Angle');
+    cRange(d,s,'cx',-.5,.5,.01,'Center X');cRange(d,s,'cy',-.5,.5,.01,'Center Y');
+    subh(d,'Look');
+    cSel(d,s,'sty',STYLES.map((m,j)=>[j,m]),'Style');
+    cRange(d,s,'lw',0,1,.01,'Line width');
+    cRange(d,s,'soft',0,1,.01,'Soft');
+    cRange(d,s,'op',0,1,.01,'Opacity');
+    cSel(d,s,'blend',BLENDS2.map((m,j)=>[j,m]),'Blend');
+    cSel(d,s,'band',BANDMODES.map((m,j)=>[j,m]),'Band colors');
+    cSel(d,s,'tbg',TILEBG.map((m,j)=>[j,m]),'Tile fill');
+    cSel(d,s,'border',BORDERS.map((m,j)=>[j,m]),'Border');
+    cSel(d,s,'cmode',CMODES.map((m,j)=>[j,m]),'Color by');
+    cRange(d,s,'ink',0,6,1,'Ink');
+    subh(d,'Map & zones');
+    cSel(d,s,'msrc',MAPSRC.map((m,j)=>[j,m]),'Map');
+    cRange(d,s,'msc',.1,8,.01,'Map scale');
+    cRange(d,s,'mS',-1,1,.01,'Size by map');
+    cRange(d,s,'mQ',-1,1,.01,'Split by map');
+    cRange(d,s,'drop',0,1,.01,'Drop');
+    cRange(d,s,'mD',-1,1,.01,'Drop by map');
+    cRange(d,s,'nz',1,10,1,'Zones');
+    cRange(d,s,'zsc',.2,6,.01,'Zone scale');
+    cChk(d,s,'zdr','Drift maps');
+    subh(d,'Motion');
+    cSel(d,s,'mo',MOTIONS.map((m,j)=>[j,m]),'Motion');
+    cRange(d,s,'cyc',1,4,1,'Cycles');
+    cRange(d,s,'mv',-3,3,1,'Move');
+  });
+  panel.lastChild.append(el('div',{className:'hint',textContent:'Each tile holds one shape from the set. Levels > 0 split tiles into a quadtree; Zones pick shapes and colours by area; the map scales, splits and drops tiles.'}));
+
+  P.warps.forEach((w,i)=>{
+    const df=WARPS[w.type];
+    d=sec('w'+i,'Space '+(i+1),{dice:()=>{randWarp(i);P.warps[i].on=true},on:[w,'on'],tag:df.n});
+    cSel(d,w,'type',WKEYS.map(k=>[k,WARPS[k].n]),'Warp',()=>{const n=WARPS[w.type];w.p=n.ps.map(q=>q[4]);w.op=0;buildUI()});
+    cSel(d,w,'op',df.ops.map((m,j)=>[j,m]),'Variant');
+    df.ps.forEach((q,j)=>cRange(d,w.p,j,q[1],q[2],q[3],q[0]));
+    cRange(d,w,'sp',0,4,1,'Speed');
+    cRange(d,w,'pu',0,1,.01,'Pulse');
+  });
+  panel.lastChild.append(el('div',{className:'hint',textContent:'Space warps bend the grid before the tiles are placed: 1 → 2 → 3.'}));
+
+  d=sec('col','Color',{dice:randColors});
+  cSel(d,{v:''},'v',[['','— palette —'],...PALETTES.map((p,i)=>[i,p[0]])],'Palette',()=>{});
+  d.lastChild.querySelector('select').onchange=e=>{const i=e.target.value;if(i==='')return;setPalette(PALETTES[+i]);changed();buildUI()};
+  const ik=el('div',{className:'inks'});P.pal.forEach((c,i)=>{const x=el('input',{type:'color',value:c,title:i?'Ink '+i:'Ground'});if(i>=P.nCol)x.classList.add('dim');x.oninput=()=>{P.pal[i]=x.value;changed()};ik.append(x)});rowEl(d,'Ground, inks',ik);
+  cRange(d,P,'nCol',2,8,1,'Count',()=>{[...ik.children].forEach((x,i)=>x.classList.toggle('dim',i>=P.nCol))});
+  cRange(d,P,'cyc',-3,3,1,'Color cycle');
+  cRange(d,P,'grain',0,1,.01,'Grain');
+  cColor(d,P,'txt','Text');cColor(d,P,'acc','Accent');cColor(d,P,'lc','Lines');
+
+
+  d=sec('exp','Export');
+  cSel(d,P,'fmt',Object.keys(FORMATS),'Format',updLabels);
+  cRange(d,P,'loop',2,20,1,'Loop, s',updLabels);
+  cSel(d,P,'q',[[.5,'Fast (½)'],[.75,'Normal (¾)'],[1,'Full']],'Preview');
+  cChk(d,P,'aa','Smooth edges');
+  cSel(d,P,'pngScale',[[1,'×1'],[2,'×2'],[3,'×3']],'PNG scale',updLabels);
+  cSel(d,P,'mp4Scale',[[1,'×1'],[2,'×2']],'MP4 scale',updLabels);
+  cSel(d,P,'fps',[[24,'24'],[25,'25'],[30,'30'],[60,'60']],'MP4 fps');
+  cSel(d,P,'mq',[[.08,'Light'],[.15,'Normal'],[.3,'High']],'MP4 quality');
+  cRange(d,P,'seed',1,99999,1,'Seed');
+  d.append(el('div',{className:'hint',id:'sizeHint'}));
+  updLabels();
+  panel.scrollTop=sc;
+}
+
+function updLabels(){
+  const [bw,bh]=baseSize();$('#bPng').textContent=`PNG ×${P.pngScale}`;
+  const h=$('#sizeHint');if(h)h.textContent=`PNG ${bw*P.pngScale}×${bh*P.pngScale} · MP4 ${bw*P.mp4Scale}×${bh*P.mp4Scale}, ${P.loop}s loop`;
+}
+
+
+/* ================= font upload ================= */
+/* ================= font upload ================= */
+/* fvar reader (axes of a variable font): TTF/OTF/WOFF; WOFF2 is brotli-compressed and can't be read here */
+async function readFvar(buf){
+  const dv=new DataView(buf);
+  const tag=o=>String.fromCharCode(dv.getUint8(o),dv.getUint8(o+1),dv.getUint8(o+2),dv.getUint8(o+3));
+  const sig=tag(0);
+  const inflate=async u8=>{const ds=new DecompressionStream('deflate');const w=ds.writable.getWriter();w.write(u8);w.close();return new Uint8Array(await new Response(ds.readable).arrayBuffer())};
+  const grab=async name=>{
+    if(sig==='wOFF'){const n=dv.getUint16(12);
+      for(let i=0;i<n;i++){const o=44+i*20;if(tag(o)===name){const off=dv.getUint32(o+4),cl=dv.getUint32(o+8),ol=dv.getUint32(o+12);
+        const raw=new Uint8Array(buf,off,cl);const u8=cl<ol?await inflate(raw):raw.slice();return new DataView(u8.buffer,u8.byteOffset,u8.byteLength)}}
+      return null}
+    if(sig==='wOF2')throw new Error('woff2');
+    const base=sig==='ttcf'?dv.getUint32(12):0,n=dv.getUint16(base+4);
+    for(let i=0;i<n;i++){const o=base+12+i*16;if(tag(o)===name)return new DataView(buf,dv.getUint32(o+8),dv.getUint32(o+12))}
+    return null};
+  const tbl=await grab('fvar');if(!tbl)return [];
+  const names={};
+  try{const nt=await grab('name');if(nt){const cnt=nt.getUint16(2),so=nt.getUint16(4);
+    for(let i=0;i<cnt;i++){const o=6+i*12,pid=nt.getUint16(o),id=nt.getUint16(o+6),len=nt.getUint16(o+8),off=nt.getUint16(o+10);
+      if(names[id]&&pid!==3)continue;let t='';
+      if(pid===3||pid===0){for(let j=0;j<len;j+=2)t+=String.fromCharCode(nt.getUint16(so+off+j))}
+      else if(pid===1){for(let j=0;j<len;j++)t+=String.fromCharCode(nt.getUint8(so+off+j))}
+      if(t)names[id]=t}}}catch(e){}
+  const ao=tbl.getUint16(4),cnt=tbl.getUint16(8),sz=tbl.getUint16(10),axes=[];
+  const t4=o=>String.fromCharCode(tbl.getUint8(o),tbl.getUint8(o+1),tbl.getUint8(o+2),tbl.getUint8(o+3)),fx=o=>tbl.getInt32(o)/65536;
+  for(let i=0;i<cnt;i++){const o=ao+i*sz,tg=t4(o);axes.push({tag:tg,min:fx(o+4),def:fx(o+8),max:fx(o+12),name:names[tbl.getUint16(o+18)]||AXNAMES[tg]||tg})}
+  return axes;
+}
+const AXNAMES={wght:'Weight',wdth:'Width',slnt:'Slant',ital:'Italic',opsz:'Optical size'};
+let fontCount=0;
+$('#fFont').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;e.target.value='';
+  try{
+    const buf=await f.arrayBuffer();let axes=[],note='';
+    try{axes=await readFvar(buf.slice(0))}
+    catch(err){if(err&&err.message==='woff2'){axes=[{tag:'wght',min:100,def:400,max:900,name:'Weight'},{tag:'wdth',min:50,def:100,max:200,name:'Width'}];
+      note='WOFF2: axes can\'t be read, showing typical wght/wdth. Load TTF/OTF for the exact axes.'}}
+    const fam='LLUser'+(++fontCount),wa=axes.find(a=>a.tag==='wght'),wd=axes.find(a=>a.tag==='wdth');
+    let ff=null,lastErr=null;
+    for(const desc of [()=>{const d={};if(wa&&wa.min>=1&&wa.max<=1000)d.weight=`${wa.min} ${wa.max}`;if(wd)d.stretch=`${wd.min}% ${wd.max}%`;return d},()=>({}),()=>({weight:'100 900'})]){
+      try{ff=new FontFace(fam,buf.slice(0),desc());await ff.load();break}catch(err){lastErr=err;ff=null}}
+    if(!ff)throw lastErr||new Error('browser rejected the font');
+    document.fonts.add(ff);
+    let name=f.name.replace(/\.[^.]+$/,'');while(READ_FONTS[name]&&!USERF[name])name+=' *';
+    USERF[name]={axes};READ_FONTS[name]=`"${fam}"`;
+    const vals={};axes.forEach(a=>vals[a.tag]=a.def);
+    P.rfont=name;P.rax=vals;
+    lastVar='';changed();buildUI();toast('Font loaded: '+name+(axes.length?` · ${axes.length} axes`:''));
+    if(note)setTimeout(()=>alert(note),50);
+  }catch(err){alert('Could not load this font: '+(err&&err.message||err))}
+};
+
+/* ================= export ================= */
+function dl(blob,name){const a=el('a',{href:URL.createObjectURL(blob),download:name});a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+const tick=()=>new Promise(r=>setTimeout(r,0));
+const needsWarm=()=>false;
+async function warm(phEnd,fps,btn,label){
+  const N=Math.max(1,Math.round(P.loop*fps));
+  for(let i=0;i<N;i++){render(((phEnd-1+i/N)%1+1)%1,1/fps);if(i%6===0){btn.textContent=`${label} warm ${Math.round(i/N*100)}%`;await tick()}}
+}
+/* ================= wall preview ================= */
+const wcv=$('#wall'),wctx=wcv.getContext('2d');
+let wallNoise=null,wallSet=null;
+function wallTexture(){
+  if(wallNoise)return wallNoise;wallNoise=el('canvas');wallNoise.width=wallNoise.height=256;const c=wallNoise.getContext('2d');
+  for(let i=0;i<9000;i++){c.fillStyle=R()<.5?'rgba(0,0,0,.12)':'rgba(255,255,255,.035)';c.fillRect(R()*256,R()*256,1+R()*2,1+R()*2)}return wallNoise}
+/* settings that every banner on the wall shares (format, timing, export, wall itself) */
+const WALL_KEEP=['fmt','q','aa','loop','pngScale','mp4Scale','fps','mq','wall','wallN','wallMode','wallPeople','wallTex','tshow','preset','custom',...TXT_KEYS];
+/* a fixed set of random designs, so the wall doesn't change on every redraw; the dice reshuffles it */
+/* ---------- dark concrete wall: panels, joints, tie holes, cracks, stains, poster scraps ---------- */
+let wallSeed=1,wallBG=null;
+function wMulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function buildWallBG(W,H){
+  const key=W+'x'+H+':'+wallSeed+':'+(P.wallTex?1:0);if(wallBG&&wallBG.key===key)return wallBG.cv;
+  const cvs=el('canvas');cvs.width=W;cvs.height=H;const c=cvs.getContext('2d'),r=wMulberry(wallSeed*9973+7),rr=(a,b)=>a+r()*(b-a),s=W/2000;
+  let g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2b2926');g.addColorStop(1,'#1c1b19');c.fillStyle=g;c.fillRect(0,0,W,H);
+  if(P.wallTex){
+    /* mottling: big soft patches, lighter and darker */
+    for(let i=0;i<70;i++){const x=rr(0,W),y=rr(0,H),R=rr(60,320)*s,l=r()<.5;g=c.createRadialGradient(x,y,0,x,y,R);
+      g.addColorStop(0,l?'rgba(255,245,230,.045)':'rgba(0,0,0,.12)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x-R,y-R,2*R,2*R)}
+    /* concrete panels: joints with a dark groove and a lit lower/right lip, formwork tie holes */
+    const pw=W/rr(2.6,3.6),ph=H/rr(1.6,2.2),ox=-rr(0,pw),oy=-rr(0,ph);
+    const groove=(x0,y0,x1,y1,vert)=>{c.strokeStyle='rgba(0,0,0,.55)';c.lineWidth=4*s;c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke();
+      c.strokeStyle='rgba(255,240,220,.07)';c.lineWidth=1.5*s;const d=2.6*s;c.beginPath();c.moveTo(x0+(vert?d:0),y0+(vert?0:d));c.lineTo(x1+(vert?d:0),y1+(vert?0:d));c.stroke()};
+    for(let x=ox;x<W;x+=pw)groove(x,0,x,H,true);for(let y=oy;y<H;y+=ph)groove(0,y,W,y,false);
+    for(let x=ox;x<W;x+=pw)for(let y=oy;y<H;y+=ph)for(let i=1;i<=2;i++)for(let j=1;j<=2;j++){const hx=x+pw*i/3,hy=y+ph*j/3,R=rr(5,8)*s;
+      g=c.createRadialGradient(hx-R*.3,hy-R*.3,0,hx,hy,R);g.addColorStop(0,'rgba(0,0,0,.75)');g.addColorStop(.7,'rgba(0,0,0,.45)');g.addColorStop(1,'rgba(255,240,220,.06)');
+      c.fillStyle=g;c.beginPath();c.arc(hx,hy,R,0,TAU);c.fill()}
+    /* water stains: streaks running down from the joints */
+    for(let i=0;i<14;i++){const x=rr(0,W),y=oy+ph*Math.floor(rr(0,H/ph+1)),w=rr(10,60)*s,L=rr(.15,.6)*H;
+      g=c.createLinearGradient(0,y,0,y+L);g.addColorStop(0,'rgba(0,0,0,.22)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x,y,w,L);
+      if(r()<.3){g=c.createLinearGradient(0,y,0,y+L*.6);g.addColorStop(0,'rgba(120,60,25,.14)');g.addColorStop(1,'rgba(120,60,25,0)');c.fillStyle=g;c.fillRect(x+w*.3,y,w*.4,L*.6)}}
+    /* cracks: jagged random walks with small branches */
+    const crack=(x,y,a,len,w,depth)=>{c.strokeStyle='rgba(0,0,0,.7)';c.lineWidth=w;c.beginPath();c.moveTo(x,y);
+      const pts=[[x,y]];for(let k=0;k<len;k++){a+=rr(-.55,.55);x+=Math.cos(a)*rr(6,16)*s;y+=Math.sin(a)*rr(6,16)*s;c.lineTo(x,y);pts.push([x,y]);
+        if(depth<2&&r()<.06)crack(x,y,a+rr(-1.2,1.2),Math.floor(len*.4),w*.6,depth+1)}c.stroke();
+      c.strokeStyle='rgba(255,240,220,.06)';c.lineWidth=w*.6;c.beginPath();pts.forEach(([px,py],k)=>k?c.lineTo(px+w,py+w):c.moveTo(px+w,py+w));c.stroke()};
+    for(let i=0;i<rr(4,8);i++)crack(rr(0,W),r()<.5?rr(0,H*.3):rr(H*.6,H),r()<.5?rr(-.6,.6)+Math.PI*.5:rr(-.4,.4)+(r()<.5?0:Math.PI),Math.floor(rr(12,40)),rr(1,2.2)*s,0);
+    /* spalls: chipped lighter patches */
+    for(let i=0;i<10;i++){const x=rr(0,W),y=rr(0,H),R=rr(6,22)*s;c.fillStyle='rgba(255,245,230,.05)';c.beginPath();
+      for(let k=0;k<7;k++){const a=k/7*TAU,q=R*rr(.5,1.1);k?c.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q):c.moveTo(x+Math.cos(a)*q,y+Math.sin(a)*q)}c.fill()}
+    /* scraps of old posters and tape left on the wall */
+    const papers=['#8a8479','#77716a','#6e675d','#7d6a42','#6a3a33','#4f5d66','#807a70']; /* dirty, faded paper: close to the wall tone */
+    for(let i=0;i<rr(3,7);i++){const x=rr(0,W),y=rr(0,H),w=rr(15,70)*s,h=rr(10,55)*s,rot=rr(-.25,.25);c.save();c.translate(x,y);c.rotate(rot);
+      c.fillStyle=papers[Math.floor(r()*papers.length)];c.globalAlpha=rr(.12,.28);c.beginPath();c.moveTo(0,0);
+      for(let k=1;k<=8;k++)c.lineTo(w*k/8,rr(-4,4)*s);for(let k=1;k<=6;k++)c.lineTo(w+rr(-5,5)*s,h*k/6);for(let k=7;k>=0;k--)c.lineTo(w*k/8,h+rr(-8,8)*s);c.closePath();c.fill();
+      if(r()<.4){c.globalAlpha=.1;c.fillStyle='#bdb7ab';c.fillRect(-6*s,-4*s,rr(20,40)*s,9*s)} /* tape */
+      c.restore()}
+  }
+  c.globalAlpha=1;c.fillStyle=c.createPattern(wallTexture(),'repeat');c.fillRect(0,0,W,H); /* fine grain */
+  wallBG={key,cv:cvs};return cvs;
+}
+function makeWallSet(){
+  /* work on a throw-away copy: the panel's controls stay bound to the real P */
+  const orig=P;wallSet=[null];
+  /* each random banner gets its own built-in font(s), different from the current poster's; a loaded font stays on the current poster only */
+  const fl=WALL_FONTS().map(([k,map])=>Object.keys(map).filter(n=>!(typeof USERF!=='undefined'&&USERF[n])&&n!==orig[k]).sort(()=>R()-.5));
+  for(let i=1;i<8;i++){P=JSON.parse(JSON.stringify(orig));randAll();
+    WALL_FONTS().forEach(([k,map,ax],j)=>{if(fl[j].length){P[k]=fl[j][(i-1)%fl[j].length];if(ax)P[ax]={}}});
+    if(P.rmo==='reveal')P.rmo='none'; /* a static banner must show its text: Line reveal is empty at the start of the loop */
+    WALL_KEEP.forEach(k=>delete P[k]);wallSet.push(P)}
+  P=orig;makeCrowd();wallSeed=ri(1,1e6);dirty=true; /* new wall surface too */
+}
+/* one passer-by in side view, walking (not running), opaque. L = look from makeCrowd(); 8 head-units tall */
+function drawWalker(c,x,foot,h,L,dir){
+  const u=h/8,wd=L.wd;c.save();c.translate(x,foot);c.scale(dir,1);c.lineCap='round';c.lineJoin='round';
+  /* no flat colours: every part is filled with a gradient from the lit upper-left to the shadowed lower-right */
+  const lx=-dir,GC={};
+  const G=col=>{if(GC[col])return GC[col];const g=c.createLinearGradient(lx*u*1.8,-u*8.2,-lx*u*1.8,0);
+    g.addColorStop(0,wShade(col,1.35));g.addColorStop(.38,col);g.addColorStop(1,wShade(col,.5));return GC[col]=g};
+  const hipY=-u*3.9,shY=-u*6.45,st=L.stride;
+  /* height differs by body length, not by scale: the body is stretched vertically, the head keeps its size and sits on top */
+  const hv=L.hv||1,HT=shY*(hv-1);
+  const leg=(a,col)=>{const kx=Math.sin(a)*u*1.95,ky=hipY+Math.cos(a)*u*1.95,fx=kx+Math.sin(a*.55)*u*1.6,fy=-u*.62; /* ankle sits inside the shoe */
+    c.strokeStyle=G(col);c.lineWidth=u*.78*L.legW;c.beginPath();c.moveTo(0,hipY);c.lineTo(kx,ky);c.lineTo(fx,fy);c.stroke();
+    if(L.cuffs){c.strokeStyle=G(wShade(col,1.25));c.lineWidth=u*.8*L.legW;c.beginPath();c.moveTo(fx-(fx-kx)*.08,fy-(fy-ky)*.08);c.lineTo(fx,fy);c.stroke()}
+    /* shoe with a sole */
+    c.fillStyle=G(L.shoe);c.beginPath();c.roundRect(fx-u*.35,-u*.5,u*1.1,u*.44,[u*.12,u*.3,u*.08,u*.08]);c.fill();
+    c.fillStyle=G(L.sole);c.beginPath();c.roundRect(fx-u*.35,-u*.12,u*1.12,u*.12,u*.04);c.fill()};
+  let hand=null;
+  const arm=(a,col,front)=>{const ex=Math.sin(a)*u*1.35,ey=shY+u*.25+Math.cos(a)*u*1.35,hx=ex+Math.sin(a+.35)*u*1.15,hy=ey+Math.cos(a+.35)*u*1.15;
+    c.strokeStyle=G(col);c.lineWidth=u*.6*wd;c.beginPath();c.moveTo(u*.05,shY+u*.25);c.lineTo(ex,ey);c.lineTo(hx,hy);c.stroke();
+    c.strokeStyle=G(wShade(col,.72));c.lineWidth=u*.62*wd;c.beginPath();c.moveTo(ex+(hx-ex)*.82,ey+(hy-ey)*.82);c.lineTo(hx,hy);c.stroke(); /* cuff */
+    c.fillStyle=G(L.skin);c.beginPath();c.ellipse(hx+Math.sin(a)*u*.05,hy+u*.2,u*.2,u*.27,0,0,TAU);c.fill();if(front)hand=[hx,hy+u*.2]};
+  /* behind the body */
+  if(L.hair===1){c.save();c.translate(0,HT);c.fillStyle=G(L.hairC);c.beginPath();c.roundRect(-u*.5,-u*7.75,u*.95,u*1.95,u*.4);c.fill();c.restore()}
+  c.save();c.scale(1,hv); /* body */
+  if(L.bag==='backpack'){c.fillStyle=G(L.bagC);c.beginPath();c.roundRect(-u*1.6*wd,shY+u*.05,u*.9,u*2.3,u*.3);c.fill();
+    c.fillStyle=G(wShade(L.bagC,.75));c.beginPath();c.roundRect(-u*1.75*wd,shY+u*1.2,u*.35,u*.9,u*.12);c.fill()}
+  leg(-st,L.legs2);arm(st*1.1,L.coat2);
+  leg(st,L.legs);
+  /* coat or jacket: rounded shoulders, A-line down to coatLen */
+  const bot=-u*L.coatLen,bw=u*(.95+(3.9-L.coatLen)*.08)*wd;
+  c.fillStyle=G(L.coat);c.beginPath();c.moveTo(-u*.72*wd,shY+u*.15);c.quadraticCurveTo(-u*.75*wd,shY-u*.15,-u*.35,shY-u*.2);c.lineTo(u*.45,shY-u*.2);
+  c.quadraticCurveTo(u*.82*wd,shY-u*.1,u*.8*wd,shY+u*.3);c.lineTo(bw,bot);c.quadraticCurveTo(0,bot+u*.2,-bw,bot);c.closePath();c.fill();
+  {const g=c.createLinearGradient(lx*bw,0,-lx*bw,0);g.addColorStop(0,'rgba(255,240,220,.18)');g.addColorStop(.45,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.38)');c.fillStyle=g;c.fill()}
+  /* coat details: front edge, collar, pocket, belt, hem */
+  const dk=wShade(L.coat,.72);c.strokeStyle=dk;c.lineWidth=u*.07;
+  c.beginPath();c.moveTo(u*.62*wd,shY+u*.35);c.lineTo(bw*.86,bot+u*.05);c.stroke();
+  if(L.buttons)for(let k=0;k<3;k++){c.fillStyle=dk;c.beginPath();c.arc(u*.45*wd+(bw*.8-u*.45*wd)*(k/3),shY+u*.8+k*(bot-shY-u*.8)/3.2,u*.07,0,TAU);c.fill()}
+  c.fillStyle=dk;c.beginPath();c.moveTo(-u*.1,shY-u*.18);c.lineTo(u*.55,shY-u*.12);c.lineTo(u*.2,shY+u*.55);c.closePath();c.fill();
+  c.strokeStyle=dk;c.lineWidth=u*.06;c.beginPath();c.moveTo(-u*.1,hipY+u*.35);c.lineTo(u*.55,hipY+u*.3);c.stroke();
+  if(L.belt){c.fillStyle=dk;c.fillRect(-u*.85*wd,hipY-u*.15,u*1.75*wd,u*.18)}
+  c.fillStyle=G(wShade(L.coat,.85));c.beginPath();c.moveTo(-bw,bot);c.quadraticCurveTo(0,bot+u*.2,bw,bot);c.lineTo(bw*.99,bot-u*.15);c.quadraticCurveTo(0,bot+u*.05,-bw*.99,bot-u*.15);c.fill();
+  if(L.bag==='shoulder'){c.strokeStyle=G(L.bagC);c.lineWidth=u*.12;c.beginPath();c.moveTo(u*.4,shY-u*.1);c.lineTo(-u*.6,hipY+u*.2);c.stroke();
+    c.fillStyle=G(L.bagC);c.beginPath();c.roundRect(-u*1.25,hipY-u*.1,u*1.1,u*.9,u*.15);c.fill();c.fillStyle=G(wShade(L.bagC,.75));c.fillRect(-u*1.25,hipY-u*.1,u*1.1,u*.25)}
+  /* neck, scarf, head */
+  c.fillStyle=G(wShade(L.skin,.9));c.fillRect(-u*.02,shY-u*.62,u*.4,u*.5);
+  if(L.scarf){c.fillStyle=G(L.scarf);c.beginPath();c.roundRect(-u*.28,shY-u*.48,u*.9,u*.52,u*.2);c.fill();c.fillRect(u*.08,shY,u*.3,u*1.25);
+    c.fillStyle=G(wShade(L.scarf,.8));c.fillRect(u*.08,shY+u*1.05,u*.3,u*.12)}
+  c.restore();c.save();c.translate(0,HT); /* head */
+  if(L.hair===5){c.fillStyle=G(L.coat2);c.beginPath();c.ellipse(-u*.05,-u*7.3,u*.72,u*.78,0,0,TAU);c.fill()} /* hood behind the head */
+  {const g=c.createRadialGradient(u*.18+lx*u*.25,-u*7.6,u*.05,u*.18,-u*7.35,u*.7);g.addColorStop(0,wShade(L.skin,1.18));g.addColorStop(.6,L.skin);g.addColorStop(1,wShade(L.skin,.62));
+  c.fillStyle=g;c.beginPath();c.ellipse(u*.18,-u*7.35,u*.5,u*.6,0,0,TAU);c.fill()}
+  c.beginPath();c.moveTo(u*.64,-u*7.45);c.lineTo(u*.82,-u*7.18);c.lineTo(u*.6,-u*7.12);c.fill(); /* nose */
+  c.fillStyle=G(wShade(L.skin,.85));c.beginPath();c.ellipse(-u*.05,-u*7.3,u*.12,u*.17,0,0,TAU);c.fill(); /* ear */
+  c.fillStyle='#1a1512';c.beginPath();c.arc(u*.45,-u*7.42,u*.05,0,TAU);c.fill(); /* eye */
+  c.strokeStyle=G(wShade(L.skin,.7));c.lineWidth=u*.04;c.beginPath();c.moveTo(u*.5,-u*6.98);c.lineTo(u*.62,-u*6.98);c.stroke(); /* mouth */
+  if(L.beard){c.fillStyle=G(L.hairC);c.beginPath();c.ellipse(u*.32,-u*6.95,u*.36,u*.26,.2,0,Math.PI);c.fill()}
+  if(L.glasses){c.strokeStyle='#151515';c.lineWidth=u*.05;c.strokeRect(u*.36,-u*7.52,u*.26,u*.18);c.beginPath();c.moveTo(u*.36,-u*7.45);c.lineTo(-u*.02,-u*7.4);c.stroke()}
+  /* hair / hats */
+  c.fillStyle=G(L.hairC);
+  if(L.hair<=2){c.beginPath();c.ellipse(u*.05,-u*7.55,u*.55,u*.48,-.25,Math.PI*.85,Math.PI*2.1);c.fill();c.fillRect(-u*.3,-u*7.6,u*.2,u*.55)}
+  if(L.hair===2){c.beginPath();c.arc(-u*.42,-u*7.78,u*.3,0,TAU);c.fill()}
+  if(L.hair===3||L.hair===4){c.fillStyle=G(L.hatC);c.beginPath();c.ellipse(u*.12,-u*7.62,u*.6,u*.56,0,Math.PI,TAU);c.fill();c.fillRect(-u*.48,-u*7.64,u*1.2,u*.22);
+    c.fillStyle=G(wShade(L.hatC,.8));c.fillRect(-u*.48,-u*7.48,u*1.2,u*.08);if(L.hair===4){c.fillStyle=G(L.hatC);c.fillRect(u*.3,-u*7.52,u*.78,u*.13)}}
+  if(L.hair===5){c.strokeStyle=G(wShade(L.coat2,.8));c.lineWidth=u*.14;c.beginPath();c.ellipse(u*.15,-u*7.32,u*.6,u*.7,0,-Math.PI*.9,Math.PI*.45);c.stroke()}
+  if(L.phones){c.strokeStyle='#161616';c.lineWidth=u*.1;c.beginPath();c.ellipse(-u*.02,-u*7.45,u*.55,u*.55,0,Math.PI*1.05,Math.PI*1.95);c.stroke();c.fillStyle='#161616';c.beginPath();c.ellipse(-u*.05,-u*7.3,u*.17,u*.22,0,0,TAU);c.fill()}
+  c.restore();c.save();c.scale(1,hv); /* front arm and what it holds */
+  arm(-st*1.1,L.coat,true);
+  if(hand&&L.cup){c.fillStyle='#f2efe9';c.fillRect(hand[0]-u*.18,hand[1]-u*.62,u*.36,u*.6);c.fillStyle='#3a2a20';c.fillRect(hand[0]-u*.2,hand[1]-u*.66,u*.4,u*.1);c.fillStyle='#b08a5a';c.fillRect(hand[0]-u*.18,hand[1]-u*.4,u*.36,u*.18)}
+  if(hand&&L.bag==='tote'){c.strokeStyle=G(wShade(L.bagC,.7));c.lineWidth=u*.06;c.beginPath();c.moveTo(hand[0]-u*.3,hand[1]+u*.3);c.lineTo(hand[0],hand[1]);c.lineTo(hand[0]+u*.3,hand[1]+u*.3);c.stroke();
+    c.fillStyle=G(L.bagC);c.beginPath();c.roundRect(hand[0]-u*.55,hand[1]+u*.28,u*1.1,u*1.25,u*.08);c.fill()}
+  if(hand&&L.phone&&!L.cup&&L.bag!=='tote'){c.fillStyle='#111';c.beginPath();c.roundRect(hand[0]-u*.1,hand[1]-u*.45,u*.22,u*.45,u*.05);c.fill()}
+  c.restore();
+  c.restore();
+}
+/* horizontal motion blur: average of shifted copies, so the body stays solid and only the edges smear */
+function drawPasserBy(c,x,foot,h,blur,L,dir){
+  const pad=h*.6,w=Math.ceil(h*.8+pad*2),hh=Math.ceil(h*1.1);
+  const a=el('canvas');a.width=w;a.height=hh;const ac=a.getContext('2d');drawWalker(ac,w/2,hh-2,h,L,dir);
+
+  /* smooth box motion blur by doubling: each pass averages the image with itself shifted (2 taps, alpha .5 each),
+     6 passes = 64 evenly spaced taps over the blur length — no ghost copies and no 8-bit banding */
+  let cur=a,sh=blur/63;const BW=w+Math.ceil(blur)+2;
+  for(let k=0;k<6;k++){const t=el('canvas');t.width=BW;t.height=hh;const tc=t.getContext('2d');tc.globalCompositeOperation='lighter';tc.globalAlpha=.5;
+    tc.drawImage(cur,0,0);tc.drawImage(cur,sh,0);cur=t;sh*=2}
+  c.save();c.filter=`blur(${Math.max(.5,h*.004).toFixed(1)}px)`; /* a touch of defocus, like the street photos */
+  c.drawImage(cur,x-w/2-blur/2,foot-hh+2);c.restore();
+}
+/* mid and light tones, so the silhouettes read against the dark wall */
+const W_COATS=['#b9a083','#5f7358','#7d838b','#9a4a3f','#4a6290','#8a8f96','#c4b9a8','#7a5a44','#3f6f86','#a8935a','#d0cbc2','#b06a3a','#6c5a8a','#e0dbd2'];
+const W_SKINS=['#f0cdb0','#e0b799','#c99b7f','#a97a5c','#8f6449','#5e3f2c'];
+const W_HAIRS=['#151010','#2a1d16','#4a3020','#a07a50','#c9a46c','#6b6b6b'];
+const W_DARKS=['#4a4f57','#3b4a63','#5a5550','#6b6f76','#3f3a34','#2f3a4c','#7a7468'];
+/* darken/lighten any #rgb or #rrggbb colour (hex2rgb expands the short form) */
+const wShade=(col,k)=>{const v=col.startsWith('rgb')?col.match(/[\d.]+/g).slice(0,3).map(Number):hex2rgb(col).map(x=>x*255);
+  return 'rgb('+v.map(x=>Math.min(255,Math.round(x*k))).join(',')+')'}; /* accepts #rgb, #rrggbb and rgb() */
+/* a cached crowd: count, depth, looks and directions vary; the Wall dice reshuffles it */
+let wallCrowd=null;
+function makeCrowd(){
+  const mx=clamp(P.wallPeople|0,0,8) /* at most 8 people in the scene */,n=mx?ri(Math.ceil(mx/3),mx):0,ppl=[];
+  for(let i=0;i<n;i++){
+    const coat=pick(W_COATS),legs=pick(W_DARKS),d=R(),hv=rf(.88,1.1); /* d: 0 far … 1 close to the camera */
+    ppl.push({d,x:R(),dir:R()<.5?1:-1,hv:rf(.84,1.12),knee:rf(.2,.3),blur:rf(.1,.2), /* higher minimum: nobody stands still */
+      L:{hv,coat,coat2:wShade(coat,.82),legs,legs2:wShade(legs,.8),skin:pick(W_SKINS),hairC:pick(W_HAIRS),shoe:pick(['#5a4636','#e8e4dc','#4a4a52','#7a2a22','#b8a27a','#2f3a4c']),
+        hair:pick([0,0,1,1,2,3,4,5]),sole:pick(['#e8e4dc','#2a2a2a','#8a6a4a']),cuffs:R()<.3,buttons:R()<.5,belt:R()<.25,beard:R()<.2,glasses:R()<.25,phones:R()<.15,phone:R()<.2,hatC:pick(['#111','#7a2a22','#d8d2c6','#2c3b57','#3d4a3a']),
+        coatLen:pick([3.35,3.35,3.1,2.6,2.3]),wd:rf(.85,1.18),legW:rf(.85,1.1),stride:rf(.2,.32),
+        bag:pick([null,null,'backpack','shoulder','tote']),bagC:pick(['#6b4a2e','#2a3550','#111','#c9b48a','#7a2a22']),
+        scarf:R()<.3?pick(['#b23a2e','#d9c27a','#e8e4dc','#2f5d50']):null,cup:R()<.2}});
+  }
+  ppl.sort((a,b)=>a.d-b.d);wallCrowd={mx,ppl};
+}
+function renderWall(ph,scale=1){
+  wallRects=[];
+  const W=2000*scale,H=1125*scale;if(wcv.width!==W){wcv.width=W;wcv.height=H}
+  const c=wctx,n=clamp(P.wallN|0,1,8),[b0w,b0h]=baseSize(),a=b0w/b0h,gapF=.035;
+  /* close-up of the wall, no floor: banners tight in a row, as if pasted next to each other */
+  const bH=Math.min(H*.62,W*.92/(a*(n+(n-1)*gapF))),bW=bH*a,gap=bW*gapF;
+  const cy=H*.43,x0=(W-(n*bW+(n-1)*gap))/2;
+  c.drawImage(buildWallBG(W,H),0,0); /* cached concrete wall */
+  if(P.wallMode==='mix'&&!wallSet)makeWallSet();
+  if(!wallCrowd||wallCrowd.mx!==clamp(P.wallPeople|0,0,8))makeCrowd();
+  const orig=P,wasExp=exporting;
+  exporting=true;renderK=clamp(bH/b0h,.15,2.5);ensureSize();
+  try{
+    for(let i=0;i<n;i++){
+      P=JSON.parse(JSON.stringify(orig)); /* each banner renders from a copy */
+      if(P.wallMode==='mix'){ /* the current poster (own design and text) hangs in the middle, random designs with neighbouring presets around it */
+        const m=Math.floor(n/2);
+        if(i!==m){Object.assign(P,JSON.parse(JSON.stringify(wallSet[(i<m?i+1:i)%wallSet.length])));
+          const L=PRESETS.length,pr=PRESETS[(((P.preset|0)+i-m)%L+L)%L];setTxt(pr)}}
+      else if(P.wallMode==='series'){const L=PRESETS.length,pr=PRESETS[(((P.preset|0)+i)%L+L)%L];setTxt(pr)}
+      flushVar(); /* fresh font axes for this banner */
+      render(P.wallMode==='phases'?(ph+i/n)%1:ph); /* phases: n moments spread over the loop */
+      P=orig;
+      const x=x0+i*(bW+gap),y=cy-bH/2;wallRects[i]=[x,y,bW,bH];
+      c.save();c.shadowColor='rgba(0,0,0,.6)';c.shadowBlur=16*scale;c.shadowOffsetY=6*scale;c.fillStyle='#000';c.fillRect(x,y,bW,bH);c.restore();
+      c.drawImage(cv,x,y,bW,bH);
+      c.fillStyle='rgba(255,255,255,.22)';c.fillRect(x,y,bW,Math.max(1,scale));
+    }
+  }finally{P=orig;renderK=null;exporting=wasExp;ensureSize()}
+  /* passers-by: farther ones smaller and less blurred, closer ones big with feet below the frame */
+  /* cut at the knee by the bottom edge; height differs by body length (hv), not by scale */
+  /* everyone at the same distance (same scale); d only orders who walks in front */
+  wallCrowd.ppl.forEach(p=>{const h=H*.7,hv=p.L.hv||1;
+    let foot=H+h*hv*(p.knee||.25);
+    /* nobody taller than 2/3 of the frame: if the head would rise above H/3, the person sits lower (cut above the knee) */
+    const top=foot-h*(1+.81*(hv-1));if(top<H/3)foot+=H/3-top;
+    drawPasserBy(c,W*(-.05+p.x*1.1),foot,h,h*p.blur,p.L,p.dir)});
+}
+/* ---------- click a neighbouring banner on the wall: it becomes the current poster, with the user's text ---------- */
+let wallRects=[];
+function adoptBanner(i){
+  const n=wallRects.length,m=Math.floor(n/2);
+  if(P.wallMode!=='mix'||!wallSet||i===m)return;
+  const k=(i<m?i+1:i)%wallSet.length,v=wallSet[k];if(!v)return;
+  /* the poster being replaced takes the clicked slot, so nothing is lost; a loaded font never moves to a neighbour */
+  const old=JSON.parse(JSON.stringify(P));WALL_KEEP.forEach(x=>delete old[x]);
+  const FL=typeof WALL_FONTS==='function'?WALL_FONTS():[['rfont',READ_FONTS,'rax']];
+  FL.forEach(([fk,map,ax])=>{if(typeof USERF!=='undefined'&&USERF[old[fk]]){const alt=Object.keys(map).filter(q=>!USERF[q]&&q!==v[fk]);if(alt.length){old[fk]=alt[Math.floor(R()*alt.length)];if(ax)old[ax]={}}}});
+  wallSet[k]=old;
+  Object.assign(P,JSON.parse(JSON.stringify(v))); /* design keys only: text, format and timing stay as they are */
+  if(typeof fixText==='function')try{fixText()}catch(e){}
+  setWall(false);changed();buildUI();toast('Now editing this poster · Wall shows the previous one in its place');
+}
+function wallHit(e){const r=wcv.getBoundingClientRect(),x=(e.clientX-r.left)*wcv.width/r.width,y=(e.clientY-r.top)*wcv.height/r.height;
+  return wallRects.findIndex(b=>x>=b[0]&&x<=b[0]+b[2]&&y>=b[1]&&y<=b[1]+b[3])}
+wcv.onmousemove=e=>{const i=wallHit(e);wcv.style.cursor=(P.wallMode==='mix'&&i>=0&&i!==Math.floor(wallRects.length/2))?'pointer':'default'};
+wcv.onclick=e=>{const i=wallHit(e);if(i<0)return;if(P.wallMode!=='mix'){toast('Clicking a banner works in Random designs mode');return}adoptBanner(i)};
+function setWall(v){P.wall=v;$('#app').classList.toggle('wallon',v);$('#bWall').classList.toggle('on',v);$('#cWall').checked=v;$('#bMp4').disabled=v;if(v)openS.add('wall');dirty=true}
+/* variable-font axes come from the canvas element styles: force a recalc and drop cached fonts before each banner */
+function flushVar(){try{if(typeof applyVariations==='function')applyVariations();
+  document.querySelectorAll('canvas').forEach(x=>{if(x.style.fontVariationSettings)getComputedStyle(x).fontVariationSettings});
+  ['dctx','mDctx','sctx','mctx'].forEach(n=>{try{const c=eval(n);if(c)c.font='1px serif'}catch(e){}})}catch(e){}}
+/* i = -1 restores the user's own text (Custom); 0…n-1 are the samples. Leaving Custom keeps it in P.custom */
+function applyPreset(i){const n=PRESETS.length;
+  if(P.preset===-1||P.preset==null)P.custom=txtSnap();
+  if(i===-1){if(!P.custom)return;P.preset=-1;Object.assign(P,JSON.parse(JSON.stringify(P.custom)));changed();buildUI();toast('Custom');return}
+  P.preset=((i%n)+n)%n;const pr=PRESETS[P.preset];setTxt(pr);changed();buildUI();toast(pr.n)}
+function stepPreset(k){const ids=[...(P.custom?[-1]:[]),...PRESETS.map((_,i)=>i)];const j=Math.max(0,ids.indexOf(P.preset??-1));applyPreset(ids[(j+k+ids.length)%ids.length])}
+async function exportPNG(){
+  if(exporting)return;
+  if(P.wall){exporting=true;try{renderWall(phase(),2);const b=await new Promise(r=>wcv.toBlob(r,'image/png'));dl(b,`grid-lab-wall-${P.seed}-${wcv.width}x${wcv.height}.png`)}
+    catch(e){alert('PNG error: '+(e&&e.message||e))}finally{exporting=false;renderWall(phase());dirty=true}return}exporting=true;const btn=$('#bPng'),ph=phase();
+  try{renderK=P.pngScale;ensureSize();if(needsWarm())await warm(ph,30,btn,'PNG');render(ph,1/30);
+    const b=await new Promise(r=>cv.toBlob(r,'image/png'));dl(b,`grid-lab-${P.seed}-${RW}x${RH}.png`)}
+  catch(e){alert('PNG error: '+(e&&e.message||e))}
+  finally{renderK=null;exporting=false;ensureSize();dirty=true;updLabels()}
+}
+async function exportMP4(){
+  if(exporting||P.wall)return;
+  if(!window.VideoEncoder||!window.VideoFrame||!window.Mp4Muxer){alert('MP4 export needs WebCodecs (Chrome / Edge / Safari 16.4+) and internet to load the muxer.');return}
+  const btn=$('#bMp4'),fps=P.fps,N=Math.round(P.loop*fps);exporting=true;
+  try{
+    renderK=P.mp4Scale;ensureSize();render(0,1/fps);
+    const w=RW,h=RH,bitrate=Math.round(w*h*fps*P.mq);
+    let codec=null;
+    for(const c of ['avc1.640034','avc1.640033','avc1.640028','avc1.4d0028','avc1.42001f']){
+      try{const s=await VideoEncoder.isConfigSupported({codec:c,width:w,height:h,bitrate,framerate:fps});if(s.supported){codec=c;break}}catch(e){}}
+    if(!codec)throw new Error(`H.264 is not supported at ${w}×${h} — try MP4 scale ×1`);
+    if(needsWarm())await warm(0,fps,btn,'MP4');
+    const muxer=new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),video:{codec:'avc',width:w,height:h},fastStart:'in-memory'});
+    let err=null;const enc=new VideoEncoder({output:(ch,meta)=>muxer.addVideoChunk(ch,meta),error:e=>{err=e}});
+    enc.configure({codec,width:w,height:h,bitrate,framerate:fps});
+    for(let i=0;i<N;i++){
+      if(err)throw err;render(i/N,1/fps);
+      const vf=new VideoFrame(cv,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});
+      enc.encode(vf,{keyFrame:i%fps===0});vf.close();
+      while(enc.encodeQueueSize>6)await new Promise(r=>setTimeout(r,2));
+      if(i%4===0){btn.textContent=`MP4 ${Math.round(i/N*100)}%`;await tick()}
+    }
+    await enc.flush();if(err)throw err;muxer.finalize();
+    dl(new Blob([muxer.target.buffer],{type:'video/mp4'}),`grid-lab-${P.seed}-${w}x${h}.mp4`);
+  }catch(e){alert('MP4 error: '+(e&&e.message||e))}
+  finally{renderK=null;exporting=false;ensureSize();dirty=true;btn.textContent='MP4'}
+}
+
+/* ================= wiring ================= */
+const act=f=>()=>{f();changed();buildUI()};
+const doAll=act(randAll),doTil=act(randTiles),doWarp=act(randWarps),doTxt=act(randText),doLay=act(randLayout),doCol=act(randColors);
+$('#bAll').onclick=doAll;$('#bTil').onclick=doTil;$('#bWarp').onclick=doWarp;$('#bTxt').onclick=doTxt;$('#bLay').onclick=doLay;$('#bCol').onclick=doCol;
+$('#bPng').onclick=exportPNG;$('#bMp4').onclick=exportMP4;
+$('#bWall').onclick=()=>{setWall(!P.wall);changed();buildUI()};
+/* on the wall Random also reshuffles the other banners, the people and the wall */
+{const f=$('#bAll').onclick;$('#bAll').onclick=()=>{f();if(P.wall){makeWallSet();buildUI()}}}
+const setPlay=v=>{playing=v;$('#bPlay').textContent=v?'❚❚':'▶'};
+$('#bPlay').onclick=()=>setPlay(!playing);
+$('#scrub').oninput=e=>{setPlay(false);clock=e.target.value/1000*P.loop;dirty=true};
+window.addEventListener('keydown',e=>{
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key.toLowerCase();
+  if(k==='r'){doAll();if(P.wall){makeWallSet();buildUI()}}else if(k==='g')doTil();else if(k==='w')doWarp();else if(k==='t')doTxt();else if(k==='l')doLay();else if(k==='c')doCol();
+  else if(k===' '){e.preventDefault();setPlay(!playing)}
+  else if(k===']')stepPreset(1);else if(k==='[')stepPreset(-1);
+  else if(k==='v'){setWall(!P.wall);changed();buildUI()}
+});
+setWall(!!P.wall);buildUI();
+const preload=Object.values(READ_FONTS).flatMap(f=>[300,400,500,700,900].map(w=>`${w} 30px ${f}`));
+Promise.all(preload.map(f=>document.fonts.load(f).catch(()=>{}))).then(()=>{fontsTick++;dirty=true});
+document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',()=>{fontsTick++;dirty=true});
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

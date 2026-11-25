@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Шрифтовые паттерны</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <section>
+      <h2>Текст</h2>
+      <textarea id="text" rows="2" spellcheck="false"></textarea>
+      <label class="chk"><input type="checkbox" id="upper"> Верхний регистр</label>
+      <div class="row2">
+        <select id="font"></select>
+        <select id="weight">
+          <option value="100">100</option><option value="200">200</option><option value="300">300</option>
+          <option value="400">400</option><option value="500">500</option><option value="600">600</option>
+          <option value="700">700</option><option value="800">800</option><option value="900">900</option>
+        </select>
+      </div>
+      <div class="btns">
+        <button id="btnFont">Загрузить шрифт…</button>
+        <button id="btnLocal" hidden>Все шрифты системы</button>
+        <input type="file" id="fontFile" accept=".ttf,.otf,.ttc,.woff,.woff2" hidden>
+      </div>
+      <div id="axes"></div>
+    </section>
+
+    <section>
+      <h2>Паттерн</h2>
+      <div id="patterns"></div>
+    </section>
+
+    <section>
+      <h2 id="paramsTitle">Параметры</h2>
+      <div id="params"></div>
+      <div class="btns">
+        <button id="btnRand">Случайно</button>
+        <button id="btnReset">Сбросить</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Формат и цвет</h2>
+      <label class="row"><span>Формат</span><select id="format"></select><i></i></label>
+      <div class="row" id="customSize" hidden>
+        <span>Размер, px</span>
+        <div class="row2"><input type="number" id="cw" min="200" max="8000" step="2"><input type="number" id="chh" min="200" max="8000" step="2"></div><i></i>
+      </div>
+      <div class="colors">
+        <label>Фон<input type="color" id="bg"></label>
+        <label>Буквы<input type="color" id="c0"></label>
+        <label>Акцент<input type="color" id="c1"></label>
+        <label>Третий<input type="color" id="c2"></label>
+      </div>
+      <div id="palettes"></div>
+      <label class="row"><span>Раскраска</span>
+        <select id="colorMode">
+          <option value="mono">Один цвет</option>
+          <option value="first">Первая буква акцентом</option>
+          <option value="cycle">Три цвета по очереди</option>
+          <option value="random">Три цвета случайно</option>
+        </select><i></i></label>
+      <label class="chk"><input type="checkbox" id="outline"> Контур вместо заливки</label>
+      <label class="row"><span>Толщина контура</span><input type="range" id="strokeW" min="0.5" max="12" step="0.5"><output id="strokeWOut"></output></label>
+    </section>
+
+    <section>
+      <h2>Анимация</h2>
+      <div class="play">
+        <button id="play">Пауза</button>
+        <input type="range" id="scrub" min="0" max="1000" value="0">
+      </div>
+      <label class="row"><span>Цикл, сек</span><input type="range" id="loop" min="2" max="20" step="1"><output id="loopOut"></output></label>
+      <div class="row"><span>Зерно</span><div class="row2"><input type="number" id="seed" min="1" max="99999"><button id="dice">Другое</button></div><i></i></div>
+    </section>
+
+    <section>
+      <h2>Экспорт</h2>
+      <div class="row"><span>PNG</span>
+        <div class="row2"><select id="pngScale"><option value="1">×1</option><option value="2" selected>×2</option><option value="4">×4</option></select><button id="btnPng">Сохранить PNG</button></div><i></i></div>
+      <div class="row"><span>Видео</span>
+        <div class="row3">
+          <select id="fps"><option value="30">30 fps</option><option value="60">60 fps</option></select>
+          <select id="vidScale"><option value="1">×1</option><option value="2">×2</option></select>
+          <select id="loops"><option value="1">1 цикл</option><option value="2">2 цикла</option><option value="4">4 цикла</option></select>
+        </div><i></i></div>
+      <div class="btns"><button id="btnVid" class="primary">Сохранить видео</button></div>
+      <progress id="prog" max="1" value="0" hidden></progress>
+      <p id="status"></p>
+    </section>
+  </aside>
+  <main id="stage"><canvas id="cv"></canvas></main>
+</div>
+
+<script src="vendor/mp4-muxer.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/text.js"></script>
+<script src="js/math3d.js"></script>
+<script src="js/patterns/mandala.js"></script>
+<script src="js/patterns/grid.js"></script>
+<script src="js/patterns/snake.js"></script>
+<script src="js/patterns/space.js"></script>
+<script src="js/patterns/spiral.js"></script>
+<script src="js/patterns/stretch.js"></script>
+<script src="js/patterns/form3d.js"></script>
+<script src="js/patterns/ripple.js"></script>
+<script src="js/patterns/orbits.js"></script>
+<script src="js/patterns/flap.js"></script>
+<script src="js/patterns/fall.js"></script>
+<script src="js/patterns/lol.js"></script>
+<script src="js/patterns/flow.js"></script>
+<script src="js/patterns/kaleido.js"></script>
+<script src="js/export.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

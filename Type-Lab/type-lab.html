@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Type Lab — кинетика и постеры для любых шрифтов</title>
+<style>
+:root{--bg:#0d0d0f;--p:#151518;--p2:#1c1c21;--line:#2a2a31;--tx:#ececf0;--mu:#8b8b96;--ac:#d6ff3f;--r:8px}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:13px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;grid-template-columns:250px minmax(0,1fr) 310px;overflow:hidden}
+aside{background:var(--p);overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px}
+aside.l{border-right:1px solid var(--line)}aside.rt{border-left:1px solid var(--line)}
+h1{font-size:15px;margin:0;letter-spacing:.02em;font-weight:650}h1 small{display:block;color:var(--mu);font-weight:400;font-size:11.5px;margin-top:2px}
+h2{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--mu);margin:0 0 7px;font-weight:600}
+button,select,input,textarea{font:inherit;color:inherit}
+.btn{background:var(--p2);border:1px solid var(--line);border-radius:var(--r);padding:7px 10px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:#4a4a55}.btn.pri{background:var(--ac);color:#111;border-color:var(--ac);font-weight:600}
+.btn:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:6px;flex-wrap:wrap}.row>*{flex:1}
+.list{display:flex;flex-direction:column;gap:1px}
+.it{background:none;border:0;text-align:left;padding:6px 8px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.it:hover{background:var(--p2)}.it.on{background:var(--tx);color:#111}
+.it i{font-style:normal;color:var(--mu);font-size:11px}.it.on i{color:#555}
+.it .x{opacity:.5;padding:0 3px}.it .x:hover{opacity:1}
+main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.top{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.top .nm{font-weight:650;font-size:14px}.top .ds{color:var(--mu);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:18px;background:repeating-conic-gradient(#111114 0 25%,#0d0d0f 0 50%) 0 0/24px 24px}
+canvas#cv{max-width:100%;max-height:100%;box-shadow:0 10px 50px #000a}
+.bar{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line)}
+.bar input[type=range]{flex:1}
+label.r{display:grid;grid-template-columns:112px 1fr 40px;align-items:center;gap:8px;margin:5px 0}
+label.r>span{color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+label.r output{text-align:right;font-variant-numeric:tabular-nums;color:var(--mu);font-size:11.5px}
+label.r select,label.r input[type=text]{grid-column:2/4}
+input[type=range]{width:100%;accent-color:var(--ac);height:16px;margin:0}
+select,textarea,input[type=text],input[type=search]{background:var(--p2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
+textarea{resize:vertical;min-height:74px;font-size:14px}
+input[type=color]{width:100%;height:30px;border:1px solid var(--line);border-radius:6px;background:none;padding:2px;cursor:pointer}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.cols3 span{display:block;color:var(--mu);font-size:11px;margin-bottom:3px}
+.pals{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.pal{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);cursor:pointer;padding:0;position:relative;overflow:hidden}
+.pal b{position:absolute;inset:auto 0 0 0;height:50%}.pal u{position:absolute;right:3px;top:3px;width:8px;height:8px;border-radius:50%}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{background:var(--p2);border:1px solid var(--line);border-radius:20px;padding:3px 9px;cursor:pointer;font-size:11.5px;font-family:ui-monospace,Menlo,monospace}
+.chip.on{background:var(--tx);color:#111;border-color:var(--tx)}
+.note{color:var(--mu);font-size:11.5px;margin:4px 0 0}
+details{border-top:1px solid var(--line);padding-top:10px}summary{cursor:pointer;color:var(--mu);font-size:11.5px}
+details ul{margin:8px 0 0;padding-left:16px;color:var(--mu);font-size:11.5px}details li{margin:4px 0}
+dialog{background:var(--p);color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:18px;width:min(460px,92vw)}
+dialog::backdrop{background:#000a}
+dialog h3{margin:0 0 12px;font-size:15px}
+dialog label.c{display:flex;gap:8px;align-items:center;margin:7px 0}
+progress{width:100%;height:8px;accent-color:var(--ac)}
+#lfList{max-height:50vh;overflow:auto;margin-top:10px}
+#drop{position:fixed;inset:0;background:#0d0d0fe6;display:none;align-items:center;justify-content:center;font-size:22px;z-index:9;border:2px dashed var(--ac)}
+</style>
+</head>
+<body>
+<aside class="l">
+  <h1>Type Lab<small>кинетика и постеры для любых шрифтов</small></h1>
+  <section>
+    <h2>Шрифты</h2>
+    <div class="row"><button class="btn pri" id="bUp">Загрузить файл</button><button class="btn" id="bLocal">С компьютера…</button></div>
+    <input type="file" id="fIn" accept=".ttf,.otf,.woff,.woff2,.ttc" multiple hidden>
+    <p class="note">TTF, OTF, WOFF, WOFF2. Можно перетащить в окно. Файлы никуда не отправляются.</p>
+    <div class="list" id="fonts" style="margin-top:8px"></div>
+  </section>
+  <section><h2>Кинетика</h2><div class="list" id="pk"></div></section>
+  <section><h2>Постеры и спесимены</h2><div class="list" id="pp"></div></section>
+</aside>
+<main>
+  <div class="top"><span class="nm" id="pName"></span><span class="ds" id="pDesc"></span>
+    <button class="btn" id="bRand" title="Случайные параметры пресета">Случайно</button>
+    <button class="btn" id="bPng">PNG</button><button class="btn" id="bMp4">MP4</button>
+    <button class="btn pri" id="bAll">Скачать всё (ZIP)</button></div>
+  <div class="stage"><canvas id="cv"></canvas></div>
+  <div class="bar"><button class="btn" id="bPlay" style="width:86px">Пауза</button><input type="range" id="scrub" min="0" max="1" step="0.001" value="0"><span class="note" id="tInfo" style="margin:0;width:120px;text-align:right"></span></div>
+</main>
+<aside class="rt" id="panel"></aside>
+
+<dialog id="dExp"><h3>Скачать всё одним архивом</h3>
+  <label class="c"><input type="checkbox" id="xP" checked> Постеры и спесимены — PNG</label>
+  <label class="c"><input type="checkbox" id="xM" checked> Все анимации — MP4</label>
+  <label class="c"><input type="checkbox" id="xS" checked> Кадр из каждой анимации — PNG</label>
+  <p class="note" id="xNote"></p>
+  <progress id="xProg" value="0" max="1" hidden></progress><p class="note" id="xStat"></p>
+  <div class="row" style="margin-top:12px"><button class="btn" id="xCancel">Закрыть</button><button class="btn pri" id="xGo">Собрать ZIP</button></div>
+</dialog>
+<dialog id="dLocal"><h3>Шрифты, установленные на компьютере</h3>
+  <input type="search" id="lfQ" placeholder="Поиск по названию"><div class="list" id="lfList"></div>
+  <div class="row" style="margin-top:12px"><button class="btn" onclick="dLocal.close()">Закрыть</button></div>
+</dialog>
+<div id="drop">Отпустите, чтобы добавить шрифт</div>
+
+<script>
+'use strict';
+/* ───────── helpers ───────── */
+const $=s=>document.querySelector(s),TAU=Math.PI*2;
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),lerp=(a,b,k)=>a+(b-a)*k,fr=x=>x-Math.floor(x);
+const EASE={
+  expo:k=>k<=0?0:k>=1?1:k<.5?2**(20*k-10)/2:(2-2**(-20*k+10))/2,
+  cubic:k=>k<.5?4*k*k*k:1-(-2*k+2)**3/2,
+  sine:k=>.5-.5*Math.cos(Math.PI*k),
+  back:k=>{const c=1.70158*1.525;return k<.5?((2*k)**2*((c+1)*2*k-c))/2:((2*k-2)**2*((c+1)*(k*2-2)+c)+2)/2},
+  linear:k=>k};
+const EASE_L={expo:'Expo — резко',cubic:'Cubic — мягко',sine:'Sine — плавно',back:'Back — с перелётом',linear:'Linear'};
+const bounceOut=x=>{const n=7.5625,d=2.75;return x<1/d?n*x*x:x<2/d?n*(x-=1.5/d)*x+.75:x<2.5/d?n*(x-=2.25/d)*x+.9375:n*(x-=2.625/d)*x+.984375};
+const FORMATS={poster:['Постер 4:5',1080,1350],story:['Сторис 9:16',1080,1920],square:['Квадрат 1:1',1080,1080],wide:['Видео 16:9',1920,1080],a:['A-формат',1414,2000]};
+const PALS=[['#0b0b0c','#f4f1ea','#ff3b1f'],['#f4f1ea','#0b0b0c','#ff3b1f'],['#ffe500','#0b0b0c','#0b0b0c'],['#1b2bff','#ffffff','#ffe500'],['#ff3b1f','#0b0b0c','#f4f1ea'],['#e9e4d8','#1c3a2b','#ff5a1f'],['#0e2a22','#d9ffcf','#ff7ad1'],['#ff8fd0','#14110f','#ffffff'],['#111111','#d6ff3f','#ffffff']];
+const TXT={lat:'Typography is what language looks like. A typeface earns its place on the page through rhythm, colour and the small decisions hidden in every curve. Set a paragraph, squint, and look at the grey it makes: even, calm, alive. Numbers 0123456789, punctuation — “quotes”, (brackets), & ampersands — all deserve the same care as the letters.',
+cyr:'Шрифт — это то, как выглядит язык. Гарнитура заслуживает место на странице ритмом, цветом набора и мелкими решениями, спрятанными в каждой кривой. Наберите абзац, прищурьтесь и посмотрите на серое пятно: ровное, спокойное, живое. Цифры 0123456789, пунктуация — «кавычки», (скобки), № и & — требуют того же внимания, что и буквы.'};
+
+/* ───────── state ───────── */
+const S=Object.assign({text:'TYPE\nIN\nMOTION',sub:'Specimen 2026 — regular, bold, italic',case:'asis',track:0,bg:PALS[0][0],fg:PALS[0][1],ac:PALS[0][2],format:'poster',dur:4,fps:30,loops:2,ease:'expo',pngScale:2,preset:'wave',params:{},playing:true,font:-1},
+  (()=>{try{return JSON.parse(localStorage.getItem('typelab')||'{}')}catch{return{}}})());
+S.font=-1;
+let saveT;const persist=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem('typelab',JSON.stringify(S))}catch{}},300)};
+let dirty=true,t0=performance.now(),curT=0;
+
+/* ───────── fonts ───────── */
+const fonts=[
+  {id:-1,name:'System Sans',css:'"Helvetica Neue",Helvetica,Arial,sans-serif',sys:1,feat:{},axes:{}},
+  {id:-2,name:'System Serif',css:'Georgia,"Times New Roman",serif',sys:1,feat:{},axes:{}},
+  {id:-3,name:'System Mono',css:'ui-monospace,Menlo,Consolas,monospace',sys:1,feat:{},axes:{}}];
+let fid=0;
+const curFont=()=>fonts.find(f=>f.id===S.font)||fonts[0];
+const DEF_ON=new Set(['liga','clig','calt','kern','rlig','ccmp','locl','mark','mkmk','rvrn','cont']);
+const HIDE=new Set(['ccmp','locl','mark','mkmk','rvrn','rlig','aalt','curs','dist','abvm','blwm','abvs','blws','akhn','rphf','pref','pres','psts','haln','nukt','half','init','medi','fina','isol','vert','vrt2','mset','cpsp']);
+const FNAME={liga:'Лигатуры',dlig:'Декоративные лигатуры',hlig:'Исторические лигатуры',calt:'Контекстные альтернативы',kern:'Кернинг',smcp:'Капитель',c2sc:'Капитель из прописных',onum:'Минускульные цифры',lnum:'Маюскульные цифры',tnum:'Табличные цифры',pnum:'Пропорциональные цифры',frac:'Дроби',sups:'Верхние индексы',subs:'Нижние индексы',sinf:'Научные индексы',ordn:'Порядковые',zero:'Перечёркнутый ноль',case:'Формы для прописных',salt:'Стилистические альтернативы',swsh:'Росчерки',titl:'Титульные формы',hist:'Исторические формы',numr:'Числители',dnom:'Знаменатели',ornm:'Орнаменты'};
+const FSAMPLE={smcp:'Small Caps Hamburg',c2sc:'CAPS TO SMALL',onum:'0123456789',lnum:'0123456789',tnum:'1110 9876',pnum:'1110 9876',frac:'1/2 3/4 5/8',sups:'x2 H2O 1st',subs:'H2O CO2',sinf:'H2O CO2',ordn:'1a 2o No',zero:'0O 1000',case:'(H-H) [A:B]',liga:'fi fl ffi office',dlig:'ct st Th fb',hlig:'ct st',numr:'12345',dnom:'12345',kern:'AVATAR To Ty'};
+const fname=t=>FNAME[t]||(/^ss\d\d$/.test(t)?'Стилистический набор '+ +t.slice(2):/^cv\d\d$/.test(t)?'Вариант знака '+ +t.slice(2):t);
+
+async function parseFont(buf){
+  const dv=new DataView(buf),tag=(d,o)=>String.fromCharCode(d.getUint8(o),d.getUint8(o+1),d.getUint8(o+2),d.getUint8(o+3));
+  const WANT=new Set(['name','GSUB','GPOS','fvar','cmap']),T={},sig=tag(dv,0);
+  if(sig==='wOF2')return null;
+  if(sig==='wOFF'){const n=dv.getUint16(12);
+    for(let i=0;i<n;i++){const o=44+i*20,t=tag(dv,o);if(!WANT.has(t))continue;const off=dv.getUint32(o+4),cl=dv.getUint32(o+8),ol=dv.getUint32(o+12);
+      let b=new Uint8Array(buf,off,cl);
+      if(cl<ol)b=new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer());
+      T[t]=new DataView(b.buffer,b.byteOffset,b.byteLength)}
+  }else{const base=sig==='ttcf'?dv.getUint32(12):0,n=dv.getUint16(base+4);
+    for(let i=0;i<n;i++){const o=base+12+i*16,t=tag(dv,o);if(WANT.has(t))T[t]=new DataView(buf,dv.getUint32(o+8),dv.getUint32(o+12))}}
+  const info={name:'',feats:[],axes:[],wght:null,chars:[]};
+  if(T.name){const d=T.name,n=d.getUint16(2),so=d.getUint16(4),got={};
+    for(let i=0;i<n;i++){const o=6+i*12,pl=d.getUint16(o),id=d.getUint16(o+6),len=d.getUint16(o+8),off=so+d.getUint16(o+10);
+      if(![1,4,16].includes(id)||(got[id]&&pl!==3))continue;let s='';
+      if(pl===3||pl===0)for(let j=0;j+1<len;j+=2)s+=String.fromCharCode(d.getUint16(off+j));else for(let j=0;j<len;j++)s+=String.fromCharCode(d.getUint8(off+j));
+      if(s)got[id]=s}
+    info.name=got[4]||got[16]||got[1]||''}
+  const fs=new Set();
+  for(const k of['GSUB','GPOS'])if(T[k]){const d=T[k],fl=d.getUint16(6);if(!fl)continue;const n=d.getUint16(fl);for(let i=0;i<n;i++)fs.add(tag(d,fl+2+i*6))}
+  info.feats=[...fs].sort();
+  if(T.fvar){const d=T.fvar,ao=d.getUint16(4),n=d.getUint16(8),sz=d.getUint16(10);
+    for(let i=0;i<n;i++){const o=ao+i*sz,ax={tag:tag(d,o),min:d.getInt32(o+4)/65536,def:d.getInt32(o+8)/65536,max:d.getInt32(o+12)/65536};
+      if(ax.tag==='wght')info.wght=ax;else info.axes.push(ax)}}
+  if(T.cmap){const d=T.cmap,n=d.getUint16(2);let best=null,bs=-1;
+    for(let i=0;i<n;i++){const o=4+i*8,pl=d.getUint16(o),en=d.getUint16(o+2),so=d.getUint32(o+4),f=d.getUint16(so);
+      const sc=f===12?2:f===4&&(pl===3&&en===1||pl===0)?1:-1;if(sc>bs){bs=sc;best={so,f}}}
+    const ok=c=>c>0x20&&!(c>=0x7f&&c<=0xa0)&&c!==0xad&&!(c>=0x300&&c<=0x36f)&&!(c>=0x2000&&c<=0x200f)&&!(c>=0x2028&&c<=0x202f)&&!(c>=0xfe00&&c<=0xfe0f)&&c!==0xfeff&&c<0xffff0;
+    const add=(s,e)=>{for(let c=s;c<=e&&info.chars.length<4000;c++)if(ok(c))info.chars.push(String.fromCodePoint(c))};
+    if(best&&best.f===4){const o=best.so,sx=d.getUint16(o+6);for(let i=0;i<sx;i+=2){const e=d.getUint16(o+14+i),s=d.getUint16(o+16+sx+i);if(s!==0xffff)add(s,Math.min(e,0xfffe))}}
+    else if(best&&best.f===12){const o=best.so,g=d.getUint32(o+12);for(let i=0;i<g;i++)add(d.getUint32(o+16+i*12),d.getUint32(o+20+i*12))}}
+  return info}
+
+function faceDesc(f,extra){const d={};if(f.info?.wght)d.weight=`${Math.max(1,f.info.wght.min)} ${Math.min(1000,f.info.wght.max)}`;
+  const fs=Object.entries(Object.assign({},f.feat,extra)).map(([t,on])=>`"${t}" ${on?1:0}`).join(', ');if(fs)d.featureSettings=fs;
+  if(f.varCss)d.variationSettings=f.varCss;return d}
+async function rebuildFace(f){
+  f.varCss=(f.info?.axes||[]).map(a=>`"${a.tag}" ${f.axes[a.tag]??a.def}`).join(', ');
+  const name=`${f.base}_${++f.ver}`,my=f.ver,ff=new FontFace(name,f.buf,faceDesc(f));
+  await ff.load();if(my!==f.ver)return;document.fonts.add(ff);if(f.face)document.fonts.delete(f.face);
+  f.face=ff;f.css=`"${name}",sans-serif`;dirty=true}
+let rbT;const rebuildSoon=f=>{clearTimeout(rbT);rbT=setTimeout(()=>rebuildFace(f),50)};
+async function addFont(buf,hint){
+  let info=null;try{info=await parseFont(buf)}catch(e){console.warn('parse',e)}
+  const f={id:++fid,name:info?.name||hint.replace(/\.[^.]+$/,''),buf,info,base:'TL'+fid,ver:0,feat:{},axes:{},wght:info?.wght?clamp(400,info.wght.min,info.wght.max):400};
+  if(info?.wght)f.wght=info.wght.def;
+  try{await rebuildFace(f)}catch(e){alert('Не удалось прочитать шрифт: '+hint);return}
+  fonts.push(f);S.font=f.id;ui()}
+const FEATC=new Map(),PENDING=new Set();
+function featFace(f,tag,on){const key=`${f.id}|${f.varCss}|${tag}|${on}`,c=FEATC.get(key);if(c)return c.ok?c.css:null;
+  const name=`${f.base}_x${FEATC.size}`,ent={ok:false,css:`"${name}",sans-serif`};FEATC.set(key,ent);
+  const p=new FontFace(name,f.buf,faceDesc(f,{[tag]:on})).load().then(ff=>{document.fonts.add(ff);ent.ok=true;dirty=true}).catch(()=>{}).finally(()=>PENDING.delete(p));
+  PENDING.add(p);return null}
+
+/* ───────── drawing kit ───────── */
+const mctx=document.createElement('canvas').getContext('2d'),MC=new Map();
+function metr(E,str,w,fam){w=Math.round(w??E.wb);fam=fam||E.fam;const key=fam+'|'+w+'|'+str;let m=MC.get(key);
+  if(!m){mctx.font=`${w} 200px ${fam}`;const q=mctx.measureText(str);m={asc:(q.actualBoundingBoxAscent||140)/200,desc:Math.max(0,q.actualBoundingBoxDescent||0)/200};if(MC.size>4000)MC.clear();MC.set(key,m)}
+  return m}
+let offCv=null;
+function mkEnv(c,W,H,t,k,pr){
+  const f=curFont(),v=f.info?.wght,cs=s=>S.case==='upper'?s.toUpperCase():S.case==='lower'?s.toLowerCase():s;
+  let lines=S.text.split('\n').map(s=>s.trim()).filter(Boolean).map(cs);if(!lines.length)lines=['TYPE'];
+  const E={c,W,H,t,k,P:S.params[pr.id],f,fam:f.css,fg:S.fg,bg:S.bg,ac:S.ac,lines,line:lines.join(' '),sub:S.sub,tr:S.track,wb:v?f.wght:400,isVar:!!v,dur:S.dur,ease:EASE[S.ease]||EASE.expo,
+    sw(x){return this.ease(1-Math.abs(2*fr(x)-1))},ss(x){return this.sw(x)*2-1},
+    font(px,w,fam){this.c.font=`${Math.round(w??this.wb)} ${Math.max(.1,px).toFixed(2)}px ${fam||this.fam}`;try{this.c.letterSpacing=(this.tr*px).toFixed(2)+'px'}catch{}},
+    wt(q,mix=1){return v?Math.round(lerp(this.wb,lerp(v.min,v.max,clamp(q)),mix)/5)*5:this.wb},
+    mw(s){return this.c.measureText(s).width},
+    fit(s,target,w){this.font(100,w);return 100*target/Math.max(1,this.mw(s)-this.tr*100)},
+    off(){if(!offCv){offCv=document.createElement('canvas');offCv.style.cssText='position:fixed;left:-99999px;top:0;width:10px;height:10px';document.body.appendChild(offCv)}offCv.style.fontVariationSettings=this.f.varCss||'normal';if(offCv.width!==W*k||offCv.height!==H*k){offCv.width=W*k;offCv.height=H*k}
+      const oc=offCv.getContext('2d');oc.setTransform(k,0,0,k,0,0);oc.clearRect(0,0,W,H);oc.fillStyle=this.fg;oc.strokeStyle=this.fg;oc.textBaseline='alphabetic';oc.lineJoin='round';
+      const E2=Object.assign({},this);E2.c=oc;E2.cv=offCv;return E2}};
+  const m=metr(E,E.line);E.asc=m.asc;E.desc=m.desc;return E}
+function render(c,W,H,t,k,pr){
+  const vs=curFont().varCss||'normal';if(c.canvas.style.fontVariationSettings!==vs){c.canvas.style.fontVariationSettings=vs;c.font='10px serif'}
+  c.setTransform(k,0,0,k,0,0);c.globalAlpha=1;c.fillStyle=S.bg;c.fillRect(0,0,W,H);
+  const E=mkEnv(c,W,H,t,k,pr);c.fillStyle=S.fg;c.strokeStyle=S.fg;c.lineJoin='round';c.textBaseline='alphabetic';c.textAlign='left';
+  c.save();try{pr.draw(E)}catch(e){console.error(pr.id,e)}c.restore()}
+function glyphRow(E,str,cx,y,size,fn){const c=E.c,ch=Array.from(str),n=ch.length,it=[];let x=0;
+  for(let i=0;i<n;i++){const o=fn(i,n,n>1?i/(n-1):0)||{},s=size*(o.s??1);E.font(s,o.w);const w=E.mw(ch[i]);it.push({o,s,w,x});x+=w}
+  const x0=cx-x/2;c.textAlign='center';
+  for(let i=0;i<n;i++){if(ch[i]===' ')continue;const {o,s,w,x:gx}=it[i];E.font(s,o.w);c.save();c.translate(x0+gx+w/2+(o.dx||0),y+(o.dy||0));
+    if(o.rot)c.rotate(o.rot);if(o.kx!=null||o.ky!=null)c.scale(Math.max(.001,o.kx??1),Math.max(.001,o.ky??1));if(o.a!=null)c.globalAlpha=clamp(o.a);if(o.col)c.fillStyle=o.col;
+    c.fillText(ch[i],0,0);c.restore()}
+  c.textAlign='left';return x}
+function block(E,lines,maxW,maxH,lead=1.1){let size=Infinity;for(const l of lines)size=Math.min(size,E.fit(l,maxW));
+  const a=Math.max(...lines.map(l=>metr(E,l).asc)),d=Math.max(...lines.map(l=>metr(E,l).desc));
+  let pitch=size*(a+d)*lead,th=pitch*(lines.length-1)+size*(a+d);if(th>maxH){const q=maxH/th;size*=q;pitch*=q;th=maxH}
+  return{size,pitch,th,a,d,draw(cx,cy,mode='fill',s=1){const c=E.c;c.save();c.translate(cx,cy);c.scale(s,s);E.font(size);c.textAlign='center';const ox=E.tr*size/2;
+    lines.forEach((l,i)=>{const y=-th/2+i*pitch+size*a;if(mode==='both'){c.save();c.fillStyle=E.bg;c.fillText(l,ox,y);c.restore()}
+      if(mode==='fill')c.fillText(l,ox,y);else c.strokeText(l,ox,y)});c.restore();c.textAlign='left'}}}
+function stretchRows(E,hs,strs,m,gap,colFn){const{c,W,H}=E,sum=hs.reduce((a,b)=>a+b,0),avail=H-2*m-gap*(hs.length-1);let y=m;
+  hs.forEach((hv,r)=>{const h=avail*hv/sum,str=strs[r%strs.length];E.font(100);const mw=Math.max(1,E.mw(str)-E.tr*100),a=metr(E,str).asc;
+    c.save();c.translate(m,y+h);c.scale((W-2*m)/mw,h/(100*a));if(colFn)c.fillStyle=colFn(r);c.fillText(str,0,0);c.restore();y+=h+gap})}
+function wrap(E,str,x,y,maxW,size,lh,maxY,w){const c=E.c;E.font(size,w);const words=str.split(/\s+/);let line='';
+  for(const wd of words){const tst=line?line+' '+wd:wd;if(E.mw(tst)>maxW&&line){if(y>maxY)return y;c.fillText(line,x,y);y+=size*lh;line=wd}else line=tst}
+  if(line&&y<=maxY){c.fillText(line,x,y);y+=size*lh}return y}
+function unitRow(E,size,sep=' '){E.font(size);const ch=Array.from(E.line+sep),ws=ch.map(q=>E.mw(q));return{ch,ws,uw:ws.reduce((a,b)=>a+b,0)}}
+function timeline(E,u){const P=E.P,A=(1-P.hold)/2,d=A*(1-P.stag)+1e-6;return{pin:clamp((E.t-u*P.stag*A)/d),pout:clamp((E.t-(1-A)-u*P.stag*A)/d)}}
+
+/* ───────── presets ───────── */
+const PRESETS=[];
+const R=(k,l,min,max,step,d)=>({k,l,min,max,step,d}),B=(k,l,d)=>({k,l,b:1,d}),O=(k,l,o,d)=>({k,l,o,d});
+const K=(id,name,desc,params,draw)=>PRESETS.push({id,name,desc,params,draw,g:'k'});
+const Z=(id,name,desc,params,draw)=>PRESETS.push({id,name,desc,params,draw,g:'p'});
+
+K('wave','Wave','Буквы едут по синусоиде; у вариативных шрифтов волной меняется и вес.',
+[R('rows','Ряды',1,14,1,6),R('amp','Амплитуда',0,1,.01,.4),R('freq','Частота',.25,3,.25,1),R('shift','Сдвиг рядов',0,.5,.01,.12),R('wmix','Волна веса',0,1,.01,1)],E=>{
+  const{W,H,P}=E,rh=H*.92/P.rows,size=Math.min(E.fit(E.line,W*.86),rh*.62/E.asc);
+  for(let r=0;r<P.rows;r++){const y=H*.04+rh*(r+.5)+size*E.asc/2;
+    glyphRow(E,E.line,W/2,y,size,(i,n,u)=>{const ph=E.t+u*P.freq+r*P.shift;return{dy:E.ss(ph)*P.amp*rh*.3,w:E.wt(E.sw(ph),P.wmix)}})}});
+
+K('marquee','Marquee','Бегущие строки навстречу друг другу. Классика афиш и сторис.',
+[R('rows','Ряды',2,18,1,7),R('speed','Скорость',1,4,1,1),B('vary','Разная скорость',true),B('outline','Контур через ряд',true),R('acc','Акцентный ряд',0,18,1,4),R('skew','Наклон',-.6,.6,.01,0)],E=>{
+  const{c,W,H,P}=E,rh=H/P.rows,size=rh*.74/E.asc,{uw}=unitRow(E,size,'  ');c.lineWidth=Math.max(1.5,size*.018);
+  for(let r=0;r<P.rows;r++){const dir=r%2?-1:1,sp=P.speed+(P.vary?r%3:0),off=fr(E.t*sp)*uw*dir,yb=rh*r+(rh+size*E.asc)/2;
+    c.save();c.translate(0,yb);c.transform(1,0,-P.skew,1,0,0);c.fillStyle=r===P.acc-1?E.ac:E.fg;
+    for(let x=((off%uw)+uw)%uw-uw*2;x<W+uw;x+=uw)(P.outline&&r%2&&r!==P.acc-1)?c.strokeText(E.line,x,0):c.fillText(E.line,x,0);
+    c.restore()}});
+
+K('echo','Echo','Шлейф контурных копий тянется за словом по орбите.',
+[R('n','Копии',2,40,1,16),R('rad','Радиус',0,.3,.005,.1),R('lag','Запаздывание',0,1,.01,.45),R('grow','Рост копий',0,.6,.01,0),O('path','Траектория',['круг','восьмёрка','вертикаль'],'круг'),B('fill','Перекрытие',true)],E=>{
+  const{c,W,H,P}=E,b=block(E,E.lines,W*.7,H*.55);
+  for(let k=P.n-1;k>=0;k--){const u=k/Math.max(1,P.n-1),ph=TAU*(E.t-u*P.lag),s=1+u*P.grow;
+    const dx=P.path==='вертикаль'?0:Math.cos(ph)*P.rad*W,dy=Math.sin(P.path==='восьмёрка'?ph*2:ph)*P.rad*W;
+    c.lineWidth=Math.max(1.5,b.size*.014)/s;if(k===0){c.fillStyle=E.fg;b.draw(W/2+dx,H/2+dy,'fill',s)}else b.draw(W/2+dx,H/2+dy,P.fill?'both':'stroke',s)}});
+
+K('stretch','Stretch','Строки растягиваются и сжимаются, вместе всегда заполняя лист.',
+[R('rows','Ряды',2,14,1,6),R('amp','Сила',0,.95,.01,.8),R('freq','Волны',.5,3,.5,1),B('alt','Акцент через ряд',false)],E=>{
+  const{W,H,P}=E,hs=[];for(let r=0;r<P.rows;r++)hs.push(Math.max(.06,1+P.amp*E.ss(E.t+r/P.rows*P.freq)));
+  stretchRows(E,hs,E.lines,W*.05,H*.012,r=>P.alt&&r%2?E.ac:E.fg)});
+
+K('cylinder','Cylinder','Текст намотан на вращающиеся барабаны, видна обратная сторона.',
+[R('rows','Ряды',1,12,1,6),R('rad','Радиус',.15,.7,.01,.4),R('speed','Скорость',1,4,1,1),B('alt','Встречное вращение',true),R('back','Обратная сторона',0,1,.01,.22)],E=>{
+  const{c,W,H,P}=E,rh=H*.92/P.rows,size0=rh*.7/E.asc,Rr=W*P.rad,circ=TAU*Rr;let u=unitRow(E,size0);
+  const n=Math.max(1,Math.round(circ/u.uw)),size=size0*circ/(n*u.uw);u=unitRow(E,size);const f=circ/(n*u.uw);c.textAlign='center';
+  for(let r=0;r<P.rows;r++){const dir=P.alt&&r%2?-1:1,rot=E.t*P.speed*TAU/n*dir+r*.4,y=H*.04+rh*r+(rh+size*E.asc)/2,g=[];
+    for(let q=0;q<n;q++){let x=q*u.uw;for(let i=0;i<u.ch.length;i++){g.push([u.ch[i],(x+u.ws[i]/2)*f/Rr+rot]);x+=u.ws[i]}}
+    for(const pass of[0,1])for(const[ch,a]of g){const cs=Math.cos(a);if(ch===' '||(cs>0)!==!!pass||Math.abs(cs)<.03)continue;
+      c.save();c.globalAlpha=pass?1:P.back;c.translate(W/2+Rr*Math.sin(a),y);c.scale(cs,1);c.fillText(ch,0,0);c.restore()}}});
+
+K('rings','Rings','Концентрические кольца текста вращаются в разные стороны.',
+[R('n','Кольца',1,10,1,5),R('out','Охват',.3,1,.01,.52),R('inner','Центр',.05,.6,.01,.16),R('speed','Скорость',1,3,1,1),B('alt','Встречное',true),B('dot','Точка в центре',true)],E=>{
+  const{c,W,H,P}=E,Rm=W*P.out,r0=Rm*P.inner,band=(Rm-r0)/P.n,size=band*.7/E.asc,u=unitRow(E,size,' · ');c.textAlign='center';
+  for(let i=0;i<P.n;i++){const rb=r0+band*i+band*.15,circ=TAU*rb,reps=Math.max(1,Math.round(circ/u.uw)),f=circ/(reps*u.uw),rot=E.t*P.speed*TAU/reps*(P.alt&&i%2?-1:1);
+    for(let q=0;q<reps;q++){let x=q*u.uw;for(let j=0;j<u.ch.length;j++){const a=(x+u.ws[j]/2)*f/rb+rot;x+=u.ws[j];if(u.ch[j]===' ')continue;
+      c.save();c.translate(W/2,H/2);c.rotate(a);c.fillStyle=u.ch[j]==='·'?E.ac:E.fg;c.fillText(u.ch[j],0,-rb);c.restore()}}}
+  if(P.dot){c.fillStyle=E.ac;c.beginPath();c.arc(W/2,H/2,r0*.55,0,TAU);c.fill()}});
+
+K('slices','Slices','Надпись нарезана на полосы, которые волной разъезжаются.',
+[R('n','Полосы',3,140,1,30),R('amp','Сдвиг',0,.6,.01,.16),R('freq','Волны',.5,4,.5,1),O('dir','Нарезка',['горизонтальная','вертикальная'],'горизонтальная')],E=>{
+  const{c,W,H,P,k}=E,o=E.off();block(o,o.lines,W*.84,H*.8).draw(W/2,H/2);const hz=P.dir==='горизонтальная',L=hz?H:W;
+  for(let i=0;i<P.n;i++){const a=Math.floor(i*L/P.n),bq=Math.floor((i+1)*L/P.n)-a,d=E.ss(E.t+i/P.n*P.freq)*P.amp*(hz?W:H);
+    for(const wq of[-1,0,1])hz?c.drawImage(o.cv,0,a*k,W*k,bq*k,d+wq*W,a,W,bq):c.drawImage(o.cv,a*k,0,bq*k,H*k,a,d+wq*H,bq,H)}});
+
+K('flag','Flag','Надпись колышется, как ткань: колонки смещаются и тянутся по волне.',
+[R('amp','Амплитуда',0,.3,.005,.07),R('freq','Волны',.5,4,.25,1.5),R('str','Растяжение',0,1,.01,.45),R('n','Детализация',40,400,10,220)],E=>{
+  const{c,W,H,P,k}=E,o=E.off();block(o,o.lines,W*.84,H*.62).draw(W/2,H/2);
+  for(let i=0;i<P.n;i++){const a=Math.floor(i*W/P.n),bq=Math.floor((i+1)*W/P.n)-a,ph=TAU*(E.t-a/W*P.freq),sc=1+P.str*.5*Math.cos(ph);
+    c.drawImage(o.cv,a*k,0,bq*k,H*k,a,H/2-H*sc/2+Math.sin(ph)*P.amp*H,bq+.6,H*sc)}});
+
+K('reveal','Reveal','Вход — пауза — выход. Буквы появляются каскадом, держатся для чтения и уходят.',
+[O('mode','Тип',['подъём','проявление','масштаб','поворот'],'подъём'),R('stag','Каскад',0,.8,.01,.5),R('hold','Пауза',.1,.8,.01,.4)],E=>{
+  const{c,W,H,P}=E,b=block(E,E.lines,W*.84,H*.8,1.16),N=E.lines.join('').length;let g=0;
+  E.lines.forEach((l,i)=>{const yb=H/2-b.th/2+i*b.pitch+b.size*b.a,rise=b.size*(b.a+b.d)*1.12,g0=g;g+=l.length;
+    c.save();if(P.mode==='подъём'){c.beginPath();c.rect(0,yb-b.size*b.a*1.04,W,b.size*(b.a*1.04+b.d)+2);c.clip()}
+    glyphRow(E,l,W/2,yb,b.size,j=>{const{pin,pout}=timeline(E,(g0+j)/Math.max(1,N-1)),a=E.ease(pin),z=E.ease(pout),v=a*(1-z);
+      return P.mode==='подъём'?{dy:(1-a)*rise-z*rise}:P.mode==='проявление'?{a:v,dy:(1-a)*b.size*.12-z*b.size*.12}:P.mode==='масштаб'?{kx:v,ky:v,a:v*3}:{rot:(1-a)*-1.4+z*1.4,a:v}});
+    c.restore()})});
+
+K('tunnel','Tunnel','Бесконечный зум: копии слова вылетают из центра.',
+[R('n','Копии',3,30,1,9),R('ratio','Шаг',1.1,2.2,.01,1.45),B('fill','Перекрытие',true),O('dir','Движение',['наружу','внутрь'],'наружу')],E=>{
+  const{c,W,H,P}=E,b=block(E,E.lines,W*.34,H*.3),tt=P.dir==='наружу'?E.t:1-E.t;
+  for(let k=P.n-1;k>=0;k--){const s=P.ratio**(k+tt-P.n*.3);c.globalAlpha=clamp(Math.min(k+tt,P.n-1-k+1-tt));c.lineWidth=Math.max(1.5,W*.0022)/s;
+    b.draw(W/2,H/2,P.fill?'both':'stroke',s)}c.globalAlpha=1});
+
+K('pulse','Pulse','По слову бежит волна масштаба — буквы вырастают и опадают.',
+[R('rows','Ряды',1,10,1,4),R('amp','Размах',0,2,.01,.9),R('freq','Частота',.25,3,.25,1),R('shift','Сдвиг рядов',0,.5,.01,.2),R('wmix','Волна веса',0,1,.01,1),O('al','Привязка',['базовая линия','центр'],'базовая линия')],E=>{
+  const{W,H,P}=E,rh=H*.92/P.rows,size=Math.min(E.fit(E.line,W*.86)/(1+P.amp*.5),rh*.8/(E.asc*(1+P.amp))),ctr=P.al==='центр';
+  for(let r=0;r<P.rows;r++)glyphRow(E,E.line,W/2,H*.04+rh*(ctr?r+.5:r+.9),size,(i,n,u)=>{const q=E.sw(E.t+u*P.freq+r*P.shift),s=1+P.amp*q;
+    return{s,w:E.wt(q,P.wmix),dy:ctr?s*size*E.asc/2:0}})});
+
+K('spiral','Spiral','Текст течёт по логарифмической спирали из центра.',
+[R('turn','Шаг витка',.2,1.5,.01,.6),R('speed','Скорость',1,4,1,1),O('dir','Движение',['наружу','внутрь'],'наружу')],E=>{
+  const{c,W,H,P}=E,q=1+P.turn,g=Math.log(q)/TAU,cc=(1-1/q)*.72/E.asc,u=unitRow(E,100),ue=u.uw/100,Rmax=Math.hypot(W,H)*.6;
+  const emin=Math.log(3)/g/cc,emax=Math.log(Rmax)/g/cc,sh=(P.dir==='наружу'?E.t:1-E.t)*P.speed*ue;c.textAlign='center';
+  for(let j=Math.floor(emin/ue)-P.speed-1;j<=Math.ceil(emax/ue);j++){let x=j*ue+sh;
+    for(let i=0;i<u.ch.length;i++){const e=x+u.ws[i]/200;x+=u.ws[i]/100;if(u.ch[i]===' ')continue;const th=cc*e,r=Math.exp(g*th);if(r<3||r>Rmax)continue;
+      E.font(r*cc);c.save();c.translate(W/2+r*Math.cos(th),H/2+r*Math.sin(th));c.rotate(th+Math.PI/2);c.fillText(u.ch[i],0,0);c.restore()}}});
+
+K('bounce','Bounce','Буквы падают, пружинят и сплющиваются при ударе — squash & stretch.',
+[R('stag','Каскад',0,.8,.01,.55),R('hold','Пауза',.1,.7,.01,.3),R('sq','Сжатие',0,.6,.01,.3)],E=>{
+  const{W,H,P}=E,b=block(E,E.lines,W*.84,H*.7,1.2),N=E.lines.join('').length;let g=0;
+  E.lines.forEach((l,i)=>{const yb=H/2-b.th/2+i*b.pitch+b.size*b.a,g0=g;g+=l.length;
+    glyphRow(E,l,W/2,yb,b.size,j=>{const{pin,pout}=timeline(E,(g0+j)/Math.max(1,N-1)),imp=Math.exp(-(((pin-.3636)/.05)**2))+.5*Math.exp(-(((pin-.727)/.04)**2));
+      return{dy:-(1-bounceOut(pin))*(yb+b.size)+pout**2.6*(H-yb+b.size*1.5),ky:1-P.sq*imp,kx:1+P.sq*imp*.6}})})});
+
+K('flap','Split-flap','Знаки перебираются, как на табло вылетов, и собираются в слово.',
+[R('stag','Каскад',0,1,.01,.7),R('rate','Скорость смены',4,40,1,14),R('hold','Пауза',.1,.8,.01,.35),B('grid','Ячейки',true)],E=>{
+  const{c,W,H,P}=E,cols=Math.max(...E.lines.map(l=>Array.from(l).length)),rows=E.lines.length,cw=W*.88/cols,chh=Math.min(H*.84/rows,cw*1.45),size=Math.min(cw*1.15,chh*.66/E.asc);
+  const pool=[...new Set(Array.from(E.line.replace(/\s/g,'')+'0123456789&#/+%'))],A=(1-P.hold)/2,step=Math.floor(E.t*E.dur*P.rate),N=cols*rows,y0=H/2-chh*rows/2;
+  E.font(size);c.textAlign='center';c.lineWidth=1.5;
+  E.lines.forEach((l,r)=>{const ch=Array.from(l),pad=Math.floor((cols-ch.length)/2);
+    for(let i=0;i<cols;i++){const g=r*cols+i,u=g/Math.max(1,N-1),tg=ch[i-pad],x=W*.06+cw*(i+.5),y=y0+chh*r;
+      if(P.grid){c.globalAlpha=.16;c.strokeRect(x-cw/2+3,y+3,cw-6,chh-6);c.globalAlpha=1}
+      if(!tg||tg===' ')continue;const scr=E.t<A*(1-P.stag+P.stag*u)||E.t>1-A*(1-P.stag*u);
+      c.fillStyle=scr?E.ac:E.fg;c.fillText(scr?pool[((Math.imul(g+1,2654435761)^Math.imul(step+7,40503))>>>0)%pool.length]:tg,x,y+(chh+size*E.asc)/2)}})});
+
+K('snake','Snake','Строки текут по волнистым траекториям, буквы поворачиваются по касательной.',
+[R('rows','Ряды',1,10,1,5),R('amp','Амплитуда',0,.6,.01,.3),R('wl','Длина волны',.3,2,.05,1),R('speed','Скорость',1,4,1,1),R('shift','Сдвиг рядов',0,.5,.01,.25)],E=>{
+  const{c,W,H,P}=E,rh=H/P.rows,size=rh*.46/E.asc,u=unitRow(E,size,'  '),A=P.amp*rh,lam=W*P.wl,dx=3,M=size*2,nx=Math.ceil((W+2*M)/dx);c.textAlign='center';
+  for(let r=0;r<P.rows;r++){const yc=rh*(r+.5)+size*E.asc/2,ph=r*P.shift*TAU,sl=x=>A*TAU/lam*Math.cos(TAU*x/lam+ph),L=[0];
+    for(let i=0;i<nx;i++)L.push(L[i]+dx*Math.hypot(1,sl(-M+(i+.5)*dx)));
+    let s=-u.uw+fr(E.t*P.speed)*u.uw*(r%2?-1:1)-(r%2?0:0),p=0,gi=0;if(r%2)s-=0;
+    for(;s<L[nx];gi++){const w=u.ws[gi%u.ch.length],sc=s+w/2;s+=w;if(sc<0||u.ch[gi%u.ch.length]===' ')continue;
+      while(p<nx-1&&L[p+1]<sc)p++;const x=-M+(p+(sc-L[p])/(L[p+1]-L[p]))*dx;
+      c.save();c.translate(x,yc+A*Math.sin(TAU*x/lam+ph));c.rotate(Math.atan(sl(x)));c.fillText(u.ch[gi%u.ch.length],0,0);c.restore()}}});
+
+K('breath','Breath','Трекинг дышит: строки сжимаются до касания и раздвигаются на всю ширину.',
+[R('min','Мин. трекинг',-.12,.3,.005,-.05),R('max','Макс. трекинг',0,1.5,.01,.55),R('shift','Сдвиг строк',0,.5,.01,.15),R('wmix','Волна веса',0,1,.01,1)],E=>{
+  const{c,W,H,P}=E,tr0=E.tr;E.tr=0;let size=Infinity;
+  for(const l of E.lines){E.font(100);size=Math.min(size,100*W*.9/(E.mw(l)+Array.from(l).length*P.max*100))}
+  const a=Math.max(...E.lines.map(l=>metr(E,l).asc)),pitch=Math.min(size*a*1.5,H*.86/E.lines.length);size=Math.min(size,pitch/a/1.25);c.textAlign='center';
+  E.lines.forEach((l,i)=>{const q=E.sw(E.t+i*P.shift);E.tr=lerp(P.min,P.max,q);E.font(size,E.wt(1-q,P.wmix));
+    c.fillText(l,W/2+E.tr*size/2,H/2-pitch*E.lines.length/2+pitch*i+(pitch+size*a)/2)});E.tr=tr0});
+
+K('shear','Shear','Ряды наклоняются волной — эффект жалюзи.',
+[R('rows','Ряды',2,18,1,8),R('amp','Наклон',0,1.4,.01,.6),R('freq','Волны',.25,3,.25,1),B('alt','Контур через ряд',false)],E=>{
+  const{c,W,H,P}=E,rh=H*.94/P.rows;c.textAlign='center';
+  for(let r=0;r<P.rows;r++){const str=E.lines[r%E.lines.length],a=metr(E,str).asc,size=rh*.8/a,cap=size*a;E.font(size);const sx=W*.8/Math.max(1,E.mw(str));
+    c.save();c.translate(W/2,H*.03+rh*(r+.5));c.transform(1,0,-E.ss(E.t+r/P.rows*P.freq)*P.amp,1,0,0);c.scale(sx,1);c.lineWidth=Math.max(1.5,size*.02)/sx;
+    P.alt&&r%2?c.strokeText(str,0,cap/2):c.fillText(str,0,cap/2);c.restore()}});
+
+K('burst','Sunburst','Лучи текста расходятся из центра и вращаются.',
+[R('n','Лучи',3,48,1,16),R('inner','Центр',0,.4,.01,.07),R('speed','Скорость',1,3,1,1),R('pulse','Пульс длины',0,1,.01,.35)],E=>{
+  const{c,W,H,P}=E,Lr=Math.hypot(W,H)*.5,r0=Lr*P.inner,size=Math.min(E.fit(E.line,(Lr-r0)*.82),TAU*(r0+Lr*.35)/P.n/E.asc*.8);E.font(size);
+  for(let i=0;i<P.n;i++){const ph=(i+E.t*P.speed)/P.n;c.save();c.translate(W/2,H/2);c.rotate(TAU*ph);c.translate(r0,size*E.asc/2);
+    c.scale(1+P.pulse*E.ss(ph*2),1);c.fillText(E.line,0,0);c.restore()}});
+
+/* ── posters ── */
+Z('swiss','Swiss','Швейцарская сетка: крупный заголовок, линейки, служебная информация.',
+[R('scale','Размер заголовка',.3,1,.01,1),B('rule','Линейки',true),B('aa','Знак Aa',true)],E=>{
+  const{c,W,H,P}=E,m=W*.065,sm=W*.019,inf=E.f.info;E.font(sm);c.fillText(E.f.name,m,m+sm);c.textAlign='right';c.fillText('Specimen — '+new Date().getFullYear(),W-m,m+sm);c.textAlign='left';
+  if(P.rule){c.fillRect(m,m+sm*1.9,W-2*m,Math.max(2,W*.003))}
+  if(P.aa){const s=W*.42;E.font(s);c.fillStyle=E.ac;c.textAlign='right';c.fillText('Aa',W-m,m+sm*3+s*metr(E,'Aa').asc);c.textAlign='left';c.fillStyle=E.fg}
+  const fy=H-m-sm*6.4;if(P.rule)c.fillRect(m,fy,W-2*m,Math.max(2,W*.003));
+  wrap(E,E.sub,m,fy+sm*2.4,(W-2*m)*.5,sm*1.15,1.4,H-m);
+  const meta=[inf?.feats?`OpenType: ${inf.feats.filter(t=>!HIDE.has(t)).length} features`:'',inf?.chars?.length?`Glyph coverage: ${inf.chars.length}`:'',inf?.wght?`Weight ${inf.wght.min}–${inf.wght.max}`:'',...(inf?.axes||[]).map(a=>`${a.tag} ${a.min}–${a.max}`)].filter(Boolean);
+  E.font(sm);c.textAlign='right';meta.slice(0,4).forEach((s,i)=>c.fillText(s,W-m,fy+sm*2.4+i*sm*1.4));c.textAlign='left';
+  let size=Infinity;for(const l of E.lines)size=Math.min(size,E.fit(l,W-2*m));size*=P.scale;
+  const a=Math.max(...E.lines.map(l=>metr(E,l).asc)),pitch=size*(a+.1);E.font(size);
+  E.lines.forEach((l,i)=>c.fillText(l,m,fy-sm*2-(E.lines.length-1-i)*pitch))});
+
+Z('letter','Big Letter','Один знак во весь лист — форма буквы как графика.',
+[R('idx','Знак №',1,24,1,1),R('scale','Масштаб',.4,3,.01,1.25),R('ox','Сдвиг X',-.5,.5,.01,0),R('oy','Сдвиг Y',-.5,.5,.01,0),B('out','Контур',false),B('cap','Подпись',true)],E=>{
+  const{c,W,H,P}=E,chs=Array.from(E.line.replace(/\s/g,'')),ch=chs[(P.idx-1)%chs.length],a=metr(E,ch).asc,size=H*.72*P.scale/a;E.font(size);c.textAlign='center';
+  const x=W/2+P.ox*W,y=H/2+size*a/2+P.oy*H;if(P.out){c.lineWidth=Math.max(2,W*.004);c.strokeText(ch,x,y)}else c.fillText(ch,x,y);c.textAlign='left';
+  if(P.cap){const m=W*.06,sm=W*.022;c.fillStyle=E.ac;E.font(sm*1.6);c.fillText(E.line,m,H-m-sm*1.7);E.font(sm);c.fillText(`${E.f.name} — U+${ch.codePointAt(0).toString(16).toUpperCase().padStart(4,'0')}`,m,H-m)}});
+
+Z('stack','Stack','Каждая строка вписана в ширину листа — плотная типографская стена.',
+[R('rows','Ряды',1,16,1,6),R('gap','Интервал',0,.06,.001,.014),O('style','Стиль',['сплошной','контур через ряд','один акцент'],'один акцент'),R('hi','Акцентный ряд',1,16,1,2)],E=>{
+  const{c,W,H,P}=E,m=W*.05,rows=[];let th=0;
+  for(let r=0;r<P.rows;r++){const s=E.lines[r%E.lines.length],size=E.fit(s,W-2*m),mm=metr(E,s);rows.push({s,size,h:size*mm.asc});th+=size*mm.asc}
+  const gap=H*P.gap,q=Math.min(1,(H-2*m-gap*(P.rows-1))/th);let y=(H-(th*q+gap*(P.rows-1)))/2;c.textAlign='center';
+  rows.forEach((o,r)=>{E.font(o.size*q);y+=o.h*q;c.lineWidth=Math.max(1.5,o.size*q*.014);c.fillStyle=P.style==='один акцент'&&r===P.hi-1?E.ac:E.fg;
+    P.style==='контур через ряд'&&r%2?c.strokeText(o.s,W/2+E.tr*o.size*q/2,y):c.fillText(o.s,W/2+E.tr*o.size*q/2,y);y+=gap})});
+
+Z('repeat','Repeat','Повтор строки со сдвигом: ритм, лесенка, один залитый ряд.',
+[R('rows','Ряды',2,32,1,13),R('shift','Лесенка',-.3,.3,.005,.05),O('style','Стиль',['контур + акцент','затухание','сплошной'],'контур + акцент'),R('hi','Акцентный ряд',1,32,1,6)],E=>{
+  const{c,W,H,P}=E,rh=H/P.rows,size=rh*.76/E.asc,{uw}=unitRow(E,size,'  ');c.lineWidth=Math.max(1.5,size*.018);
+  for(let r=0;r<P.rows;r++){const y=rh*r+(rh+size*E.asc)/2,x0=(((r*P.shift*W)%uw)+uw)%uw-uw;
+    c.globalAlpha=P.style==='затухание'?lerp(.07,1,r/Math.max(1,P.rows-1)):1;const hi=P.style==='контур + акцент'&&r===P.hi-1;c.fillStyle=hi?E.ac:E.fg;
+    for(let x=x0;x<W;x+=uw)P.style==='контур + акцент'&&!hi?c.strokeText(E.line,x,y):c.fillText(E.line,x,y)}c.globalAlpha=1});
+
+Z('diagonal','Diagonal','Строки под углом, уходящие за обрез.',
+[R('ang','Угол',-90,90,1,-24),R('rows','Ряды',2,22,1,8),B('alt','Контур через ряд',true),R('hi','Акцентный ряд',0,22,1,4)],E=>{
+  const{c,W,H,P}=E,D=Math.hypot(W,H),rh=D/P.rows,size=rh*.76/E.asc,{uw}=unitRow(E,size,'  ');c.translate(W/2,H/2);c.rotate(P.ang*Math.PI/180);c.lineWidth=Math.max(1.5,size*.018);
+  for(let r=0;r<P.rows;r++){const y=-D/2+rh*r+(rh+size*E.asc)/2;c.fillStyle=r===P.hi-1?E.ac:E.fg;
+    for(let x=-D-(r%2?uw/2:0);x<D;x+=uw)P.alt&&r%2&&r!==P.hi-1?c.strokeText(E.line,x,y):c.fillText(E.line,x,y)}});
+
+Z('steps','Steps','Одна строка, растянутая ступенями по вертикали.',
+[R('n','Ступени',2,10,1,5),R('grow','Рост',1,2.6,.01,1.6),B('rev','Сверху вниз',false),B('alt','Акцент через ряд',false)],E=>{
+  const{W,H,P}=E,hs=[];for(let i=0;i<P.n;i++)hs.push(P.grow**(P.rev?P.n-1-i:i));stretchRows(E,hs,E.lines,W*.05,H*.012,r=>P.alt&&r%2?E.ac:E.fg)});
+
+Z('badge','Badge','Круглая эмблема: текст по окружности и крупный знак в центре.',
+[R('rings','Кольца текста',1,4,1,2),R('rad','Радиус',.2,.6,.01,.42),B('disc','Диск',true),O('mid','В центре',['первая буква','слово','ничего'],'первая буква')],E=>{
+  const{c,W,H,P}=E,Rm=W*P.rad,band=Rm*.17,size=band*.66/E.asc,u=unitRow(E,size,' · ');
+  if(P.disc){c.fillStyle=E.ac;c.beginPath();c.arc(W/2,H/2,Rm-band*P.rings-band*.25,0,TAU);c.fill();c.fillStyle=E.fg}c.textAlign='center';
+  for(let i=0;i<P.rings;i++){const rb=Rm-band*(i+1)+band*.18,circ=TAU*rb,reps=Math.max(1,Math.round(circ/u.uw)),f=circ/(reps*u.uw);E.font(size);
+    for(let q=0;q<reps;q++){let x=q*u.uw;for(let j=0;j<u.ch.length;j++){const a=(x+u.ws[j]/2)*f/rb+i*.5;x+=u.ws[j];if(u.ch[j]===' ')continue;c.save();c.translate(W/2,H/2);c.rotate(a);c.fillText(u.ch[j],0,-rb);c.restore()}}}
+  const ri=Rm-band*P.rings-band*.25;c.fillStyle=P.disc?E.bg:E.fg;
+  if(P.mid==='первая буква'){const ch=Array.from(E.line)[0],a=metr(E,ch).asc,s=ri*1.25/a;E.font(s);c.fillText(ch,W/2,H/2+s*a/2)}
+  else if(P.mid==='слово')block(E,E.lines,ri*1.5,ri*1.2).draw(W/2,H/2)});
+
+Z('scale','Type Scale','Лесенка кеглей — как шрифт держится от афишного до мелкого.',
+[R('max','Макс. размер',80,420,1,230),R('ratio','Шаг',1.15,2,.01,1.5),R('n','Ступени',3,12,1,8)],E=>{
+  const{c,W,H,P}=E,m=W*.06,q=W/1080,col=W*.1,sm=W*.016;let y=m;
+  for(let i=0;i<P.n;i++){const px=P.max/P.ratio**i,s=px*q,h=s*(E.asc+E.desc)*1.12;if(y+h>H-m)break;
+    c.fillStyle=E.ac;E.font(sm);c.fillText(Math.round(px)+' px',m,y+s*E.asc);c.fillStyle=E.fg;
+    c.save();c.beginPath();c.rect(m+col,y-s*.2,W-2*m-col,h+s*.4);c.clip();E.font(s);c.fillText(E.line+'  '+E.sub,m+col,y+s*E.asc);c.restore();
+    y+=h+H*.012;c.globalAlpha=.25;c.fillRect(m,y-H*.006,W-2*m,1.5);c.globalAlpha=1}});
+
+Z('glyphs','Glyph Grid','Таблица знаков шрифта (из файла) — полный состав.',
+[R('cols','Колонки',4,26,1,10),R('skip','Начать с знака',0,3000,1,0),B('lines','Сетка',true)],E=>{
+  const{c,W,H,P}=E,m=W*.06,sm=W*.019,all=E.f.info?.chars?.length?E.f.info.chars:Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&@#%!?.,:;()[]{}«»“”—+=*/'),chars=all.slice(Math.min(P.skip,Math.max(0,all.length-P.cols)));
+  E.font(sm);c.fillText(E.f.name,m,m+sm);c.textAlign='right';c.fillStyle=E.ac;c.fillText(all.length+' glyphs',W-m,m+sm);c.fillStyle=E.fg;
+  const top=m+sm*2.4,cell=(W-2*m)/P.cols,rows=Math.floor((H-m-top)/cell);E.font(cell*.52);c.textAlign='center';c.lineWidth=1.5;
+  for(let i=0;i<rows*P.cols&&i<chars.length;i++){const x=m+cell*(i%P.cols),y=top+cell*Math.floor(i/P.cols);
+    if(P.lines){c.globalAlpha=.22;c.strokeRect(x,y,cell,cell);c.globalAlpha=1}c.fillText(chars[i],x+cell/2,y+cell*.68)}});
+
+Z('para','Paragraph','Заголовок и колонки текста разными кеглями — проверка набора.',
+[R('hs','Заголовок',.05,.3,.005,.13),R('cols','Колонки',1,3,1,2),R('ts','Кегль текста',10,44,1,22),R('lh','Интерлиньяж',1,2,.01,1.4)],E=>{
+  const{c,W,H,P}=E,m=W*.07,q=W/1080,hsz=W*P.hs,ha=E.asc;let y=wrap(E,E.line,m,m+hsz*ha,W-2*m,hsz,ha+.16,H*.6);
+  y+=-hsz*(ha+.16)+hsz*.35;c.fillStyle=E.ac;c.fillRect(m,y,W-2*m,Math.max(2,W*.004));c.fillStyle=E.fg;y+=H*.035;
+  const body=(E.sub?E.sub+'. ':'')+(/[а-яё]/i.test(S.text+S.sub)?TXT.cyr:TXT.lat),gut=W*.04,cw=(W-2*m-gut*(P.cols-1))/P.cols;
+  for(let i=0;i<P.cols;i++){const s=P.ts*q*[1,.78,.62][i],x=m+i*(cw+gut);c.fillStyle=E.ac;E.font(W*.014);c.fillText(Math.round(s/q)+' px',x,y);c.fillStyle=E.fg;
+    wrap(E,(body+' ').repeat(4),x,y+W*.014+s*1.2,cw,s,P.lh,H-m)}});
+
+Z('features','OpenType','Каждая OpenType-фича шрифта: выключена слева, включена справа.',
+[R('n','Строк',3,16,1,9),R('skip','Пропустить',0,40,1,0),B('own','Мой текст вместо примеров',false)],E=>{
+  const{c,W,H,P}=E,m=W*.06,sm=W*.017,f=E.f;E.font(sm);c.fillText(f.name+' — OpenType features',m,m+sm);
+  const tags=(f.info?.feats||[]).filter(t=>!HIDE.has(t)).slice(P.skip,P.skip+P.n);
+  if(!f.buf||!tags.length){block(E,!f.buf?['Загрузите','файл шрифта']:f.info?['В шрифте нет','OpenType-фич']:['WOFF2: список фич','недоступен'],W*.7,H*.2).draw(W/2,H/2);return}
+  const top=m+sm*2.6,rh=(H-m-top)/tags.length,colw=(W-2*m-W*.04)/2;
+  tags.forEach((t,i)=>{const y=top+rh*i,smp=P.own?E.line:(FSAMPLE[t]||(/^(ss|cv)\d\d$|salt|swsh|calt|titl|hist/.test(t)?E.line:E.line));
+    c.globalAlpha=.25;c.fillRect(m,y,W-2*m,1.5);c.globalAlpha=1;c.fillStyle=E.ac;E.font(sm);c.fillText(t+' — '+fname(t),m,y+sm*1.6);c.fillStyle=E.fg;
+    [0,1].forEach(on=>{const fam=featFace(f,t,on)||E.fam,x=m+on*(colw+W*.04);E.font(100,null,fam);const s=Math.min(100*colw/Math.max(1,E.mw(smp)),(rh-sm*2.6)/(E.asc+E.desc)*.9);
+      E.font(s,null,fam);c.globalAlpha=on?1:.5;c.fillText(smp,x,y+sm*2.4+s*E.asc*1.05);c.globalAlpha=1})})});
+
+Z('compare','Compare','Сравнение: все загруженные шрифты, либо лесенка весов вариативного.',
+[R('n','Макс. строк',2,14,1,8)],E=>{
+  const{c,W,H,P}=E,m=W*.06,sm=W*.016,up=fonts.filter(f=>!f.sys);let items;
+  if(up.length<2&&E.isVar){const v=E.f.info.wght;items=Array.from({length:P.n},(_,i)=>({l:'wght '+Math.round(lerp(v.min,v.max,i/(P.n-1))),w:lerp(v.min,v.max,i/(P.n-1)),fam:E.fam}))}
+  else items=(up.length>=2?up:fonts).slice(0,P.n).map(f=>({l:f.name,w:f.info?.wght?f.wght:400,fam:f.css}));
+  const rh=(H-2*m)/items.length;
+  items.forEach((it,i)=>{const y=m+rh*i,mm=metr(E,E.line,it.w,it.fam);c.globalAlpha=.25;c.fillRect(m,y,W-2*m,1.5);c.globalAlpha=1;c.fillStyle=E.ac;E.font(sm,400);c.fillText(it.l,m,y+sm*1.7);c.fillStyle=E.fg;
+    E.font(100,it.w,it.fam);const s=Math.min(100*(W-2*m)/Math.max(1,E.mw(E.line)),(rh-sm*3)/(mm.asc+mm.desc));E.font(s,it.w,it.fam);c.fillText(E.line,m,y+sm*2.4+(rh-sm*2.8+s*mm.asc-s*mm.desc)/2)})});
+
+const byId=id=>PRESETS.find(p=>p.id===id)||PRESETS[0];
+for(const p of PRESETS){const o=S.params[p.id]=S.params[p.id]||{};for(const d of p.params)if(o[d.k]===undefined||(d.o&&!d.o.includes(o[d.k])))o[d.k]=d.d}
+
+/* ───────── UI ───────── */
+const cv=$('#cv'),ctx=cv.getContext('2d'),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let CT=[];
+const fmtN=v=>Math.abs(v)>=100?Math.round(v):+(+v).toFixed(3);
+const cR=(l,min,max,step,v,set)=>`<label class="r"><span title="${esc(l)}">${esc(l)}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${v}" data-c="${CT.push(set)-1}"><output>${fmtN(v)}</output></label>`;
+const cS=(l,opts,v,set)=>`<label class="r"><span>${esc(l)}</span><select data-c="${CT.push(set)-1}">${opts.map(o=>{const[a,b]=Array.isArray(o)?o:[o,o];return`<option value="${esc(a)}"${String(a)===String(v)?' selected':''}>${esc(b)}</option>`}).join('')}</select></label>`;
+const cB=(l,v,set)=>`<label class="r"><span>${esc(l)}</span><input type="checkbox" ${v?'checked':''} data-c="${CT.push(set)-1}" style="justify-self:start;accent-color:var(--ac)"><output></output></label>`;
+function ui(){
+  const f=curFont(),p=byId(S.preset);S.preset=p.id;
+  $('#fonts').innerHTML=fonts.map(q=>`<button class="it${q.id===f.id?' on':''}" data-f="${q.id}"><span>${esc(q.name)}</span>${q.sys?'<i>system</i>':`<i>${q.info?.wght?'variable':''} <span class="x" data-del="${q.id}">✕</span></i>`}</button>`).join('');
+  for(const g of['k','p'])$('#p'+g).innerHTML=PRESETS.filter(q=>q.g===g).map(q=>`<button class="it${q.id===p.id?' on':''}" data-p="${q.id}"><span>${q.name}</span></button>`).join('');
+  $('#pName').textContent=p.name;$('#pDesc').textContent=p.desc;$('#bMp4').disabled=p.g!=='k';
+  CT=[];const P=S.params[p.id],inf=f.info,fmt=FORMATS[S.format]||FORMATS.poster;
+  let h=`<section><h2>Текст</h2><textarea data-c="${CT.push(v=>S.text=v)-1}" spellcheck="false">${esc(S.text)}</textarea>
+    <p class="note">Каждая строка — отдельный ряд в постерах.</p>
+    <label class="r" style="margin-top:8px"><span>Подпись</span><input type="text" value="${esc(S.sub)}" data-c="${CT.push(v=>S.sub=v)-1}"></label>
+    ${cS('Регистр',[['asis','Как набрано'],['upper','ПРОПИСНЫЕ'],['lower','строчные']],S.case,v=>S.case=v)}
+    ${cR('Трекинг',-.1,.6,.005,S.track,v=>S.track=v)}</section>`;
+  h+=`<section><h2>Пресет — ${p.name}</h2>`+p.params.map(d=>d.b?cB(d.l,P[d.k],v=>P[d.k]=v):d.o?cS(d.l,d.o,P[d.k],v=>P[d.k]=v):cR(d.l,d.min,d.max,d.step,P[d.k],v=>P[d.k]=v)).join('')+
+    `<div class="row" style="margin-top:8px"><button class="btn" id="bReset">Сбросить пресет</button></div></section>`;
+  h+=`<section><h2>Шрифт — ${esc(f.name)}</h2>`;
+  if(inf?.wght)h+=cR('Вес (wght)',inf.wght.min,inf.wght.max,1,f.wght,v=>f.wght=v);
+  for(const a of inf?.axes||[])h+=cR(a.tag,a.min,a.max,(a.max-a.min)>20?1:.01,f.axes[a.tag]??a.def,v=>{f.axes[a.tag]=v;rebuildSoon(f)});
+  const feats=(inf?.feats||[]).filter(t=>!HIDE.has(t));
+  if(feats.length)h+=`<div class="chips" style="margin-top:8px">${feats.map(t=>`<button class="chip${(f.feat[t]??DEF_ON.has(t))?' on':''}" data-feat="${t}" title="${esc(fname(t))}">${t}</button>`).join('')}</div><p class="note">OpenType-фичи: нажмите, чтобы включить или выключить.</p>`;
+  else h+=`<p class="note">${f.sys?'Системный шрифт. Загрузите файл, чтобы увидеть оси и OpenType-фичи.':f.info?'В шрифте нет переключаемых OpenType-фич.':'WOFF2: шрифт работает, но список фич и осей прочитать нельзя — загрузите TTF/OTF/WOFF.'}</p>`;
+  h+=`</section><section><h2>Цвет</h2><div class="pals">${PALS.map((q,i)=>`<button class="pal" data-pal="${i}" style="background:${q[0]}"><b style="background:${q[1]}"></b><u style="background:${q[2]}"></u></button>`).join('')}</div>
+    <div class="cols3">${[['bg','Фон'],['fg','Текст'],['ac','Акцент']].map(([k,l])=>`<label><span>${l}</span><input type="color" value="${S[k]}" data-c="${CT.push(v=>S[k]=v)-1}"></label>`).join('')}</div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="bSwap">Поменять фон и текст</button></div></section>`;
+  h+=`<section><h2>Формат и движение</h2>
+    ${cS('Формат',Object.entries(FORMATS).map(([k,v])=>[k,`${v[0]} — ${v[1]}×${v[2]}`]),S.format,v=>{S.format=v;sizeCanvas()})}
+    ${cR('Цикл, сек',1,12,.5,S.dur,v=>S.dur=v)}
+    ${cS('Плавность',Object.entries(EASE_L),S.ease,v=>S.ease=v)}
+    ${cS('Кадров/сек',[24,30,60],S.fps,v=>S.fps=+v)}
+    ${cR('Повторов в MP4',1,6,1,S.loops,v=>S.loops=v)}
+    ${cS('PNG',[[1,'1× — '+fmt[1]+' px'],[2,'2× — '+fmt[1]*2+' px'],[3,'3× — '+fmt[1]*3+' px']],S.pngScale,v=>S.pngScale=+v)}</section>`;
+  h+=`<details><summary>Принципы, заложенные в пресеты</summary><ul>
+    <li><b>Бесшовный цикл.</b> Каждая анимация возвращается в исходный кадр — ролик можно зациклить без шва.</li>
+    <li><b>Не линейно.</b> Движение идёт по кривым плавности: Expo для резкого плакатного ритма, Sine для спокойного.</li>
+    <li><b>Каскад.</b> Буквы и ряды стартуют со сдвигом по фазе — так рождается волна и ритм.</li>
+    <li><b>Пауза для чтения.</b> В Reveal, Bounce и Split-flap слово замирает: если зрителю нужно читать дважды, анимация мешает.</li>
+    <li><b>Одна идея на лист.</b> Один приём, два цвета и акцент. Контраст масштаба и повтор работают лучше набора эффектов.</li>
+    <li><b>Шрифт — герой.</b> Крупный кегль, обрез по краю, контур против заливки показывают рисунок знаков.</li></ul></details>`;
+  $('#panel').innerHTML=h;dirty=true;persist()}
+$('#panel').addEventListener('input',e=>{const el=e.target,i=el.dataset.c;if(i==null)return;
+  const v=el.type==='checkbox'?el.checked:el.type==='range'?+el.value:el.value;CT[i](v);if(el.type==='range')el.nextElementSibling.value=fmtN(v);dirty=true;persist();
+  if(el.tagName==='SELECT'&&/Формат/.test(el.parentNode.textContent))ui()});
+$('#panel').addEventListener('click',e=>{const t=e.target,f=curFont();
+  if(t.dataset.feat){const k=t.dataset.feat;f.feat[k]=!(f.feat[k]??DEF_ON.has(k));rebuildFace(f).then(ui)}
+  else if(t.dataset.pal){[S.bg,S.fg,S.ac]=PALS[t.dataset.pal];ui()}
+  else if(t.id==='bSwap'){[S.bg,S.fg]=[S.fg,S.bg];ui()}
+  else if(t.id==='bReset'){const p=byId(S.preset);for(const d of p.params)S.params[p.id][d.k]=d.d;ui()}});
+document.querySelector('aside.l').addEventListener('click',e=>{const t=e.target.closest('[data-del],[data-f],[data-p]');if(!t)return;
+  if(t.dataset.del){const i=fonts.findIndex(f=>f.id==t.dataset.del);if(i>=0){if(fonts[i].face)document.fonts.delete(fonts[i].face);fonts.splice(i,1);if(S.font==t.dataset.del)S.font=fonts[fonts.length-1].id}ui();e.stopPropagation()}
+  else if(t.dataset.f){S.font=+t.dataset.f;ui()}else if(t.dataset.p){S.preset=t.dataset.p;ui()}});
+$('#bRand').onclick=()=>{const p=byId(S.preset),P=S.params[p.id];for(const d of p.params)P[d.k]=d.b?Math.random()<.5:d.o?d.o[Math.random()*d.o.length|0]:+(d.min+Math.round(Math.random()*(d.max-d.min)/d.step)*d.step).toFixed(4);ui()};
+$('#bUp').onclick=()=>$('#fIn').click();
+const loadFiles=async fl=>{for(const f of fl)if(/\.(ttf|otf|woff2?|ttc)$/i.test(f.name))await addFont(await f.arrayBuffer(),f.name)};
+$('#fIn').onchange=e=>{loadFiles([...e.target.files]);e.target.value=''};
+let dragN=0;addEventListener('dragenter',e=>{e.preventDefault();dragN++;$('#drop').style.display='flex'});
+addEventListener('dragleave',()=>{if(--dragN<=0){dragN=0;$('#drop').style.display='none'}});addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();dragN=0;$('#drop').style.display='none';loadFiles([...e.dataTransfer.files])});
+let LF=null;
+if(!window.queryLocalFonts)$('#bLocal').hidden=true;
+$('#bLocal').onclick=async()=>{try{LF=LF||await window.queryLocalFonts()}catch(e){alert('Браузер не дал доступ к установленным шрифтам. Загрузите файл шрифта.');return}
+  if(!LF.length){alert('Доступ к установленным шрифтам не выдан.');LF=null;return}$('#lfQ').value='';lfRender();$('#dLocal').showModal()};
+function lfRender(){const q=$('#lfQ').value.toLowerCase();$('#lfList').innerHTML=LF.map((f,i)=>[f,i]).filter(([f])=>f.fullName.toLowerCase().includes(q)).slice(0,250).map(([f,i])=>`<button class="it" data-i="${i}"><span>${esc(f.fullName)}</span></button>`).join('')}
+$('#lfQ').oninput=lfRender;
+$('#lfList').onclick=async e=>{const b=e.target.closest('[data-i]');if(!b)return;const f=LF[b.dataset.i];$('#dLocal').close();await addFont(await(await f.blob()).arrayBuffer(),f.fullName)};
+
+function sizeCanvas(){const[,w,h]=FORMATS[S.format]||FORMATS.poster;cv.width=w;cv.height=h;dirty=true}
+const setPlay=v=>{S.playing=v;$('#bPlay').textContent=v?'Пауза':'Играть';if(v)t0=performance.now()-curT*S.dur*1000};
+$('#bPlay').onclick=()=>setPlay(!S.playing);
+$('#scrub').oninput=e=>{setPlay(false);curT=+e.target.value;dirty=true};
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||document.querySelector('dialog[open]'))return;
+  if(e.code==='Space'){e.preventDefault();setPlay(!S.playing)}
+  if(e.code==='ArrowDown'||e.code==='ArrowUp'){e.preventDefault();const i=PRESETS.findIndex(p=>p.id===S.preset);S.preset=PRESETS[(i+(e.code==='ArrowDown'?1:-1)+PRESETS.length)%PRESETS.length].id;ui()}});
+function loop(now){const p=byId(S.preset),anim=p.g==='k';
+  if(anim&&S.playing){curT=fr((now-t0)/1000/S.dur);dirty=true}
+  if(dirty&&!BUSY){dirty=false;render(ctx,cv.width,cv.height,anim?curT:0,1,p);
+    $('#scrub').value=curT;$('#scrub').disabled=$('#bPlay').disabled=!anim;$('#tInfo').textContent=anim?`${(curT*S.dur).toFixed(2)} / ${S.dur} с`:'статичный лист'}
+  requestAnimationFrame(loop)}
+
+/* ───────── export ───────── */
+let BUSY=false;
+const tick=()=>new Promise(r=>setTimeout(r,0));
+const safe=s=>s.replace(/[^\wЀ-ӿ-]+/g,'_').slice(0,40)||'font';
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+function exCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;c.style.cssText='position:fixed;left:-99999px;top:0;width:10px;height:10px';c.style.fontVariationSettings=curFont().varCss||'normal';document.body.appendChild(c);return c}
+async function makePNG(p,t,scale){const[,W,H]=FORMATS[S.format],c=exCanvas(W*scale,H*scale),x=c.getContext('2d');
+  render(x,W,H,t,scale,p);if(PENDING.size){await Promise.all([...PENDING]);render(x,W,H,t,scale,p)}
+  const b=await new Promise(r=>c.toBlob(r,'image/png'));c.remove();return b}
+async function pickCodec(W,H,fps){if(!('VideoEncoder'in window))return null;
+  for(const codec of['avc1.640033','avc1.4d0033','avc1.42003e','avc1.42E01F']){const cfg={codec,width:W,height:H,bitrate:(W*H>1.6e6?12:9)*1e6,framerate:fps,avc:{format:'avc'}};
+    try{if((await VideoEncoder.isConfigSupported(cfg)).supported)return cfg}catch{}}return null}
+async function makeMP4(p,onProg,cancel){
+  const[,W,H]=FORMATS[S.format],fps=S.fps,n=Math.max(2,Math.round(S.dur*fps)),total=n*S.loops,cfg=await pickCodec(W,H,fps);
+  if(!cfg)throw new Error('Этот браузер не умеет кодировать H.264 (WebCodecs). Откройте в Chrome, Edge или Safari.');
+  const c=exCanvas(W,H),x=c.getContext('2d'),samples=[];let desc=null,err=null;
+  const enc=new VideoEncoder({output(ch,meta){const d=meta?.decoderConfig?.description;if(d&&!desc)desc=new Uint8Array(d.buffer?d.buffer.slice(d.byteOffset,d.byteOffset+d.byteLength):d);
+    const b=new Uint8Array(ch.byteLength);ch.copyTo(b);samples.push({d:b,key:ch.type==='key'})},error(e){err=e}});
+  enc.configure(cfg);
+  try{for(let i=0;i<total;i++){if(err)throw err;if(cancel?.())throw new Error('cancel');
+      render(x,W,H,(i%n)/n,1,p);const vf=new VideoFrame(c,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});enc.encode(vf,{keyFrame:i%fps===0});vf.close();
+      while(enc.encodeQueueSize>6)await tick();if(i%4===0){onProg?.(i/total);await tick()}}
+    await enc.flush()}finally{try{enc.close()}catch{}c.remove()}
+  if(err)throw err;if(!desc)throw new Error('Кодек не вернул конфигурацию');
+  return muxMP4(samples,desc,W,H,fps)}
+function muxMP4(samples,avcC,W,H,fps){
+  const u32=n=>[n>>>24&255,n>>>16&255,n>>>8&255,n&255],u16=n=>[n>>8&255,n&255],str=s=>[...s].map(c=>c.charCodeAt(0)),z=n=>new Array(n).fill(0);
+  const cat=parts=>{let len=0;for(const p of parts)len+=p.length;const o=new Uint8Array(len);let q=0;for(const p of parts){o.set(p,q);q+=p.length}return o};
+  const box=(type,...parts)=>{const body=cat(parts);return cat([u32(body.length+8),str(type),body])},full=(type,v,fl,...parts)=>box(type,[v,fl>>16&255,fl>>8&255,fl&255],...parts);
+  const ts=fps*100,delta=100,dur=samples.length*delta,mat=[...u32(0x10000),...z(12),...u32(0x10000),...z(12),...u32(0x40000000)];
+  const ftyp=box('ftyp',str('isom'),u32(512),str('isomiso2avc1mp41'));
+  const keys=[];samples.forEach((s,i)=>{if(s.key)keys.push(i+1)});
+  const moov=off=>box('moov',
+    full('mvhd',0,0,u32(0),u32(0),u32(ts),u32(dur),u32(0x10000),u16(0x100),z(10),mat,z(24),u32(2)),
+    box('trak',
+      full('tkhd',0,7,u32(0),u32(0),u32(1),u32(0),u32(dur),z(8),u16(0),u16(0),u16(0),u16(0),mat,u32(W<<16),u32(H<<16)),
+      box('mdia',full('mdhd',0,0,u32(0),u32(0),u32(ts),u32(dur),u16(0x55c4),u16(0)),
+        full('hdlr',0,0,u32(0),str('vide'),z(12),str('VideoHandler'),[0]),
+        box('minf',full('vmhd',0,1,z(8)),box('dinf',full('dref',0,0,u32(1),full('url ',0,1))),
+          box('stbl',
+            full('stsd',0,0,u32(1),box('avc1',z(6),u16(1),z(16),u16(W),u16(H),u32(0x480000),u32(0x480000),u32(0),u16(1),z(32),u16(24),[255,255],box('avcC',avcC))),
+            full('stts',0,0,u32(1),u32(samples.length),u32(delta)),
+            full('stss',0,0,u32(keys.length),keys.flatMap(u32)),
+            full('stsc',0,0,u32(1),u32(1),u32(samples.length),u32(1)),
+            full('stsz',0,0,u32(0),u32(samples.length),samples.flatMap(s=>u32(s.d.length))),
+            full('stco',0,0,u32(1),u32(off)))))));
+  const mv=moov(ftyp.length+moov(0).length+8),size=samples.reduce((a,s)=>a+s.d.length,0);
+  return new Blob([ftyp,mv,new Uint8Array([...u32(size+8),...str('mdat')]),...samples.map(s=>s.d)],{type:'video/mp4'})}
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c}return t})();
+function makeZip(files){const enc=new TextEncoder(),parts=[],cd=[];let off=0;const d=new Date(),tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1),dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  for(const f of files){const nm=enc.encode(f.name);let c=~0;for(let i=0;i<f.data.length;i++)c=CRC[(c^f.data[i])&255]^(c>>>8);c=~c>>>0;
+    const lh=new DataView(new ArrayBuffer(30));lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x800,true);lh.setUint16(10,tm,true);lh.setUint16(12,dt,true);lh.setUint32(14,c,true);lh.setUint32(18,f.data.length,true);lh.setUint32(22,f.data.length,true);lh.setUint16(26,nm.length,true);
+    const ch=new DataView(new ArrayBuffer(46));ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x800,true);ch.setUint16(12,tm,true);ch.setUint16(14,dt,true);ch.setUint32(16,c,true);ch.setUint32(20,f.data.length,true);ch.setUint32(24,f.data.length,true);ch.setUint16(28,nm.length,true);ch.setUint32(42,off,true);
+    parts.push(lh.buffer,nm,f.data);cd.push(ch.buffer,nm);off+=30+nm.length+f.data.length}
+  const cdSize=cd.reduce((a,b)=>a+b.byteLength,0),e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cdSize,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cd,e.buffer],{type:'application/zip'})}
+const baseName=p=>`${safe(curFont().name)}_${p.id}_${S.format}`;
+async function busy(btn,label,fn){if(BUSY)return;BUSY=true;const old=btn.textContent;btn.disabled=true;
+  try{await fn(v=>btn.textContent=label+' '+Math.round(v*100)+'%')}catch(e){if(e.message!=='cancel')alert(e.message||e)}finally{BUSY=false;btn.disabled=false;btn.textContent=old;dirty=true;ui()}}
+$('#bPng').onclick=()=>busy($('#bPng'),'PNG',async()=>{const p=byId(S.preset);download(await makePNG(p,p.g==='k'?curT:0,S.pngScale),baseName(p)+'.png')});
+$('#bMp4').onclick=()=>busy($('#bMp4'),'MP4',async pr=>{const p=byId(S.preset);download(await makeMP4(p,pr),baseName(p)+'.mp4')});
+let xCancel=false;
+$('#bAll').onclick=()=>{const k=PRESETS.filter(p=>p.g==='k').length,z=PRESETS.length-k,[,W,H]=FORMATS[S.format];
+  $('#xNote').textContent=`${z} постеров и ${k} анимаций шрифтом «${curFont().name}», формат ${W}×${H}, цикл ${S.dur} с × ${S.loops}, ${S.fps} кадров/с. Используются текущие настройки каждого пресета.`;
+  $('#xProg').hidden=true;$('#xStat').textContent='';$('#xGo').disabled=false;$('#dExp').showModal()};
+$('#xCancel').onclick=()=>{xCancel=true;if(!BUSY)$('#dExp').close()};
+$('#dExp').addEventListener('cancel',e=>{if(BUSY){e.preventDefault();xCancel=true}});
+$('#xGo').onclick=async()=>{if(BUSY)return;BUSY=true;xCancel=false;$('#xGo').disabled=true;$('#xProg').hidden=false;
+  const jobs=[],files=[],pad=i=>String(i+1).padStart(2,'0');
+  PRESETS.filter(p=>p.g==='p').forEach((p,i)=>{if($('#xP').checked)jobs.push({p,kind:'png',name:`posters/${pad(i)}-${p.id}.png`})});
+  PRESETS.filter(p=>p.g==='k').forEach((p,i)=>{if($('#xM').checked)jobs.push({p,kind:'mp4',name:`motion/${pad(i)}-${p.id}.mp4`});if($('#xS').checked)jobs.push({p,kind:'still',name:`stills/${pad(i)}-${p.id}.png`})});
+  try{if(!jobs.length)throw new Error('Ничего не выбрано');
+    for(let j=0;j<jobs.length;j++){if(xCancel)throw new Error('cancel');const{p,kind,name}=jobs[j];$('#xStat').textContent=`${j+1} / ${jobs.length} — ${p.name} (${kind==='mp4'?'MP4':'PNG'})`;$('#xProg').value=j/jobs.length;await tick();
+      const blob=kind==='mp4'?await makeMP4(p,v=>$('#xProg').value=(j+v)/jobs.length,()=>xCancel):await makePNG(p,kind==='still'?.3:0,kind==='still'?1:S.pngScale);
+      files.push({name,data:new Uint8Array(await blob.arrayBuffer())})}
+    files.push({name:'settings.json',data:new TextEncoder().encode(JSON.stringify({font:curFont().name,...S},null,1))});
+    $('#xStat').textContent='Собираю архив…';await tick();download(makeZip(files),`type-lab_${safe(curFont().name)}_${S.format}.zip`);
+    $('#xProg').value=1;$('#xStat').textContent=`Готово: ${files.length-1} файлов в архиве.`}
+  catch(e){$('#xStat').textContent=e.message==='cancel'?'Отменено.':'Ошибка: '+(e.message||e)}
+  finally{BUSY=false;$('#xGo').disabled=false;dirty=true}};
+
+window.TypeLab={addFont,S,PRESETS,makePNG,makeMP4,makeZip,fonts,ui};
+sizeCanvas();ui();setPlay(S.playing);requestAnimationFrame(loop);
+</script>
+</body>
+</html>
